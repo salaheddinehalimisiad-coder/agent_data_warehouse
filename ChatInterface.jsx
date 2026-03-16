@@ -32,6 +32,12 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
       });
       const data = await response.json();
       
+      if (data.status === 'error') {
+        setMessages(prev => [...prev, { role: 'bot', content: "⚠️ Désolé, une erreur est survenue : " + (data.message || "Erreur inconnue") }]);
+        setIsLoading(false);
+        return;
+      }
+      
       if (activeTab === 'etl') {
         setMessages(prev => [...prev, { role: 'bot', content: "C'est fait ! Le script PySpark a été mis à jour avec vos instructions." }]);
         if (data.etl_code) {

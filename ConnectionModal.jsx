@@ -11,7 +11,7 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
   const [dwHost, setDwHost]         = useState('127.0.0.1');
   const [dwPort, setDwPort]         = useState('3306');
   const [dwUser, setDwUser]         = useState('root');
-  const [dwPassword, setDwPassword] = useState('');
+  const [dwPassword, setDwPassword] = useState('23102802Sd;');
   const [dwDatabase, setDwDatabase] = useState('data_warehouse');
   const [showDwConfig, setShowDwConfig] = useState(true);
 

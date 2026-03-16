@@ -233,50 +233,79 @@ async def start_process(req: ConnectionRequest):
 # ── /api/chat ─────────────────────────────────────────────────────────────────
 @app.post("/api/chat")
 async def chat_with_agent(req: ChatRequest):
-    config = get_config()
-    current_state = agent_app.get_state(config).values
+    try:
+        config = get_config()
+        state_snapshot = agent_app.get_state(config)
+        current_state = state_snapshot.values if state_snapshot else {}
 
-    if req.context == "etl":
-        # Modification spécifique du script PySpark
-        from langchain_core.prompts import ChatPromptTemplate
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        
-        current_etl_code = current_state.get("etl_code", "")
-        if not current_etl_code:
-            return {"status": "error", "message": "Aucun script ETL à modifier."}
+        if req.context == "etl":
+            # Modification spécifique du script PySpark
+            from langchain_core.prompts import ChatPromptTemplate
+            from langchain_google_genai import ChatGoogleGenerativeAI
             
-        llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """Tu es un expert PySpark.
+            current_etl_code = current_state.get("etl_code", "")
+            if not current_etl_code:
+                _log("⚠️ Erreur Chat : Aucun script ETL trouvé dans la session actuelle.")
+                return {"status": "error", "message": "Aucun script ETL à modifier. Veuillez relancer un pipeline."}
+                
+            llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """Tu es un expert PySpark.
 Voici le script ETL actuel:
 
 {current_etl_code}
 
 L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code PySpark complet et modifié, sans aucune explication markdown."""),
-            ("human", "{user_request}")
-        ])
-        chain = prompt | llm
+                ("human", "{user_request}")
+            ])
+            chain = prompt | llm
+            
+            _log(f"Agent ETL (Chat) : modification du script PySpark demandée...")
+            _broadcast()
+            
+            response = chain.invoke({"current_etl_code": current_etl_code, "user_request": req.message})
+            
+            # Gestion robuste du contenu (parfois une liste dans les versions récentes de LangChain/Gemini)
+            raw_content = response.content
+            if isinstance(raw_content, list):
+                # Extraire le texte de chaque partie si c'est une liste
+                text_parts = []
+                for part in raw_content:
+                    if isinstance(part, dict) and "text" in part:
+                        text_parts.append(part["text"])
+                    else:
+                        text_parts.append(str(part))
+                full_text = "".join(text_parts)
+            else:
+                full_text = str(raw_content)
+
+            # Nettoyage propre du code Markdown
+            clean_code = full_text.replace("```python", "").replace("```pyspark", "").replace("```", "").strip()
+            
+            # Mettre à jour l'état LangGraph avec le nouveau script
+            agent_app.update_state(config, {"etl_code": clean_code})
+            
+            _log(f"Script PySpark mis à jour avec succès via le chat.")
+            _broadcast()
+            return {"status": "waiting_for_review", "etl_code": clean_code}
         
-        _log(f"Agent ETL (Chat) : modification du script PySpark demandée...")
-        _broadcast()
-        
-        response = chain.invoke({"current_etl_code": current_etl_code, "user_request": req.message})
-        clean_code = response.content.replace("```python", "").replace("```", "").strip()
-        
-        # Mettre à jour l'état LangGraph avec le nouveau script
-        agent_app.update_state(config, {"etl_code": clean_code})
-        
-        _log(f"Script PySpark mis à jour avec succès via le chat.")
-        _broadcast()
-        return {"status": "waiting_for_review", "etl_code": clean_code}
-    
-    else:
-        # Modification du modèle logique SQL
-        agent_app.update_state(config, {"messages": [{"role": "user", "content": req.message}]})
-        for event in agent_app.stream(None, config=config):
-            pass
-        current_state = agent_app.get_state(config).values
-        return {"status": "waiting_for_review", "sql_ddl": current_state.get("sql_ddl", "")}
+        else:
+            # Modification du modèle logique SQL
+            if not current_state:
+                 return {"status": "error", "message": "Session expirée ou introuvable. Veuillez re-générer un modèle."}
+                 
+            agent_app.update_state(config, {"messages": [{"role": "user", "content": req.message}]})
+            for event in agent_app.stream(None, config=config):
+                pass
+            
+            new_state = agent_app.get_state(config).values
+            return {"status": "waiting_for_review", "sql_ddl": new_state.get("sql_ddl", "")}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        _log(f"❌ Erreur critique dans le Chat : {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
 # ── /api/validate ─────────────────────────────────────────────────────────────
