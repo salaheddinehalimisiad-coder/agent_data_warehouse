@@ -1,0 +1,8 @@
+id_transaction,date_vente,produit,categorie,quantite,prix_unitaire,client_id,ville,pays
+1,2023-10-01,Ordinateur Portable X1,Electronique,1,1200.50,C100,Paris,France
+2,2023-10-02,Souris Sans Fil,Electronique,3,25.00,C101,Lyon,France
+3,2023-10-02,Clavier Mécanique,Electronique,2,85.99,C102,Marseille,France
+4,2023-10-03,Bureau Assis-Debout,Mobilier,1,450.00,C100,Paris,France
+5,2023-10-04,Écran 27 Pouces,Electronique,2,250.00,C103,Bordeaux,France
+6,2023-10-05,Casque Audio,Electronique,1,150.00,C104,Lille,France
+7,2023-10-05,Chaise Ergonomique,Mobilier,4,199.99,C105,Nantes,France
