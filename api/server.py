@@ -111,6 +111,7 @@ class ConnectionRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    context: str = "sql"  # 'sql' ou 'etl'
 
 
 # ── SSE endpoint ──────────────────────────────────────────────────────────────
@@ -233,11 +234,49 @@ async def start_process(req: ConnectionRequest):
 @app.post("/api/chat")
 async def chat_with_agent(req: ChatRequest):
     config = get_config()
-    agent_app.update_state(config, {"messages": [{"role": "user", "content": req.message}]})
-    for event in agent_app.stream(None, config=config):
-        pass
     current_state = agent_app.get_state(config).values
-    return {"status": "waiting_for_review", "sql_ddl": current_state.get("sql_ddl", "")}
+
+    if req.context == "etl":
+        # Modification spécifique du script PySpark
+        from langchain_core.prompts import ChatPromptTemplate
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        
+        current_etl_code = current_state.get("etl_code", "")
+        if not current_etl_code:
+            return {"status": "error", "message": "Aucun script ETL à modifier."}
+            
+        llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """Tu es un expert PySpark.
+Voici le script ETL actuel:
+
+{current_etl_code}
+
+L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code PySpark complet et modifié, sans aucune explication markdown."""),
+            ("human", "{user_request}")
+        ])
+        chain = prompt | llm
+        
+        _log(f"Agent ETL (Chat) : modification du script PySpark demandée...")
+        _broadcast()
+        
+        response = chain.invoke({"current_etl_code": current_etl_code, "user_request": req.message})
+        clean_code = response.content.replace("```python", "").replace("```", "").strip()
+        
+        # Mettre à jour l'état LangGraph avec le nouveau script
+        agent_app.update_state(config, {"etl_code": clean_code})
+        
+        _log(f"Script PySpark mis à jour avec succès via le chat.")
+        _broadcast()
+        return {"status": "waiting_for_review", "etl_code": clean_code}
+    
+    else:
+        # Modification du modèle logique SQL
+        agent_app.update_state(config, {"messages": [{"role": "user", "content": req.message}]})
+        for event in agent_app.stream(None, config=config):
+            pass
+        current_state = agent_app.get_state(config).values
+        return {"status": "waiting_for_review", "sql_ddl": current_state.get("sql_ddl", "")}
 
 
 # ── /api/validate ─────────────────────────────────────────────────────────────
@@ -283,6 +322,33 @@ def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
         pipeline_state["status"] = "failed"
         _broadcast()
 
+def re_execute_etl_pipeline(config: dict):
+    from nodes.etl_executor import etl_executor_node
+    try:
+        _set_stage("etl_exec", "running", "Réexécution demandée par l'utilisateur…")
+        _log("Lancement manuel de l'exécuteur ETL (PySpark)…")
+        _broadcast()
+        
+        current_state = agent_app.get_state(config).values
+        result = etl_executor_node(current_state)
+        agent_app.update_state(config, result)
+        
+        if result.get("etl_error"):
+            _set_stage("etl_exec", "failed", result["etl_error"][:80])
+            pipeline_state["status"] = "failed"
+            _log(f"Échec de l'exécution manuelle: {result['etl_error'][:80]}")
+        else:
+            _set_stage("etl_exec", "success", "Tables créées dans MySQL (Custom)")
+            pipeline_state["status"] = "success"
+            pipeline_state["ended_at"] = time.time()
+            _log("✅ Data Warehouse personnalisé opérationnel !")
+            
+        _broadcast()
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        pipeline_state["status"] = "failed"
+        _broadcast()
+
 
 @app.post("/api/validate")
 async def validate_and_deploy(background_tasks: BackgroundTasks, req: Optional[ConnectionRequest] = None):
@@ -297,6 +363,15 @@ async def validate_and_deploy(background_tasks: BackgroundTasks, req: Optional[C
 
     return {"status": "background",
             "message": "Le pipeline d'intégration a démarré en tâche de fond. Suivez la progression !"}
+
+@app.post("/api/execute-etl")
+async def execute_etl_custom(background_tasks: BackgroundTasks):
+    config = get_config()
+    _set_stage("etl_gen", "success", "Script manuel validé")
+    pipeline_state["status"] = "running"
+    _broadcast()
+    background_tasks.add_task(re_execute_etl_pipeline, config)
+    return {"status": "background", "message": "Réexécution du pipeline PySpark lancée en arrière-plan !"}
 
 
 # ── Notifications ─────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen]   = useState(true);
   const [sqlCode, setSqlCode]           = useState("-- Le code DDL généré apparaîtra ici...");
   const [etlCode, setEtlCode]           = useState(null);
+  const [activeTab, setActiveTab]       = useState('sql');
   const [messages, setMessages]         = useState([]);
   const [activePanel, setActivePanel]   = useState('pipeline'); // Open by default or dashboard
 
@@ -179,7 +180,13 @@ export default function App() {
               En ligne
             </span>
           </div>
-          <ChatInterface messages={messages} setMessages={setMessages} onUpdateSql={setSqlCode} />
+          <ChatInterface 
+             messages={messages} 
+             setMessages={setMessages} 
+             onUpdateSql={setSqlCode} 
+             onUpdateEtl={setEtlCode}
+             activeTab={activeTab} 
+          />
         </div>
 
         <div className="flex-1 p-6 overflow-y-auto">
@@ -201,7 +208,12 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <ModelVisualizer code={sqlCode} etlCode={etlCode} />
+            <ModelVisualizer 
+              code={sqlCode} 
+              etlCode={etlCode} 
+              activeTab={activeTab} 
+              setActiveTab={setActiveTab} 
+            />
           )}
         </div>
 

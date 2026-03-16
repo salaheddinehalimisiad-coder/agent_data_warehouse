@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Copy, Terminal, Database, Sparkles } from 'lucide-react';
 
-export default function ModelVisualizer({ code, etlCode }) {
-  const [activeTab, setActiveTab] = useState('sql');
-
+export default function ModelVisualizer({ code, etlCode, activeTab, setActiveTab }) {
   const handleCopy = () => {
     const textToCopy = activeTab === 'sql' ? code : etlCode;
     if (textToCopy) {

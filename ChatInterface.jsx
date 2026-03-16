@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, CheckCircle, Bot, User, Loader2 } from 'lucide-react';
 
-export default function ChatInterface({ messages, setMessages, onUpdateSql }) {
+export default function ChatInterface({ messages, setMessages, onUpdateSql, onUpdateEtl, activeTab }) {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef(null);
@@ -28,16 +28,20 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql }) {
       const response = await fetch('http://127.0.0.1:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg }),
+        body: JSON.stringify({ message: userMsg, context: activeTab || 'sql' }),
       });
       const data = await response.json();
       
-      // On met à jour le chat avec la réponse
-      setMessages(prev => [...prev, { role: 'bot', content: "C'est fait ! Le modèle a été mis à jour avec vos instructions." }]);
-      
-      // On met à jour l'éditeur central avec le nouveau code SQL
-      if (data.sql_ddl) {
+      if (activeTab === 'etl') {
+        setMessages(prev => [...prev, { role: 'bot', content: "C'est fait ! Le script PySpark a été mis à jour avec vos instructions." }]);
+        if (data.etl_code) {
+          onUpdateEtl(data.etl_code);
+        }
+      } else {
+        setMessages(prev => [...prev, { role: 'bot', content: "C'est fait ! Le modèle a été mis à jour avec vos instructions." }]);
+        if (data.sql_ddl) {
           onUpdateSql(data.sql_ddl);
+        }
       }
     } catch (error) {
       console.error("Erreur chat:", error);
@@ -50,23 +54,21 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql }) {
   const handleValidate = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://127.0.0.1:8000/api/validate', { method: 'POST' });
+      const endpoint = activeTab === 'etl' ? 'http://127.0.0.1:8000/api/execute-etl' : 'http://127.0.0.1:8000/api/validate';
+      const response = await fetch(endpoint, { method: 'POST' });
       const data = await response.json();
       
       if (data.status === 'success') {
         setMessages(prev => [...prev, { role: 'bot', content: "✅ Succès ! Code ETL PySpark généré." }]);
-        alert("🎉 Succès : " + data.message);
-        if (data.etl_code_used) {
-            onUpdateSql("-- Code PySpark ETL Généré :\n\n" + data.etl_code_used);
-        }
+        // alert("🎉 Succès : " + data.message);
       } else if (data.status === 'background') {
-        setMessages(prev => [...prev, { role: 'bot', content: "🚀 Génération ETL lancée en arrière-plan ! Suivez la progression sur le widget inférieur." }]);
+        setMessages(prev => [...prev, { role: 'bot', content: "🚀 Action lancée en arrière-plan ! Suivez la progression sur le widget ETL." }]);
       } else {
-        setMessages(prev => [...prev, { role: 'bot', content: "❌ Échec de l'ETL." }]);
+        setMessages(prev => [...prev, { role: 'bot', content: "❌ Échec de l'action." }]);
         alert("⚠️ Problème : " + data.error);
       }
     } catch (error) {
-      alert("Erreur d'exécution de la requête réseau : " + error.message + ". Vérifiez que le serveur est bien démarré.");
+      alert("Erreur d'exécution : Vérifiez que le serveur Python tourne bien.");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -109,10 +111,10 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql }) {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Modifier le modèle (ex: Ajoute une table Temps...)"
+            placeholder={activeTab === 'etl' ? "Modifier le script (ex: Ajoute un filtre sur l'année...)" : "Modifier le modèle (ex: Ajoute une table Temps...)"}
             className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-4 pr-12 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
           />
-          <button type="submit" className="absolute right-2 p-2 text-blue-400 hover:text-blue-300 transition-colors">
+          <button type="submit" className={`absolute right-2 p-2 transition-colors ${activeTab === 'etl' ? 'text-emerald-400 hover:text-emerald-300' : 'text-blue-400 hover:text-blue-300'}`}>
             <Send size={20} />
           </button>
         </form>
@@ -120,10 +122,14 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql }) {
         <button 
           onClick={handleValidate}
           disabled={isLoading}
-          className="w-full py-3 px-4 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium rounded-xl transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+          className={`w-full py-3 px-4 border text-sm font-medium rounded-xl transition-all flex items-center justify-center gap-2 group disabled:opacity-50 ${
+            activeTab === 'etl' 
+              ? 'bg-emerald-600/10 hover:bg-emerald-600/20 border-emerald-500/30 text-emerald-400' 
+              : 'bg-blue-600/10 hover:bg-blue-600/20 border-blue-500/30 text-blue-400'
+          }`}
         >
           <CheckCircle size={18} className="group-hover:scale-110 transition-transform" />
-          Valider le modèle et lancer l'ETL
+          {activeTab === 'etl' ? "Réexécuter le script PySpark (ETL)" : "Valider le script SQL & Automatisations"}
         </button>
       </div>
     </div>
