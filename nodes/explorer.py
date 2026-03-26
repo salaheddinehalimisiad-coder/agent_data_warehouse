@@ -3,6 +3,7 @@
 from typing import Dict, Any
 # Importation de l'état global (le "Cerveau")
 from app_state import AgentState
+import time
 # Importation de notre couche de connectivité (Common Connectivity Layer)
 from utils.connectors import SQLConnector, CSVConnector
 
@@ -28,7 +29,7 @@ def explorer_node(state: AgentState) -> dict:
         connector = SQLConnector(connection_string=connection_string)
         
     elif source_type == "csv":
-        file_path = config.get("file_path", "upload/data.csv")
+        file_path = config.get("file_path", "ventes.csv")
         connector = CSVConnector(file_path=file_path)
         
     else:
@@ -45,6 +46,4 @@ def explorer_node(state: AgentState) -> dict:
         print("Erreur : Impossible d'établir la connexion avec la source.")
         # En environnement de production, on pourrait ajouter une clé 'error' au state ici
         
-    # 3. Mise à jour du graphe
-    # Dans LangGraph, renvoyer un dictionnaire met à jour les clés correspondantes dans l'AgentState
     return {"source_metadata": metadata}

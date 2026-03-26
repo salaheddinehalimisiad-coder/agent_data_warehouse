@@ -7,3 +7,5 @@ pydantic
 pandas
 sqlalchemy
 python-dotenv
+mysql-connector-python
+langchain-community

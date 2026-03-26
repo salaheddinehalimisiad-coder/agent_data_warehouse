@@ -1,7 +1,8 @@
+from langchain_google_genai import ChatGoogleGenerativeAI
+import os
 # Fichier : nodes/etl_generator.py
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
 from app_state import AgentState
 
 def etl_generator_node(state: AgentState) -> dict:
@@ -9,6 +10,7 @@ def etl_generator_node(state: AgentState) -> dict:
     print("\n--- ⚙️ AGENT ETL : Génération du pipeline d'intégration ---")
     
     metadata = state.get("source_metadata")
+    print("--- ⚙️ AGENT ETL : Génération du script PySpark/Pandas ---")
     logical_model = state.get("logical_model")
     
     llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)

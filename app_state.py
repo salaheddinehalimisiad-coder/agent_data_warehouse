@@ -21,6 +21,9 @@ class AgentState(TypedDict):
     # Drapeau de validation pour l'étape "Human-in-the-loop" [cite: 4, 21, 59]
     is_validated: bool
 
+    # Rapport du Critique sur le DDL généré
+    critic_review: str
+
     # Code PySpark/SQL généré pour l'ETL
     etl_code: str
     

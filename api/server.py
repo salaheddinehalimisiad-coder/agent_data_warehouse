@@ -1,3 +1,4 @@
+from langchain_google_genai import ChatGoogleGenerativeAI
 # Fichier : api/server.py
 
 from fastapi import FastAPI, Request, File, UploadFile, BackgroundTasks
@@ -11,7 +12,10 @@ import uuid, asyncio, json, time
 from dotenv import load_dotenv
 
 load_dotenv()
+import logging
 from main import create_agent_workflow
+
+logging.basicConfig(filename='pipeline.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -19,6 +23,9 @@ app = FastAPI(
     description="API de conception assistée et ETL automatisé",
     version="2.0"
 )
+
+import sqlite3
+import datetime
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +47,7 @@ def get_config():
 STAGES = [
     {"id": "explorer",   "label": "🔍 Exploration",          "status": "idle"},
     {"id": "modeler",    "label": "🧠 Modélisation IA",       "status": "idle"},
+    {"id": "critic",     "label": "🛡️ Agent Critique",       "status": "idle"},
     {"id": "human",      "label": "👤 Validation Humaine",    "status": "idle"},
     {"id": "etl_gen",    "label": "⚙️ Génération ETL",        "status": "idle"},
     {"id": "etl_exec",   "label": "🚀 Exécution MySQL",       "status": "idle"},
@@ -90,6 +98,7 @@ def _broadcast():
 
 
 def _log(msg: str):
+    logging.info(msg)
     pipeline_state["logs"].append({"t": round(time.time() - pipeline_state["started_at"], 1), "msg": msg})
     _broadcast()
 
@@ -208,19 +217,25 @@ async def start_process(req: ConnectionRequest):
                 _set_stage("modeler",  "running")
                 _log("Modélisation OLAP en cours…")
             elif node == "modeler_node":
-                _set_stage("modeler", "success", "Schéma Star Schema généré")
+                _set_stage("modeler", "success", "Schéma généré")
+                _set_stage("critic", "running")
+                _log("Agent Critique analyse la conformité...")
+            elif node == "critic_node":
+                _set_stage("critic", "success", "Revue terminée")
                 _set_stage("human",   "running")
-                _log("En attente de validation humaine…")
+                _log("En attente de validation humaine...")
 
         current_state = agent_app.get_state(config).values
         _set_stage("explorer", "success")
         _set_stage("modeler",  "success")
+        _set_stage("critic",   "success")
         _set_stage("human", "running", "En attente de votre validation")
         _log("Modèle prêt — validez pour lancer l'ETL.")
         _broadcast()
 
         return {"status": "waiting_for_review",
                 "sql_ddl": current_state.get("sql_ddl", ""),
+                "critic_review": current_state.get("critic_review", ""),
                 "message": "Modèle généré avec succès."}
 
     except Exception as e:
@@ -241,8 +256,7 @@ async def chat_with_agent(req: ChatRequest):
         if req.context == "etl":
             # Modification spécifique du script PySpark
             from langchain_core.prompts import ChatPromptTemplate
-            from langchain_google_genai import ChatGoogleGenerativeAI
-            
+                        
             current_etl_code = current_state.get("etl_code", "")
             if not current_etl_code:
                 _log("⚠️ Erreur Chat : Aucun script ETL trouvé dans la session actuelle.")
@@ -299,7 +313,11 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code P
                 pass
             
             new_state = agent_app.get_state(config).values
-            return {"status": "waiting_for_review", "sql_ddl": new_state.get("sql_ddl", "")}
+            return {
+                "status": "waiting_for_review", 
+                "sql_ddl": new_state.get("sql_ddl", ""),
+                "critic_review": new_state.get("critic_review", "")
+            }
 
     except Exception as e:
         import traceback
@@ -317,6 +335,7 @@ def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
         for event in agent_app.stream(None, config=config):
             node = list(event.keys())[0] if event else None
             if node == "etl_generator":
+                _set_stage("human", "success", "Validation reçue")
                 _set_stage("etl_gen",  "success", "Script PySpark généré")
                 _set_stage("etl_exec", "running")
                 _log("Exécution ETL → MySQL…")
@@ -325,6 +344,8 @@ def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
             elif node == "healer":
                 _set_stage("healer", "running", "Correction automatique en cours…")
                 _log("Agent Healer activé…")
+                
+            _broadcast() # Notify UI step by step
 
         current_state = agent_app.get_state(config).values
         error = current_state.get("etl_error", "")
@@ -401,6 +422,142 @@ async def execute_etl_custom(background_tasks: BackgroundTasks):
     _broadcast()
     background_tasks.add_task(re_execute_etl_pipeline, config)
     return {"status": "background", "message": "Réexécution du pipeline PySpark lancée en arrière-plan !"}
+
+@app.get("/api/sessions")
+def get_history_sessions():
+    try:
+        import os
+        if not os.path.exists("state_checkpoint.db"):
+            return {"sessions": []}
+            
+        with sqlite3.connect("state_checkpoint.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT thread_id, max(checkpoint_id) FROM checkpoints GROUP BY thread_id")
+            rows = cursor.fetchall()
+            
+            sessions = []
+            for r in rows:
+                tid = r[0]
+                sessions.append({
+                    "id": tid,
+                    "name": f"Pipeline {tid}",
+                    "updated_at": datetime.datetime.now().isoformat()
+                })
+                
+            sessions.reverse()
+            return {"sessions": sessions}
+            
+    except Exception as e:
+        print("Erreur sessions", e)
+        return {"sessions": []}
+
+class ResumeRequest(BaseModel):
+    session_id: str
+
+@app.post("/api/sessions/resume")
+async def resume_session_endpoint(req: ResumeRequest):
+    global current_session_id
+    tid = req.session_id
+    if tid:
+        current_session_id = tid
+        config = get_config()
+        state_snapshot = agent_app.get_state(config)
+        current_state = state_snapshot.values if state_snapshot else {}
+        messages = current_state.get("messages", [])
+        msgs = [{"role": getattr(m, "type", "human"), "content": m.content} for m in messages] if messages else []
+        return {
+            "status": "success",
+            "sql_ddl": current_state.get("sql_ddl", ""),
+            "etl_code": current_state.get("etl_code", ""),
+            "critic_review": current_state.get("critic_review", ""),
+            "messages": msgs
+        }
+    return {"status": "error"}
+
+@app.post("/api/sessions/new")
+def new_session_endpoint():
+    global current_session_id
+    current_session_id = f"session_dw_{uuid.uuid4().hex[:8]}"
+    return {"status": "success", "session_id": current_session_id}
+
+from fastapi.responses import Response
+
+@app.get("/api/export-pdf")
+def export_pipeline_pdf():
+    from fpdf import FPDF
+    
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Helvetica', 'B', 15)
+            self.set_fill_color(99, 102, 241)
+            self.set_text_color(255, 255, 255)
+            self.cell(0, 15, 'Rapport : Data Warehouse Automatise', 0, 1, 'C', 1)
+            self.ln(10)
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('Helvetica', 'I', 8)
+            self.set_text_color(128, 128, 128)
+            self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+
+    pdf = PDF()
+    pdf.add_page()
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, '1. Resume Executif', 0, 1)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(80, 80, 80)
+    pdf.multi_cell(0, 6, "Ce rapport documente la creation et le deploiement automatiques de votre Data Warehouse via le systeme Multi-Agents d'Intelligence Artificielle. Le pipeline a suivi quatre grandes etapes pour achever le workflow (Extraction, Transformation, Modelisation et Chargement) par le biais du script genere en PySpark.")
+    pdf.ln(5)
+
+    config = {"configurable": {"thread_id": current_session_id}}
+    try:
+        state = agent_app.get_state(config).values if agent_app else {}
+    except:
+        state = {}
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, '2. Modele Conceptuel de Donnees (DDL)', 0, 1)
+    pdf.set_font('Helvetica', '', 8)
+    sql_text = state.get('sql_ddl', 'Aucun schema SQL genere')
+    if sql_text is None: sql_text = "Aucun schema SQL genere"
+    sql_text = sql_text.replace('é', 'e').replace('à', 'a').replace('è', 'e')
+    pdf.multi_cell(0, 5, sql_text)
+    pdf.ln(5)
+
+    pdf.add_page()
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 10, '3. Code Source PySpark de l\'ETL', 0, 1)
+    pdf.set_font('Helvetica', '', 8)
+    etl_text = state.get('etl_code', 'Aucun code ETL genere')
+    if etl_text is None: etl_text = "Aucun code ETL genere"
+    etl_text = etl_text.replace('é', 'e').replace('à', 'a').replace('è', 'e')
+    pdf.multi_cell(0, 5, etl_text)
+
+    pdf_bytes = bytearray(pdf.output(dest='S'))
+    return Response(content=bytes(pdf_bytes), media_type="application/pdf")
+
+@app.get("/api/export")
+def export_results():
+    try:
+        config = get_config()
+        state_snapshot = agent_app.get_state(config)
+        current_state = state_snapshot.values if state_snapshot else {}
+        
+        sql = current_state.get("sql_ddl", "-- Aucun modèle")
+        etl = current_state.get("etl_code", "# Aucun ETL")
+        critic = current_state.get("critic_review", "Aucune remarque.")
+
+        summary = f"""# RESUME DU DATA WAREHOUSE\n\n## Rapport de l'Agent Critique:\n{critic}\n\n## 1) DDL SQL:\n```sql\n{sql}\n```\n\n## 2) Code PySpark ETL:\n```python\n{etl}\n```\n"""
+
+        # Enregistrement dans un fichier local pour la trace (point 5)
+        with open("resume_architecture.txt", "w", encoding="utf-8") as f:
+            f.write(summary)
+
+        return {"status": "success", "summary": summary, "sql": sql, "etl": etl}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 # ── Notifications ─────────────────────────────────────────────────────────────

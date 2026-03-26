@@ -87,7 +87,7 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
       }
 
       if (data.status === 'waiting_for_review') {
-        onStartSuccess(data.sql_ddl);
+        onStartSuccess(data.sql_ddl, data.critic_review);
         onClose();
       } else {
         alert("Erreur retournée par le backend : " + (data.message || JSON.stringify(data)));

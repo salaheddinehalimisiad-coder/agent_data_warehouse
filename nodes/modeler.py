@@ -1,9 +1,10 @@
+from langchain_google_genai import ChatGoogleGenerativeAI
+import os
 # Fichier : nodes/modeler.py
 
 from typing import List
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI 
 from app_state import AgentState
 
 # ---------------------------------------------------------

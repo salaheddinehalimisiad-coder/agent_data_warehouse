@@ -1,7 +1,8 @@
+from langchain_google_genai import ChatGoogleGenerativeAI
+import os
 # Fichier : nodes/healer.py
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
 from app_state import AgentState
 
 def healer_node(state: AgentState) -> dict:
@@ -10,9 +11,8 @@ def healer_node(state: AgentState) -> dict:
     
     print(f"\n--- 🚑 AGENT CORRECTEUR (SELF-HEALING) : Tentative de réparation {retry_count + 1}/3 ---")
     
-    failed_code = state.get("etl_code")
-    error_log = state.get("etl_error")
-    
+    failed_code = state.get("etl_code")    
+    print("Analyse de l'erreur par l'Intelligence Artificielle...")
     llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
     
     prompt = ChatPromptTemplate.from_messages([

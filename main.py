@@ -9,6 +9,7 @@ from app_state import AgentState
 from nodes.explorer import explorer_node
 from nodes.modeler import modeler_node
 from nodes.chat_modifier import chat_modifier_node
+from nodes.critic import critic_node
 from nodes.etl_generator import etl_generator_node
 from nodes.etl_executor import etl_executor_node
 from nodes.healer import healer_node
@@ -47,6 +48,7 @@ def create_agent_workflow():
     # 1. Ajout de tous les nœuds de l'architecture
     workflow.add_node("explorer", explorer_node)
     workflow.add_node("modeler", modeler_node)
+    workflow.add_node("critic", critic_node)
     workflow.add_node("human_review", human_review_node)
     workflow.add_node("chat_modifier", chat_modifier_node)
     
@@ -58,11 +60,12 @@ def create_agent_workflow():
     # 2. Définition du flux logique de base
     workflow.add_edge(START, "explorer")
     workflow.add_edge("explorer", "modeler")
-    workflow.add_edge("modeler", "human_review")
+    workflow.add_edge("modeler", "critic")
+    workflow.add_edge("critic", "human_review")
 
     # 3. Boucle 1 : Human-in-the-loop (Conception)
     workflow.add_conditional_edges("human_review", route_after_review)
-    workflow.add_edge("chat_modifier", "human_review")
+    workflow.add_edge("chat_modifier", "critic") # le modèle modifié doit être recritiqué
 
     # 4. Phase de génération ETL
     workflow.add_edge("etl_generator", "etl_executor")

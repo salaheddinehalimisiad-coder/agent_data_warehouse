@@ -1,7 +1,8 @@
+from langchain_google_genai import ChatGoogleGenerativeAI
+import os
 # Fichier : nodes/chat_modifier.py
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from app_state import AgentState
 from nodes.modeler import DimensionalModelOutput # On réutilise notre schéma strict
 
@@ -21,6 +22,7 @@ def chat_modifier_node(state: AgentState) -> dict:
     # Le dernier message correspond à la demande de l'utilisateur (ex: "Ajoute une dimension temps")
     user_request = messages[-1].content
 
+    # LLM via Gemini
     llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
     structured_llm = llm.with_structured_output(DimensionalModelOutput)
 
