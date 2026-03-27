@@ -1,5 +1,5 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 import os
+from nodes.llm_factory import get_llm, call_with_retry, extract_text
 # Fichier : nodes/etl_generator.py
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -13,7 +13,7 @@ def etl_generator_node(state: AgentState) -> dict:
     print("--- ⚙️ AGENT ETL : Génération du script PySpark/Pandas ---")
     logical_model = state.get("logical_model")
     
-    llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
+    llm = get_llm(temperature=0)
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", """Tu es un Lead Data Engineer expert en Big Data.
@@ -31,14 +31,10 @@ def etl_generator_node(state: AgentState) -> dict:
     ])
     
     chain = prompt | llm
-    response = chain.invoke({"metadata": metadata, "logical_model": logical_model})
+    response = call_with_retry(chain, {"metadata": metadata, "logical_model": logical_model})
     
-    content = response.content
-    if isinstance(content, list):
-        # Extraire le texte si c'est une liste de dicts
-        content = "".join([c.get("text", "") if isinstance(c, dict) else str(c) for c in content])
-        
-    # Nettoyage de la réponse si l'IA ajoute des balises ```python
+    content = extract_text(response)
+    # Nettoyage si l'IA ajoute des balises ```python
     clean_code = content.replace("```python", "").replace("```", "").strip()
     
     print("Script PySpark généré avec succès.")

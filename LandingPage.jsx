@@ -16,7 +16,7 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
 };
 
-export default function LandingPage({ onResumeSession, onNewSession, onNavigate }) {
+export default function LandingPage({ onResumeSession, onNewSession, onNavigate, user, onAuthOpen }) {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -70,7 +70,11 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate 
             <a href="#" className="hover:text-white transition-colors" onClick={e => { e.preventDefault(); onNavigate('usecases'); }}>Cas d'utilisation</a>
           </div>
           <div className="flex items-center gap-6">
-            <button className="text-sm font-semibold text-zinc-300 hover:text-white transition-colors hidden sm:block">Se connecter</button>
+            {user ? (
+              <button onClick={() => onNavigate('profile')} className="text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors hidden sm:block">Mon Profil</button>
+            ) : (
+              <button onClick={onAuthOpen} className="text-sm font-semibold text-zinc-300 hover:text-white transition-colors hidden sm:block">Se connecter</button>
+            )}
             <button 
               onClick={onNewSession} 
               className="text-sm font-bold bg-white text-black px-6 py-2.5 rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"

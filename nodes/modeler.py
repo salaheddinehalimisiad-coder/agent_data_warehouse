@@ -1,92 +1,158 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 import os
+from nodes.llm_factory import get_llm, call_with_retry, extract_text
 # Fichier : nodes/modeler.py
 
-from typing import List
+import json
+import re
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from app_state import AgentState
 
-# ---------------------------------------------------------
-# 1. DÉFINITION STRICTE DES SORTIES AVEC PYDANTIC (Validation)
-# ---------------------------------------------------------
+
 class ColumnSchema(BaseModel):
     name: str = Field(description="Nom de la colonne")
-    type: str = Field(description="Type de données SQL (ex: VARCHAR, INT)")
+    type: str = Field(description="Type SQL (ex: VARCHAR(255), BIGINT, DATE)")
     is_primary_key: bool = Field(default=False)
     is_foreign_key: bool = Field(default=False)
-    references: str = Field(default=None, description="Table référencée si c'est une clé étrangère")
+    references: Optional[str] = Field(default=None)
 
 class TableSchema(BaseModel):
-    name: str = Field(description="Nom de la table (ex: dim_temps, fact_ventes)")
-    type: str = Field(description="Doit être 'FAIT' ou 'DIMENSION'")
+    name: str
+    type: str  # 'FAIT' ou 'DIMENSION'
     columns: List[ColumnSchema]
 
 class DimensionalModelOutput(BaseModel):
     tables: List[TableSchema]
-    reasoning: str = Field(description="Courte explication de vos choix de modélisation (Pourquoi ce schéma en étoile/flocon ?)")
+    reasoning: str = Field(default="")
 
-# ---------------------------------------------------------
-# 2. LOGIQUE DU NŒUD DE L'AGENT MODÉLISATEUR
-# ---------------------------------------------------------
+
+def _parse_model_from_text(text: str) -> DimensionalModelOutput:
+    """Parse le JSON retourné par le LLM (compatible Ollama et Gemini) via json-repair."""
+    import json_repair
+    import re
+    
+    # Extraire la zone où pourrait se trouver du JSON
+    json_match = re.search(r'\{[\s\S]*\}', text)
+    if json_match:
+        json_str = json_match.group(0)
+    else:
+        json_str = text
+    
+    raw = json_repair.loads(json_str)
+    if not isinstance(raw, dict):
+        raise ValueError(f"Le contenu réparé n'est pas un JSON valide :\n{raw}")
+        
+    tables = []
+    for t in raw.get("tables", []):
+        cols = [
+            ColumnSchema(
+                name=c.get("name", "col"),
+                type=c.get("type", "VARCHAR(255)"),
+                is_primary_key=c.get("is_primary_key", False),
+                is_foreign_key=c.get("is_foreign_key", False),
+                references=c.get("references")
+            )
+            for c in t.get("columns", [])
+        ]
+        tables.append(TableSchema(name=t["name"], type=t.get("type", "DIMENSION"), columns=cols))
+    
+    return DimensionalModelOutput(tables=tables, reasoning=raw.get("reasoning", ""))
+
+
+
 def modeler_node(state: AgentState) -> dict:
-    """
-    Agent IA qui transforme les métadonnées brutes en modèle dimensionnel OLAP
-    et génère le code SQL DDL temporaire.
-    """
+    """Agent IA qui transforme les métadonnées brutes en modèle dimensionnel OLAP."""
     print("--- 🧠 AGENT MODÉLISATEUR : Analyse et Conception ---")
     
     metadata = state.get("source_metadata", {})
     if not metadata:
-        print("Erreur : Aucune métadonnée trouvée. L'exploration a échoué.")
+        print("Erreur : Aucune métadonnée trouvée.")
         return {"sql_ddl": "-- Erreur : Pas de métadonnées"}
 
-    # Initialisation du LLM avec Gemini
-    llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
-    
-    # On force le LLM à répondre EXACTEMENT selon notre schéma Pydantic
-    structured_llm = llm.with_structured_output(DimensionalModelOutput)
+    llm = get_llm(temperature=0)
 
-    # Création du Prompt métier (Prompt Engineering)
+    # Prompt qui force une sortie JSON structurée — compatible Ollama et Gemini
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """Tu es un ingénieur en Business Intelligence et Data Warehousing expert.
-        Ton rôle est de concevoir un schéma en étoile ou en flocon à partir de métadonnées brutes.
-        Identifie logiquement les tables de faits et de dimensions.
-        Génère les clés primaires (surrogate keys) et clés étrangères nécessaires."""),
-        ("human", "Voici les métadonnées extraites de la source : {metadata}\nConçois le modèle OLAP.")
+        ("system", """Tu es un expert en Data Warehousing. 
+Analyse les métadonnées et conçois un schéma OLAP en étoile (Star Schema).
+
+RÉPONDS UNIQUEMENT avec un objet JSON valide respectant EXACTEMENT cette structure:
+{{
+  "tables": [
+    {{
+      "name": "fact_ventes",
+      "type": "FAIT",
+      "columns": [
+        {{"name": "id_vente_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
+        {{"name": "dim_produit_sk", "type": "BIGINT", "is_primary_key": false, "is_foreign_key": true, "references": "dim_produit"}},
+        {{"name": "montant_total_ttc", "type": "DECIMAL(12,2)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
+      ]
+    }},
+    {{
+      "name": "dim_produit",
+      "type": "DIMENSION",
+      "columns": [
+        {{"name": "produit_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
+        {{"name": "nom_produit", "type": "VARCHAR(255)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
+      ]
+    }}
+  ],
+  "reasoning": "Explication courte du schéma choisi"
+}}
+
+Ne mets rien d'autre que le JSON. Pas de texte avant, pas de balises markdown."""),
+        ("human", "Voici les métadonnées: {metadata}\n\nGénère le modèle OLAP complet en JSON.")
     ])
 
-    # Création de la chaîne et exécution
-    chain = prompt | structured_llm
-    
-    print("Envoi des métadonnées au LLM pour modélisation logique...")
-    # L'IA nous renvoie un objet Pydantic propre, pas du texte brut fragile !
-    logical_model: DimensionalModelOutput = chain.invoke({"metadata": str(metadata)})
-    
-    print(f"Modèle généré : {len(logical_model.tables)} tables identifiées.")
-    print(f"Raisonnement de l'IA : {logical_model.reasoning}")
+    chain = prompt | llm
 
-    # ---------------------------------------------------------
-    # 3. GÉNÉRATION DU DDL SQL TEMPORAIRE
-    # ---------------------------------------------------------
-    # Le système génère des blocs de code SQL temporaires représentant ce modèle
+    print("Envoi des métadonnées au LLM pour modélisation...")
+    response = call_with_retry(chain, {"metadata": str(metadata)})
+    raw_text = extract_text(response)
+
+    # Nettoyage des balises markdown si présentes
+    raw_text = raw_text.replace("```json", "").replace("```", "").strip()
+
+    try:
+        logical_model = _parse_model_from_text(raw_text)
+    except Exception as e:
+        print(f"⚠️ Erreur parsing JSON: {e}. Tentative de réparation par l'Agent IA...")
+        try:
+            repair_prompt = ChatPromptTemplate.from_messages([
+                ("system", "Tu es un expert JSON. Le texte suivant contient un JSON invalide. Corrige les erreurs de syntaxe (par exemple, guillemets non échappés ou caractères illégaux) et renvoie le JSON strictement valide. Ne modifie pas la structure de base. RÉPONDS UNIQUEMENT AVEC LE JSON VALIDE."),
+                ("human", "{invalid_json}")
+            ])
+            repair_resp = call_with_retry(repair_prompt | llm, {"invalid_json": raw_text})
+            repaired_text = extract_text(repair_resp).replace("```json", "").replace("```", "").strip()
+            logical_model = _parse_model_from_text(repaired_text)
+            print("✅ Le JSON a été réparé avec succès par l'Agent IA !")
+        except Exception as e2:
+            print(f"⚠️ Échec de la réparation JSON: {e2}")
+            return {"sql_ddl": f"-- Erreur parsing modèle: {e} | Échec réparation: {e2}\n\n/* JSON original:\n{raw_text[:800]}...\n*/"}
+
+    print(f"✅ Modèle généré: {len(logical_model.tables)} tables.")
+    print(f"Raisonnement: {logical_model.reasoning}")
+
+    # Génération DDL SQL
     sql_statements = []
     for table in logical_model.tables:
         cols_sql = []
+        fks = []
         for col in table.columns:
-            col_def = f"{col.name} {col.type}"
+            col_def = f"    {col.name} {col.type}"
             if col.is_primary_key:
                 col_def += " PRIMARY KEY"
-            if col.is_foreign_key and col.references:
-                col_def += f" REFERENCES {col.references}"
             cols_sql.append(col_def)
-            
-        create_table_sql = f"CREATE TABLE {table.name} (\n    " + ",\n    ".join(cols_sql) + "\n);"
+            if col.is_foreign_key and col.references:
+                fks.append(f"    FOREIGN KEY ({col.name}) REFERENCES {col.references}({col.references.replace('dim_', '') + '_sk'})")
+        
+        all_cols = cols_sql + fks
+        create_table_sql = f"CREATE TABLE IF NOT EXISTS {table.name} (\n" + ",\n".join(all_cols) + "\n);"
         sql_statements.append(create_table_sql)
 
     final_ddl = "\n\n".join(sql_statements)
 
-    # Mise à jour de l'état global du graphe
     return {
         "logical_model": logical_model.dict(),
         "sql_ddl": final_ddl

@@ -262,7 +262,8 @@ async def chat_with_agent(req: ChatRequest):
                 _log("⚠️ Erreur Chat : Aucun script ETL trouvé dans la session actuelle.")
                 return {"status": "error", "message": "Aucun script ETL à modifier. Veuillez relancer un pipeline."}
                 
-            llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
+            from nodes.llm_factory import get_llm, call_with_retry
+            llm = get_llm(temperature=0)
             prompt = ChatPromptTemplate.from_messages([
                 ("system", """Tu es un expert PySpark.
 Voici le script ETL actuel:
@@ -277,7 +278,7 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code P
             _log(f"Agent ETL (Chat) : modification du script PySpark demandée...")
             _broadcast()
             
-            response = chain.invoke({"current_etl_code": current_etl_code, "user_request": req.message})
+            response = call_with_retry(chain, {"current_etl_code": current_etl_code, "user_request": req.message})
             
             # Gestion robuste du contenu (parfois une liste dans les versions récentes de LangChain/Gemini)
             raw_content = response.content
@@ -337,6 +338,7 @@ def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
             if node == "etl_generator":
                 _set_stage("human", "success", "Validation reçue")
                 _set_stage("etl_gen",  "success", "Script PySpark généré")
+                pipeline_state["etl_code_used"] = agent_app.get_state(config).values.get("etl_code", "")
                 _set_stage("etl_exec", "running")
                 _log("Exécution ETL → MySQL…")
             elif node == "etl_executor":

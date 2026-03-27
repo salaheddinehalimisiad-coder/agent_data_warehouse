@@ -6,7 +6,8 @@ import ChatInterface from './ChatInterface';
 import PipelineCanvas from './PipelineCanvas';
 import LandingPage from './LandingPage';
 import DocumentationPage from './DocumentationPage';
-
+import AuthModal from './AuthModal';
+import ProfilePage from './ProfilePage';
 import ProcessDiagram from './ProcessDiagram';
 
 const SidebarIcon = ({ icon: Icon, active, onClick, tooltip }) => (
@@ -31,6 +32,8 @@ export default function App() {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [view, setView] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user_profile')) || null);
   const [activeSessionId, setActiveSessionId] = useState(null);
   
   const [sqlCode, setSqlCode] = useState(null);
@@ -49,7 +52,7 @@ export default function App() {
         const data = JSON.parse(event.data);
         setPipelineState(data);
         if (data.status === 'running') setShowTerminal(true);
-        if (data.status === 'success' && data.etl_code_used) {
+        if (data.etl_code_used) {
           setEtlCode(data.etl_code_used);
         }
         
@@ -111,33 +114,46 @@ export default function App() {
 
   if (view === 'dashboard') {
     return (
-      <LandingPage 
-        onNavigate={handleNavigate}
-        onNewSession={async () => {
-          try {
-            const res = await fetch('http://localhost:8000/api/sessions/new', { method: 'POST' });
-            const data = await res.json();
-            setActiveSessionId(data.session_id);
-          } catch (e) { console.error(e); }
-          setView('canvas'); 
-          setIsModalOpen(true); 
-        }}
-        onResumeSession={async (id) => {
-          try {
-            const res = await fetch('http://localhost:8000/api/sessions/resume', {
-              method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_id: id})
-            });
-            const data = await res.json();
-            if(data.status === 'success') {
-              setSqlCode(data.sql_ddl);
-              setEtlCode(data.etl_code);
-              setMessages(data.messages || []);
-              setActiveSessionId(id); 
-              setView('canvas'); 
-            }
-          } catch (e) { console.error(e); }
-        }}
-      />
+      <>
+        <LandingPage 
+          onNavigate={handleNavigate}
+          onNewSession={async () => {
+            try {
+              const res = await fetch('http://localhost:8000/api/sessions/new', { method: 'POST' });
+              const data = await res.json();
+              setActiveSessionId(data.session_id);
+            } catch (e) { console.error(e); }
+            setView('canvas'); 
+            setIsModalOpen(true); 
+          }}
+          onResumeSession={async (id) => {
+            try {
+              const res = await fetch('http://localhost:8000/api/sessions/resume', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_id: id})
+              });
+              const data = await res.json();
+              if(data.status === 'success') {
+                setSqlCode(data.sql_ddl);
+                setEtlCode(data.etl_code);
+                setMessages(data.messages || []);
+                setActiveSessionId(id); 
+                setView('canvas'); 
+              }
+            } catch (e) { console.error(e); }
+          }}
+          user={user}
+          onAuthOpen={() => setIsAuthOpen(true)}
+        />
+        <AuthModal 
+          isOpen={isAuthOpen} 
+          onClose={() => setIsAuthOpen(false)} 
+          onLogin={(u) => {
+            setUser(u);
+            localStorage.setItem('user_profile', JSON.stringify(u));
+            setIsAuthOpen(false);
+          }} 
+        />
+      </>
     );
   }
 
@@ -202,7 +218,13 @@ export default function App() {
                <ProcessDiagram />
              </div>
            )}
-           {(view !== 'canvas' && view !== 'dashboard' && view !== 'documentation' && view !== 'usecases') && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">Page {view} en construction...</div>}
+           {view === 'profile' && (
+             <ProfilePage 
+               user={user} 
+               onLogout={() => { setUser(null); localStorage.removeItem('user_profile'); setView('dashboard'); }} 
+             />
+           )}
+           {(view !== 'canvas' && view !== 'dashboard' && view !== 'documentation' && view !== 'usecases' && view !== 'profile') && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">Page {view} en construction...</div>}
 
             {/* Live Terminal Panel */}
             <AnimatePresence>

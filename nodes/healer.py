@@ -1,5 +1,5 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 import os
+from nodes.llm_factory import get_llm, call_with_retry, extract_text
 # Fichier : nodes/healer.py
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -13,7 +13,7 @@ def healer_node(state: AgentState) -> dict:
     
     failed_code = state.get("etl_code")    
     print("Analyse de l'erreur par l'Intelligence Artificielle...")
-    llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", temperature=0)
+    llm = get_llm(temperature=0)
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", """Tu es un ingénieur de fiabilité (SRE) expert en PySpark.
@@ -25,13 +25,10 @@ def healer_node(state: AgentState) -> dict:
     ])
     
     chain = prompt | llm
-    response = chain.invoke({"failed_code": failed_code, "error_log": error_log})
+    error_log = state.get("etl_error", "")
+    response = call_with_retry(chain, {"failed_code": failed_code, "error_log": error_log})
     
-    content = response.content
-    if isinstance(content, list):
-        content = "".join([c.get("text", "") if isinstance(c, dict) else str(c) for c in content])
-        
-    healed_code = content.replace("```python", "").replace("```", "").strip()
+    healed_code = extract_text(response).replace("```python", "").replace("```", "").strip()
     
     print("Code ETL analysé et corrigé par l'IA.")
     

@@ -1,8 +1,1501 @@
-id_transaction,date_vente,produit,categorie,quantite,prix_unitaire,client_id,ville,pays
-1,2023-10-01,Ordinateur Portable X1,Electronique,1,1200.50,C100,Paris,France
-2,2023-10-02,Souris Sans Fil,Electronique,3,25.00,C101,Lyon,France
-3,2023-10-02,Clavier Mécanique,Electronique,2,85.99,C102,Marseille,France
-4,2023-10-03,Bureau Assis-Debout,Mobilier,1,450.00,C100,Paris,France
-5,2023-10-04,Écran 27 Pouces,Electronique,2,250.00,C103,Bordeaux,France
-6,2023-10-05,Casque Audio,Electronique,1,150.00,C104,Lille,France
-7,2023-10-05,Chaise Ergonomique,Mobilier,4,199.99,C105,Nantes,France
+id_vente,date,client_id,produit,categorie,region,canal,quantite,prix_unitaire,remise_pct,montant_total
+VNT00001,2024-09-19,CLI0001,Clavier mécanique,Périphériques,Grand Est,Revendeur,14,89.99,0,1259.86
+VNT00002,2024-09-07,CLI0020,Imprimante laser,Impression,Normandie,B2B Direct,8,349.99,15,2379.93
+VNT00003,2024-01-13,CLI0120,Tablette graphique,Création,Grand Est,Magasin,8,249.99,0,1999.92
+VNT00004,2024-01-10,CLI0118,Laptop Pro,Informatique,Île-de-France,B2B Direct,3,1299.99,15,3314.97
+VNT00005,2024-04-26,CLI0123,Laptop Pro,Informatique,Bretagne,B2B Direct,15,1299.99,10,17549.86
+VNT00006,2024-10-11,CLI0088,Souris sans fil,Périphériques,Provence-PACA,Magasin,5,39.99,20,159.96
+VNT00007,2024-11-13,CLI0044,Imprimante laser,Impression,Île-de-France,Magasin,2,349.99,0,699.98
+VNT00008,2024-06-09,CLI0173,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,15,39.99,5,569.86
+VNT00009,2024-04-03,CLI0176,Laptop Pro,Informatique,Provence-PACA,Magasin,1,1299.99,20,1039.99
+VNT00010,2024-08-27,CLI0177,Laptop Pro,Informatique,Île-de-France,Revendeur,3,1299.99,15,3314.97
+VNT00011,2024-02-17,CLI0128,Souris sans fil,Périphériques,Provence-PACA,Magasin,5,39.99,10,179.96
+VNT00012,2024-10-29,CLI0027,Disque SSD 1TB,Stockage,Provence-PACA,Revendeur,3,99.99,15,254.97
+VNT00013,2024-12-29,CLI0172,Laptop Pro,Informatique,Normandie,B2B Direct,11,1299.99,10,12869.9
+VNT00014,2024-03-30,CLI0129,Casque audio,Audio,Île-de-France,En ligne,12,129.99,10,1403.89
+VNT00015,2024-03-12,CLI0147,Laptop Pro,Informatique,Normandie,Revendeur,15,1299.99,5,18524.86
+VNT00016,2024-06-29,CLI0104,Webcam HD,Vidéo,Hauts-de-France,B2B Direct,9,79.99,0,719.91
+VNT00017,2024-06-10,CLI0020,Tablette graphique,Création,Bretagne,Revendeur,10,249.99,20,1999.92
+VNT00018,2024-03-29,CLI0007,Laptop Pro,Informatique,Normandie,B2B Direct,10,1299.99,0,12999.9
+VNT00019,2024-03-28,CLI0023,Hub USB-C,Connectique,Hauts-de-France,Revendeur,13,49.99,5,617.38
+VNT00020,2024-03-31,CLI0040,Imprimante laser,Impression,Provence-PACA,Magasin,7,349.99,5,2327.43
+VNT00021,2024-10-06,CLI0073,Écran 4K,Affichage,Île-de-France,B2B Direct,4,449.99,5,1709.96
+VNT00022,2024-04-07,CLI0191,Souris sans fil,Périphériques,Provence-PACA,En ligne,8,39.99,5,303.92
+VNT00023,2024-10-16,CLI0157,Tablette graphique,Création,Île-de-France,Revendeur,3,249.99,0,749.97
+VNT00024,2024-09-26,CLI0138,Écran 4K,Affichage,Auvergne-Rhône-Alpes,Revendeur,14,449.99,0,6299.86
+VNT00025,2024-10-24,CLI0006,Imprimante laser,Impression,Hauts-de-France,Revendeur,2,349.99,10,629.98
+VNT00026,2024-04-05,CLI0159,Clavier mécanique,Périphériques,Hauts-de-France,En ligne,13,89.99,20,935.9
+VNT00027,2024-01-12,CLI0119,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,Magasin,15,49.99,5,712.36
+VNT00028,2024-10-25,CLI0004,Souris sans fil,Périphériques,Grand Est,Revendeur,13,39.99,0,519.87
+VNT00029,2024-02-22,CLI0197,Casque audio,Audio,Occitanie,Revendeur,7,129.99,0,909.93
+VNT00030,2024-03-18,CLI0149,Hub USB-C,Connectique,Hauts-de-France,Magasin,7,49.99,10,314.94
+VNT00031,2024-01-24,CLI0056,Souris sans fil,Périphériques,Normandie,B2B Direct,10,39.99,10,359.91
+VNT00032,2024-01-28,CLI0011,Clavier mécanique,Périphériques,Provence-PACA,Magasin,4,89.99,20,287.97
+VNT00033,2024-04-12,CLI0006,Hub USB-C,Connectique,Île-de-France,En ligne,6,49.99,10,269.95
+VNT00034,2024-03-29,CLI0185,Tablette graphique,Création,Provence-PACA,En ligne,3,249.99,10,674.97
+VNT00035,2024-03-22,CLI0071,Webcam HD,Vidéo,Île-de-France,B2B Direct,8,79.99,0,639.92
+VNT00036,2024-12-08,CLI0097,Souris sans fil,Périphériques,Normandie,En ligne,5,39.99,5,189.95
+VNT00037,2024-01-17,CLI0073,Hub USB-C,Connectique,Grand Est,Magasin,3,49.99,15,127.47
+VNT00038,2024-07-10,CLI0135,Tablette graphique,Création,Bretagne,B2B Direct,3,249.99,0,749.97
+VNT00039,2024-08-04,CLI0072,Casque audio,Audio,Bretagne,Magasin,14,129.99,20,1455.89
+VNT00040,2024-06-13,CLI0103,Laptop Pro,Informatique,Grand Est,Revendeur,3,1299.99,0,3899.97
+VNT00041,2024-12-06,CLI0091,Clavier mécanique,Périphériques,Provence-PACA,En ligne,9,89.99,0,809.91
+VNT00042,2024-01-29,CLI0084,Tablette graphique,Création,Hauts-de-France,Revendeur,12,249.99,20,2399.9
+VNT00043,2024-11-06,CLI0159,Écran 4K,Affichage,Hauts-de-France,Revendeur,7,449.99,10,2834.94
+VNT00044,2024-09-06,CLI0056,Écran 4K,Affichage,Hauts-de-France,Revendeur,1,449.99,10,404.99
+VNT00045,2024-07-30,CLI0115,Webcam HD,Vidéo,Grand Est,Magasin,5,79.99,15,339.96
+VNT00046,2024-09-27,CLI0036,Casque audio,Audio,Bretagne,B2B Direct,14,129.99,5,1728.87
+VNT00047,2024-01-20,CLI0151,Écran 4K,Affichage,Occitanie,Magasin,2,449.99,0,899.98
+VNT00048,2024-12-29,CLI0083,Clavier mécanique,Périphériques,Île-de-France,B2B Direct,5,89.99,15,382.46
+VNT00049,2024-10-20,CLI0087,Tablette graphique,Création,Île-de-France,Revendeur,4,249.99,0,999.96
+VNT00050,2024-11-01,CLI0087,Écran 4K,Affichage,Auvergne-Rhône-Alpes,B2B Direct,9,449.99,10,3644.92
+VNT00051,2024-08-01,CLI0192,Casque audio,Audio,Auvergne-Rhône-Alpes,En ligne,8,129.99,15,883.93
+VNT00052,2024-09-22,CLI0133,Hub USB-C,Connectique,Occitanie,Revendeur,6,49.99,5,284.94
+VNT00053,2024-02-01,CLI0191,Tablette graphique,Création,Hauts-de-France,B2B Direct,10,249.99,20,1999.92
+VNT00054,2024-02-18,CLI0005,Écran 4K,Affichage,Auvergne-Rhône-Alpes,B2B Direct,1,449.99,5,427.49
+VNT00055,2024-07-14,CLI0148,Tablette graphique,Création,Provence-PACA,Revendeur,15,249.99,10,3374.87
+VNT00056,2024-11-15,CLI0087,Disque SSD 1TB,Stockage,Occitanie,Magasin,6,99.99,0,599.94
+VNT00057,2024-06-03,CLI0180,Clavier mécanique,Périphériques,Provence-PACA,En ligne,5,89.99,0,449.95
+VNT00058,2024-10-12,CLI0189,Casque audio,Audio,Bretagne,B2B Direct,11,129.99,20,1143.91
+VNT00059,2024-02-19,CLI0190,Casque audio,Audio,Bretagne,B2B Direct,2,129.99,0,259.98
+VNT00060,2024-10-03,CLI0112,Tablette graphique,Création,Île-de-France,Magasin,14,249.99,15,2974.88
+VNT00061,2024-06-24,CLI0135,Casque audio,Audio,Provence-PACA,Magasin,9,129.99,5,1111.41
+VNT00062,2024-05-27,CLI0123,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,Magasin,12,89.99,10,971.89
+VNT00063,2024-02-15,CLI0148,Disque SSD 1TB,Stockage,Île-de-France,Revendeur,3,99.99,15,254.97
+VNT00064,2024-02-04,CLI0023,Disque SSD 1TB,Stockage,Grand Est,Revendeur,11,99.99,15,934.91
+VNT00065,2024-10-29,CLI0015,Casque audio,Audio,Bretagne,B2B Direct,3,129.99,0,389.97
+VNT00066,2024-07-19,CLI0033,Casque audio,Audio,Occitanie,En ligne,13,129.99,10,1520.88
+VNT00067,2024-04-13,CLI0028,Tablette graphique,Création,Bretagne,Magasin,1,249.99,10,224.99
+VNT00068,2024-01-23,CLI0168,Webcam HD,Vidéo,Normandie,Magasin,12,79.99,0,959.88
+VNT00069,2024-06-22,CLI0132,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,En ligne,9,39.99,0,359.91
+VNT00070,2024-08-03,CLI0018,Clavier mécanique,Périphériques,Provence-PACA,Magasin,1,89.99,15,76.49
+VNT00071,2024-06-03,CLI0093,Écran 4K,Affichage,Île-de-France,Magasin,15,449.99,20,5399.88
+VNT00072,2024-10-20,CLI0087,Hub USB-C,Connectique,Provence-PACA,B2B Direct,7,49.99,20,279.94
+VNT00073,2024-10-26,CLI0199,Disque SSD 1TB,Stockage,Île-de-France,En ligne,15,99.99,20,1199.88
+VNT00074,2024-07-08,CLI0140,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Revendeur,12,349.99,10,3779.89
+VNT00075,2024-11-26,CLI0053,Souris sans fil,Périphériques,Hauts-de-France,Revendeur,3,39.99,10,107.97
+VNT00076,2024-07-04,CLI0145,Souris sans fil,Périphériques,Bretagne,En ligne,3,39.99,5,113.97
+VNT00077,2024-09-08,CLI0160,Clavier mécanique,Périphériques,Hauts-de-France,B2B Direct,6,89.99,15,458.95
+VNT00078,2024-01-21,CLI0042,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Revendeur,2,349.99,15,594.98
+VNT00079,2024-12-12,CLI0018,Disque SSD 1TB,Stockage,Bretagne,Revendeur,15,99.99,10,1349.87
+VNT00080,2024-02-26,CLI0126,Tablette graphique,Création,Grand Est,En ligne,12,249.99,20,2399.9
+VNT00081,2024-08-21,CLI0175,Hub USB-C,Connectique,Île-de-France,B2B Direct,14,49.99,0,699.86
+VNT00082,2024-12-05,CLI0023,Webcam HD,Vidéo,Hauts-de-France,B2B Direct,14,79.99,5,1063.87
+VNT00083,2024-08-19,CLI0136,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,14,39.99,20,447.89
+VNT00084,2024-07-05,CLI0189,Tablette graphique,Création,Auvergne-Rhône-Alpes,Revendeur,10,249.99,15,2124.91
+VNT00085,2024-05-16,CLI0162,Casque audio,Audio,Normandie,En ligne,5,129.99,0,649.95
+VNT00086,2024-12-24,CLI0045,Écran 4K,Affichage,Bretagne,Revendeur,8,449.99,0,3599.92
+VNT00087,2024-11-08,CLI0166,Imprimante laser,Impression,Occitanie,B2B Direct,6,349.99,15,1784.95
+VNT00088,2024-05-06,CLI0150,Disque SSD 1TB,Stockage,Occitanie,B2B Direct,5,99.99,10,449.95
+VNT00089,2024-04-21,CLI0165,Tablette graphique,Création,Bretagne,Revendeur,4,249.99,15,849.97
+VNT00090,2024-07-18,CLI0189,Casque audio,Audio,Grand Est,Magasin,11,129.99,20,1143.91
+VNT00091,2024-12-14,CLI0064,Disque SSD 1TB,Stockage,Occitanie,En ligne,5,99.99,20,399.96
+VNT00092,2024-08-31,CLI0050,Webcam HD,Vidéo,Provence-PACA,En ligne,3,79.99,15,203.97
+VNT00093,2024-03-07,CLI0058,Clavier mécanique,Périphériques,Hauts-de-France,B2B Direct,11,89.99,15,841.41
+VNT00094,2024-12-30,CLI0146,Imprimante laser,Impression,Occitanie,B2B Direct,1,349.99,15,297.49
+VNT00095,2024-04-08,CLI0120,Webcam HD,Vidéo,Bretagne,Magasin,12,79.99,20,767.9
+VNT00096,2024-09-11,CLI0075,Imprimante laser,Impression,Grand Est,Revendeur,13,349.99,15,3867.39
+VNT00097,2024-09-06,CLI0109,Imprimante laser,Impression,Normandie,En ligne,12,349.99,20,3359.9
+VNT00098,2024-02-20,CLI0078,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,En ligne,14,89.99,15,1070.88
+VNT00099,2024-05-06,CLI0021,Tablette graphique,Création,Normandie,Revendeur,6,249.99,5,1424.94
+VNT00100,2024-10-03,CLI0042,Casque audio,Audio,Bretagne,B2B Direct,1,129.99,15,110.49
+VNT00101,2024-12-19,CLI0089,Clavier mécanique,Périphériques,Occitanie,Revendeur,9,89.99,10,728.92
+VNT00102,2024-06-18,CLI0127,Casque audio,Audio,Normandie,En ligne,1,129.99,0,129.99
+VNT00103,2024-10-30,CLI0030,Casque audio,Audio,Auvergne-Rhône-Alpes,Revendeur,13,129.99,0,1689.87
+VNT00104,2024-10-01,CLI0152,Tablette graphique,Création,Hauts-de-France,B2B Direct,3,249.99,20,599.98
+VNT00105,2024-12-06,CLI0122,Souris sans fil,Périphériques,Provence-PACA,En ligne,5,39.99,0,199.95
+VNT00106,2024-03-06,CLI0120,Webcam HD,Vidéo,Île-de-France,B2B Direct,13,79.99,20,831.9
+VNT00107,2024-12-29,CLI0178,Disque SSD 1TB,Stockage,Occitanie,Magasin,7,99.99,15,594.94
+VNT00108,2024-06-08,CLI0191,Hub USB-C,Connectique,Provence-PACA,En ligne,6,49.99,20,239.95
+VNT00109,2024-12-30,CLI0082,Souris sans fil,Périphériques,Bretagne,Revendeur,11,39.99,10,395.9
+VNT00110,2024-12-03,CLI0147,Webcam HD,Vidéo,Normandie,B2B Direct,15,79.99,5,1139.86
+VNT00111,2024-10-20,CLI0175,Hub USB-C,Connectique,Provence-PACA,En ligne,8,49.99,10,359.93
+VNT00112,2024-10-28,CLI0097,Clavier mécanique,Périphériques,Hauts-de-France,En ligne,2,89.99,15,152.98
+VNT00113,2024-08-10,CLI0065,Casque audio,Audio,Île-de-France,B2B Direct,7,129.99,10,818.94
+VNT00114,2024-05-06,CLI0028,Disque SSD 1TB,Stockage,Grand Est,B2B Direct,14,99.99,0,1399.86
+VNT00115,2024-10-28,CLI0153,Tablette graphique,Création,Provence-PACA,En ligne,8,249.99,10,1799.93
+VNT00116,2024-07-22,CLI0069,Écran 4K,Affichage,Bretagne,B2B Direct,15,449.99,5,6412.36
+VNT00117,2024-07-28,CLI0146,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,8,39.99,10,287.93
+VNT00118,2024-02-08,CLI0082,Écran 4K,Affichage,Grand Est,En ligne,9,449.99,0,4049.91
+VNT00119,2024-11-23,CLI0190,Clavier mécanique,Périphériques,Hauts-de-France,En ligne,7,89.99,5,598.43
+VNT00120,2024-02-28,CLI0200,Hub USB-C,Connectique,Île-de-France,Revendeur,8,49.99,10,359.93
+VNT00121,2024-09-15,CLI0071,Clavier mécanique,Périphériques,Occitanie,Magasin,8,89.99,10,647.93
+VNT00122,2024-02-06,CLI0194,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,B2B Direct,10,99.99,0,999.9
+VNT00123,2024-12-07,CLI0039,Laptop Pro,Informatique,Île-de-France,B2B Direct,7,1299.99,0,9099.93
+VNT00124,2024-07-23,CLI0189,Casque audio,Audio,Hauts-de-France,En ligne,10,129.99,20,1039.92
+VNT00125,2024-10-24,CLI0180,Casque audio,Audio,Provence-PACA,Magasin,14,129.99,20,1455.89
+VNT00126,2024-11-14,CLI0178,Écran 4K,Affichage,Provence-PACA,Magasin,2,449.99,0,899.98
+VNT00127,2024-01-14,CLI0090,Tablette graphique,Création,Hauts-de-France,Magasin,11,249.99,15,2337.41
+VNT00128,2024-11-27,CLI0039,Souris sans fil,Périphériques,Hauts-de-France,En ligne,14,39.99,15,475.88
+VNT00129,2024-04-09,CLI0093,Casque audio,Audio,Hauts-de-France,Revendeur,15,129.99,5,1852.36
+VNT00130,2024-08-06,CLI0122,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,En ligne,11,49.99,10,494.9
+VNT00131,2024-12-09,CLI0144,Webcam HD,Vidéo,Occitanie,B2B Direct,7,79.99,20,447.94
+VNT00132,2024-07-15,CLI0069,Laptop Pro,Informatique,Provence-PACA,B2B Direct,9,1299.99,20,9359.93
+VNT00133,2024-06-08,CLI0034,Clavier mécanique,Périphériques,Occitanie,Magasin,8,89.99,20,575.94
+VNT00134,2024-08-23,CLI0199,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,En ligne,15,89.99,20,1079.88
+VNT00135,2024-07-19,CLI0065,Écran 4K,Affichage,Bretagne,Magasin,6,449.99,20,2159.95
+VNT00136,2024-08-12,CLI0171,Imprimante laser,Impression,Occitanie,Magasin,2,349.99,15,594.98
+VNT00137,2024-05-29,CLI0030,Tablette graphique,Création,Hauts-de-France,B2B Direct,9,249.99,15,1912.42
+VNT00138,2024-12-20,CLI0005,Webcam HD,Vidéo,Île-de-France,Revendeur,15,79.99,0,1199.85
+VNT00139,2024-01-04,CLI0045,Hub USB-C,Connectique,Bretagne,En ligne,2,49.99,20,79.98
+VNT00140,2024-06-02,CLI0087,Casque audio,Audio,Hauts-de-France,B2B Direct,8,129.99,5,987.92
+VNT00141,2024-03-12,CLI0175,Hub USB-C,Connectique,Île-de-France,B2B Direct,6,49.99,5,284.94
+VNT00142,2024-06-15,CLI0167,Hub USB-C,Connectique,Normandie,En ligne,2,49.99,5,94.98
+VNT00143,2024-08-31,CLI0034,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,B2B Direct,4,79.99,15,271.97
+VNT00144,2024-03-05,CLI0010,Tablette graphique,Création,Occitanie,Magasin,13,249.99,0,3249.87
+VNT00145,2024-01-29,CLI0039,Imprimante laser,Impression,Hauts-de-France,B2B Direct,14,349.99,20,3919.89
+VNT00146,2024-04-05,CLI0049,Tablette graphique,Création,Grand Est,B2B Direct,4,249.99,5,949.96
+VNT00147,2024-01-25,CLI0198,Disque SSD 1TB,Stockage,Île-de-France,Magasin,4,99.99,0,399.96
+VNT00148,2024-11-22,CLI0039,Écran 4K,Affichage,Hauts-de-France,Magasin,11,449.99,20,3959.91
+VNT00149,2024-07-07,CLI0163,Laptop Pro,Informatique,Hauts-de-France,Magasin,1,1299.99,15,1104.99
+VNT00150,2024-02-02,CLI0084,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,5,89.99,5,427.45
+VNT00151,2024-04-11,CLI0092,Clavier mécanique,Périphériques,Provence-PACA,Revendeur,1,89.99,5,85.49
+VNT00152,2024-05-24,CLI0135,Laptop Pro,Informatique,Hauts-de-France,Revendeur,14,1299.99,0,18199.86
+VNT00153,2024-01-21,CLI0033,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,Magasin,13,1299.99,0,16899.87
+VNT00154,2024-01-02,CLI0035,Hub USB-C,Connectique,Hauts-de-France,B2B Direct,7,49.99,15,297.44
+VNT00155,2024-10-05,CLI0088,Hub USB-C,Connectique,Bretagne,Magasin,3,49.99,15,127.47
+VNT00156,2024-02-10,CLI0148,Hub USB-C,Connectique,Île-de-France,Revendeur,5,49.99,20,199.96
+VNT00157,2024-10-30,CLI0015,Clavier mécanique,Périphériques,Île-de-France,En ligne,14,89.99,10,1133.87
+VNT00158,2024-03-25,CLI0021,Souris sans fil,Périphériques,Grand Est,B2B Direct,13,39.99,10,467.88
+VNT00159,2024-05-14,CLI0099,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,En ligne,6,99.99,5,569.94
+VNT00160,2024-01-26,CLI0160,Tablette graphique,Création,Hauts-de-France,En ligne,13,249.99,15,2762.39
+VNT00161,2024-07-19,CLI0045,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,Revendeur,10,79.99,20,639.92
+VNT00162,2024-07-25,CLI0121,Laptop Pro,Informatique,Provence-PACA,Revendeur,3,1299.99,5,3704.97
+VNT00163,2024-07-27,CLI0084,Webcam HD,Vidéo,Île-de-France,Revendeur,13,79.99,15,883.89
+VNT00164,2024-06-22,CLI0061,Webcam HD,Vidéo,Provence-PACA,B2B Direct,1,79.99,5,75.99
+VNT00165,2024-06-01,CLI0101,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Magasin,9,99.99,0,899.91
+VNT00166,2024-05-16,CLI0189,Écran 4K,Affichage,Île-de-France,Revendeur,10,449.99,5,4274.9
+VNT00167,2024-09-25,CLI0191,Imprimante laser,Impression,Hauts-de-France,B2B Direct,2,349.99,15,594.98
+VNT00168,2024-08-11,CLI0116,Laptop Pro,Informatique,Île-de-France,Revendeur,15,1299.99,20,15599.88
+VNT00169,2024-09-09,CLI0061,Imprimante laser,Impression,Normandie,Magasin,4,349.99,10,1259.96
+VNT00170,2024-04-18,CLI0166,Écran 4K,Affichage,Bretagne,Revendeur,2,449.99,10,809.98
+VNT00171,2024-05-01,CLI0114,Écran 4K,Affichage,Bretagne,Revendeur,14,449.99,5,5984.87
+VNT00172,2024-03-03,CLI0059,Imprimante laser,Impression,Occitanie,B2B Direct,6,349.99,15,1784.95
+VNT00173,2024-10-25,CLI0037,Tablette graphique,Création,Auvergne-Rhône-Alpes,Magasin,11,249.99,20,2199.91
+VNT00174,2024-10-02,CLI0116,Laptop Pro,Informatique,Hauts-de-France,B2B Direct,14,1299.99,15,15469.88
+VNT00175,2024-09-19,CLI0050,Disque SSD 1TB,Stockage,Normandie,En ligne,13,99.99,5,1234.88
+VNT00176,2024-04-27,CLI0016,Tablette graphique,Création,Auvergne-Rhône-Alpes,B2B Direct,4,249.99,0,999.96
+VNT00177,2024-10-13,CLI0095,Disque SSD 1TB,Stockage,Occitanie,En ligne,15,99.99,15,1274.87
+VNT00178,2024-11-14,CLI0092,Hub USB-C,Connectique,Hauts-de-France,Magasin,4,49.99,10,179.96
+VNT00179,2024-01-05,CLI0112,Souris sans fil,Périphériques,Bretagne,En ligne,10,39.99,0,399.9
+VNT00180,2024-07-06,CLI0196,Tablette graphique,Création,Grand Est,En ligne,6,249.99,20,1199.95
+VNT00181,2024-04-30,CLI0022,Disque SSD 1TB,Stockage,Île-de-France,Revendeur,6,99.99,15,509.95
+VNT00182,2024-09-30,CLI0124,Imprimante laser,Impression,Occitanie,En ligne,6,349.99,20,1679.95
+VNT00183,2024-07-18,CLI0176,Casque audio,Audio,Auvergne-Rhône-Alpes,B2B Direct,13,129.99,10,1520.88
+VNT00184,2024-08-08,CLI0162,Clavier mécanique,Périphériques,Normandie,B2B Direct,11,89.99,20,791.91
+VNT00185,2024-12-01,CLI0029,Imprimante laser,Impression,Provence-PACA,En ligne,7,349.99,10,2204.94
+VNT00186,2024-08-02,CLI0048,Casque audio,Audio,Normandie,En ligne,9,129.99,15,994.42
+VNT00187,2024-11-09,CLI0093,Souris sans fil,Périphériques,Île-de-France,Revendeur,14,39.99,5,531.87
+VNT00188,2024-02-21,CLI0088,Webcam HD,Vidéo,Grand Est,En ligne,13,79.99,20,831.9
+VNT00189,2024-07-25,CLI0187,Casque audio,Audio,Normandie,Magasin,8,129.99,20,831.94
+VNT00190,2024-09-10,CLI0183,Écran 4K,Affichage,Normandie,Revendeur,9,449.99,20,3239.93
+VNT00191,2024-10-06,CLI0009,Webcam HD,Vidéo,Grand Est,Magasin,11,79.99,5,835.9
+VNT00192,2024-12-18,CLI0199,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,B2B Direct,15,1299.99,10,17549.86
+VNT00193,2024-01-03,CLI0196,Webcam HD,Vidéo,Grand Est,En ligne,8,79.99,5,607.92
+VNT00194,2024-05-19,CLI0191,Laptop Pro,Informatique,Hauts-de-France,Magasin,2,1299.99,15,2209.98
+VNT00195,2024-11-19,CLI0010,Écran 4K,Affichage,Île-de-France,B2B Direct,12,449.99,15,4589.9
+VNT00196,2024-09-13,CLI0172,Hub USB-C,Connectique,Grand Est,B2B Direct,9,49.99,15,382.42
+VNT00197,2024-09-09,CLI0165,Hub USB-C,Connectique,Île-de-France,B2B Direct,4,49.99,15,169.97
+VNT00198,2024-12-17,CLI0071,Webcam HD,Vidéo,Île-de-France,En ligne,11,79.99,20,703.91
+VNT00199,2024-12-17,CLI0158,Tablette graphique,Création,Bretagne,B2B Direct,12,249.99,10,2699.89
+VNT00200,2024-11-04,CLI0114,Laptop Pro,Informatique,Grand Est,Magasin,8,1299.99,5,9879.92
+VNT00201,2024-04-22,CLI0198,Tablette graphique,Création,Île-de-France,En ligne,11,249.99,10,2474.9
+VNT00202,2024-08-28,CLI0166,Tablette graphique,Création,Grand Est,Revendeur,5,249.99,5,1187.45
+VNT00203,2024-02-08,CLI0047,Laptop Pro,Informatique,Provence-PACA,B2B Direct,5,1299.99,20,5199.96
+VNT00204,2024-08-24,CLI0134,Casque audio,Audio,Provence-PACA,B2B Direct,14,129.99,0,1819.86
+VNT00205,2024-12-17,CLI0060,Hub USB-C,Connectique,Île-de-France,Revendeur,10,49.99,20,399.92
+VNT00206,2024-06-20,CLI0162,Webcam HD,Vidéo,Bretagne,Revendeur,11,79.99,0,879.89
+VNT00207,2024-02-09,CLI0013,Laptop Pro,Informatique,Hauts-de-France,En ligne,12,1299.99,10,14039.89
+VNT00208,2024-01-16,CLI0089,Hub USB-C,Connectique,Provence-PACA,Magasin,13,49.99,20,519.9
+VNT00209,2024-07-08,CLI0111,Hub USB-C,Connectique,Provence-PACA,Revendeur,14,49.99,0,699.86
+VNT00210,2024-11-19,CLI0051,Hub USB-C,Connectique,Bretagne,B2B Direct,13,49.99,20,519.9
+VNT00211,2024-06-06,CLI0048,Disque SSD 1TB,Stockage,Bretagne,Revendeur,9,99.99,15,764.92
+VNT00212,2024-08-17,CLI0164,Webcam HD,Vidéo,Provence-PACA,Revendeur,8,79.99,10,575.93
+VNT00213,2024-06-06,CLI0055,Imprimante laser,Impression,Bretagne,B2B Direct,13,349.99,0,4549.87
+VNT00214,2024-04-14,CLI0189,Écran 4K,Affichage,Normandie,En ligne,1,449.99,10,404.99
+VNT00215,2024-02-23,CLI0081,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,11,39.99,20,351.91
+VNT00216,2024-12-14,CLI0014,Écran 4K,Affichage,Normandie,Magasin,9,449.99,10,3644.92
+VNT00217,2024-10-05,CLI0125,Hub USB-C,Connectique,Normandie,Revendeur,3,49.99,5,142.47
+VNT00218,2024-06-09,CLI0025,Webcam HD,Vidéo,Normandie,Revendeur,11,79.99,0,879.89
+VNT00219,2024-05-01,CLI0116,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Revendeur,4,349.99,20,1119.97
+VNT00220,2024-02-06,CLI0078,Clavier mécanique,Périphériques,Occitanie,En ligne,7,89.99,15,535.44
+VNT00221,2024-11-14,CLI0107,Hub USB-C,Connectique,Grand Est,En ligne,3,49.99,0,149.97
+VNT00222,2024-08-01,CLI0049,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,Revendeur,13,89.99,0,1169.87
+VNT00223,2024-04-11,CLI0047,Laptop Pro,Informatique,Hauts-de-France,B2B Direct,10,1299.99,10,11699.91
+VNT00224,2024-06-23,CLI0196,Souris sans fil,Périphériques,Occitanie,Revendeur,8,39.99,0,319.92
+VNT00225,2024-08-26,CLI0001,Webcam HD,Vidéo,Île-de-France,B2B Direct,15,79.99,20,959.88
+VNT00226,2024-08-09,CLI0003,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,2,89.99,5,170.98
+VNT00227,2024-08-08,CLI0009,Laptop Pro,Informatique,Bretagne,En ligne,1,1299.99,5,1234.99
+VNT00228,2024-06-15,CLI0033,Imprimante laser,Impression,Bretagne,B2B Direct,6,349.99,10,1889.95
+VNT00229,2024-04-23,CLI0185,Souris sans fil,Périphériques,Occitanie,Magasin,1,39.99,15,33.99
+VNT00230,2024-04-26,CLI0181,Souris sans fil,Périphériques,Occitanie,Magasin,12,39.99,20,383.9
+VNT00231,2024-03-03,CLI0063,Souris sans fil,Périphériques,Normandie,En ligne,10,39.99,10,359.91
+VNT00232,2024-06-30,CLI0144,Hub USB-C,Connectique,Île-de-France,En ligne,1,49.99,5,47.49
+VNT00233,2024-01-15,CLI0069,Clavier mécanique,Périphériques,Provence-PACA,Magasin,4,89.99,5,341.96
+VNT00234,2024-12-25,CLI0035,Webcam HD,Vidéo,Bretagne,En ligne,11,79.99,20,703.91
+VNT00235,2024-09-30,CLI0049,Hub USB-C,Connectique,Provence-PACA,B2B Direct,13,49.99,0,649.87
+VNT00236,2024-11-22,CLI0101,Hub USB-C,Connectique,Normandie,Revendeur,10,49.99,15,424.92
+VNT00237,2024-08-08,CLI0056,Laptop Pro,Informatique,Grand Est,Magasin,1,1299.99,15,1104.99
+VNT00238,2024-02-12,CLI0153,Disque SSD 1TB,Stockage,Occitanie,B2B Direct,6,99.99,10,539.95
+VNT00239,2024-01-17,CLI0010,Clavier mécanique,Périphériques,Île-de-France,Magasin,11,89.99,10,890.9
+VNT00240,2024-02-24,CLI0003,Clavier mécanique,Périphériques,Provence-PACA,B2B Direct,15,89.99,0,1349.85
+VNT00241,2024-05-30,CLI0048,Disque SSD 1TB,Stockage,Grand Est,En ligne,14,99.99,0,1399.86
+VNT00242,2024-11-30,CLI0003,Hub USB-C,Connectique,Provence-PACA,Magasin,14,49.99,10,629.87
+VNT00243,2024-05-20,CLI0020,Webcam HD,Vidéo,Bretagne,B2B Direct,4,79.99,15,271.97
+VNT00244,2024-05-11,CLI0086,Clavier mécanique,Périphériques,Occitanie,En ligne,4,89.99,5,341.96
+VNT00245,2024-06-25,CLI0156,Imprimante laser,Impression,Occitanie,En ligne,9,349.99,20,2519.93
+VNT00246,2024-04-15,CLI0086,Laptop Pro,Informatique,Grand Est,Magasin,2,1299.99,15,2209.98
+VNT00247,2024-07-31,CLI0076,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,B2B Direct,4,99.99,10,359.96
+VNT00248,2024-06-02,CLI0093,Écran 4K,Affichage,Normandie,Magasin,10,449.99,5,4274.9
+VNT00249,2024-12-08,CLI0152,Disque SSD 1TB,Stockage,Normandie,Revendeur,10,99.99,10,899.91
+VNT00250,2024-10-22,CLI0197,Disque SSD 1TB,Stockage,Occitanie,Magasin,3,99.99,5,284.97
+VNT00251,2024-09-29,CLI0174,Tablette graphique,Création,Normandie,En ligne,6,249.99,5,1424.94
+VNT00252,2024-03-31,CLI0151,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,B2B Direct,6,49.99,20,239.95
+VNT00253,2024-09-25,CLI0105,Laptop Pro,Informatique,Provence-PACA,B2B Direct,14,1299.99,10,16379.87
+VNT00254,2024-03-26,CLI0124,Disque SSD 1TB,Stockage,Normandie,B2B Direct,7,99.99,5,664.93
+VNT00255,2024-04-23,CLI0004,Clavier mécanique,Périphériques,Hauts-de-France,B2B Direct,15,89.99,15,1147.37
+VNT00256,2024-12-28,CLI0192,Casque audio,Audio,Normandie,B2B Direct,6,129.99,0,779.94
+VNT00257,2024-04-09,CLI0175,Clavier mécanique,Périphériques,Occitanie,Magasin,14,89.99,5,1196.87
+VNT00258,2024-07-26,CLI0093,Imprimante laser,Impression,Île-de-France,Magasin,10,349.99,5,3324.9
+VNT00259,2024-11-15,CLI0134,Hub USB-C,Connectique,Grand Est,B2B Direct,11,49.99,20,439.91
+VNT00260,2024-12-02,CLI0197,Clavier mécanique,Périphériques,Île-de-France,Revendeur,10,89.99,20,719.92
+VNT00261,2024-08-28,CLI0138,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,Magasin,9,49.99,10,404.92
+VNT00262,2024-12-04,CLI0191,Tablette graphique,Création,Normandie,Revendeur,6,249.99,5,1424.94
+VNT00263,2024-12-12,CLI0131,Disque SSD 1TB,Stockage,Hauts-de-France,Magasin,13,99.99,0,1299.87
+VNT00264,2024-02-08,CLI0065,Imprimante laser,Impression,Normandie,Magasin,8,349.99,20,2239.94
+VNT00265,2024-10-31,CLI0148,Casque audio,Audio,Île-de-France,Magasin,5,129.99,15,552.46
+VNT00266,2024-02-03,CLI0172,Disque SSD 1TB,Stockage,Grand Est,En ligne,7,99.99,0,699.93
+VNT00267,2024-11-24,CLI0188,Tablette graphique,Création,Occitanie,Revendeur,7,249.99,20,1399.94
+VNT00268,2024-11-13,CLI0183,Casque audio,Audio,Provence-PACA,Magasin,9,129.99,20,935.93
+VNT00269,2024-12-05,CLI0078,Souris sans fil,Périphériques,Grand Est,Magasin,4,39.99,5,151.96
+VNT00270,2024-02-22,CLI0056,Écran 4K,Affichage,Auvergne-Rhône-Alpes,B2B Direct,2,449.99,5,854.98
+VNT00271,2024-01-14,CLI0008,Casque audio,Audio,Hauts-de-France,Revendeur,4,129.99,20,415.97
+VNT00272,2024-11-12,CLI0199,Webcam HD,Vidéo,Île-de-France,En ligne,5,79.99,0,399.95
+VNT00273,2024-12-15,CLI0166,Webcam HD,Vidéo,Bretagne,B2B Direct,15,79.99,5,1139.86
+VNT00274,2024-06-19,CLI0030,Webcam HD,Vidéo,Normandie,Revendeur,10,79.99,20,639.92
+VNT00275,2024-12-26,CLI0040,Webcam HD,Vidéo,Provence-PACA,Magasin,7,79.99,20,447.94
+VNT00276,2024-08-10,CLI0145,Imprimante laser,Impression,Grand Est,Revendeur,14,349.99,15,4164.88
+VNT00277,2024-11-18,CLI0112,Tablette graphique,Création,Normandie,Magasin,5,249.99,0,1249.95
+VNT00278,2024-01-17,CLI0036,Tablette graphique,Création,Auvergne-Rhône-Alpes,En ligne,6,249.99,0,1499.94
+VNT00279,2024-09-13,CLI0028,Disque SSD 1TB,Stockage,Provence-PACA,B2B Direct,7,99.99,20,559.94
+VNT00280,2024-11-06,CLI0156,Webcam HD,Vidéo,Île-de-France,En ligne,4,79.99,15,271.97
+VNT00281,2024-05-06,CLI0079,Écran 4K,Affichage,Provence-PACA,En ligne,9,449.99,0,4049.91
+VNT00282,2024-03-17,CLI0001,Imprimante laser,Impression,Bretagne,En ligne,1,349.99,0,349.99
+VNT00283,2024-12-03,CLI0077,Casque audio,Audio,Occitanie,Magasin,4,129.99,0,519.96
+VNT00284,2024-10-01,CLI0107,Tablette graphique,Création,Auvergne-Rhône-Alpes,Revendeur,8,249.99,10,1799.93
+VNT00285,2024-02-20,CLI0179,Webcam HD,Vidéo,Bretagne,B2B Direct,9,79.99,15,611.92
+VNT00286,2024-03-15,CLI0188,Tablette graphique,Création,Provence-PACA,B2B Direct,1,249.99,10,224.99
+VNT00287,2024-03-25,CLI0197,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,Magasin,15,49.99,15,637.37
+VNT00288,2024-03-22,CLI0023,Webcam HD,Vidéo,Île-de-France,B2B Direct,12,79.99,0,959.88
+VNT00289,2024-11-11,CLI0044,Laptop Pro,Informatique,Bretagne,B2B Direct,2,1299.99,15,2209.98
+VNT00290,2024-08-13,CLI0078,Disque SSD 1TB,Stockage,Grand Est,Revendeur,11,99.99,5,1044.9
+VNT00291,2024-02-18,CLI0183,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Magasin,6,39.99,15,203.95
+VNT00292,2024-12-22,CLI0158,Tablette graphique,Création,Île-de-France,Magasin,7,249.99,5,1662.43
+VNT00293,2024-11-05,CLI0038,Casque audio,Audio,Occitanie,En ligne,8,129.99,10,935.93
+VNT00294,2024-11-06,CLI0145,Laptop Pro,Informatique,Île-de-France,Magasin,8,1299.99,20,8319.94
+VNT00295,2024-06-28,CLI0188,Hub USB-C,Connectique,Provence-PACA,Magasin,11,49.99,15,467.41
+VNT00296,2024-02-10,CLI0113,Écran 4K,Affichage,Provence-PACA,B2B Direct,8,449.99,15,3059.93
+VNT00297,2024-12-18,CLI0097,Tablette graphique,Création,Provence-PACA,B2B Direct,9,249.99,5,2137.41
+VNT00298,2024-03-14,CLI0021,Tablette graphique,Création,Auvergne-Rhône-Alpes,B2B Direct,10,249.99,0,2499.9
+VNT00299,2024-07-04,CLI0072,Souris sans fil,Périphériques,Île-de-France,Revendeur,1,39.99,5,37.99
+VNT00300,2024-03-03,CLI0047,Hub USB-C,Connectique,Provence-PACA,B2B Direct,3,49.99,15,127.47
+VNT00301,2024-08-02,CLI0105,Disque SSD 1TB,Stockage,Grand Est,Revendeur,12,99.99,15,1019.9
+VNT00302,2024-02-28,CLI0124,Casque audio,Audio,Bretagne,Revendeur,3,129.99,5,370.47
+VNT00303,2024-11-19,CLI0083,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Magasin,14,99.99,0,1399.86
+VNT00304,2024-07-08,CLI0002,Imprimante laser,Impression,Grand Est,B2B Direct,1,349.99,10,314.99
+VNT00305,2024-09-15,CLI0184,Écran 4K,Affichage,Bretagne,B2B Direct,14,449.99,5,5984.87
+VNT00306,2024-03-12,CLI0150,Souris sans fil,Périphériques,Provence-PACA,En ligne,5,39.99,20,159.96
+VNT00307,2024-06-16,CLI0140,Écran 4K,Affichage,Bretagne,En ligne,4,449.99,0,1799.96
+VNT00308,2024-04-28,CLI0073,Laptop Pro,Informatique,Occitanie,En ligne,6,1299.99,0,7799.94
+VNT00309,2024-01-17,CLI0174,Souris sans fil,Périphériques,Normandie,Revendeur,8,39.99,20,255.94
+VNT00310,2024-07-04,CLI0152,Casque audio,Audio,Grand Est,Revendeur,7,129.99,5,864.43
+VNT00311,2024-01-24,CLI0095,Clavier mécanique,Périphériques,Normandie,Magasin,4,89.99,15,305.97
+VNT00312,2024-12-20,CLI0091,Écran 4K,Affichage,Hauts-de-France,En ligne,8,449.99,20,2879.94
+VNT00313,2024-06-06,CLI0168,Webcam HD,Vidéo,Île-de-France,B2B Direct,5,79.99,15,339.96
+VNT00314,2024-09-04,CLI0186,Écran 4K,Affichage,Normandie,B2B Direct,11,449.99,15,4207.41
+VNT00315,2024-07-05,CLI0146,Casque audio,Audio,Hauts-de-France,En ligne,12,129.99,10,1403.89
+VNT00316,2024-08-01,CLI0095,Imprimante laser,Impression,Grand Est,Revendeur,15,349.99,10,4724.87
+VNT00317,2024-01-09,CLI0046,Imprimante laser,Impression,Bretagne,B2B Direct,1,349.99,20,279.99
+VNT00318,2024-03-16,CLI0188,Clavier mécanique,Périphériques,Île-de-France,Revendeur,10,89.99,5,854.9
+VNT00319,2024-10-28,CLI0087,Tablette graphique,Création,Bretagne,Magasin,11,249.99,20,2199.91
+VNT00320,2024-08-08,CLI0098,Webcam HD,Vidéo,Occitanie,Revendeur,1,79.99,0,79.99
+VNT00321,2024-07-12,CLI0053,Tablette graphique,Création,Hauts-de-France,Magasin,5,249.99,0,1249.95
+VNT00322,2024-03-01,CLI0051,Clavier mécanique,Périphériques,Occitanie,Revendeur,9,89.99,15,688.42
+VNT00323,2024-02-19,CLI0191,Tablette graphique,Création,Provence-PACA,Revendeur,15,249.99,20,2999.88
+VNT00324,2024-02-15,CLI0006,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,9,89.99,5,769.41
+VNT00325,2024-08-14,CLI0140,Hub USB-C,Connectique,Provence-PACA,Revendeur,8,49.99,10,359.93
+VNT00326,2024-06-09,CLI0021,Webcam HD,Vidéo,Normandie,B2B Direct,10,79.99,15,679.91
+VNT00327,2024-05-24,CLI0061,Souris sans fil,Périphériques,Normandie,Revendeur,7,39.99,15,237.94
+VNT00328,2024-09-13,CLI0090,Disque SSD 1TB,Stockage,Grand Est,Revendeur,10,99.99,15,849.91
+VNT00329,2024-04-09,CLI0144,Tablette graphique,Création,Bretagne,Magasin,12,249.99,10,2699.89
+VNT00330,2024-12-14,CLI0141,Casque audio,Audio,Bretagne,En ligne,8,129.99,10,935.93
+VNT00331,2024-03-15,CLI0010,Tablette graphique,Création,Auvergne-Rhône-Alpes,Revendeur,14,249.99,10,3149.87
+VNT00332,2024-02-19,CLI0051,Laptop Pro,Informatique,Bretagne,En ligne,14,1299.99,20,14559.89
+VNT00333,2024-09-30,CLI0141,Clavier mécanique,Périphériques,Occitanie,Magasin,9,89.99,5,769.41
+VNT00334,2024-07-05,CLI0198,Hub USB-C,Connectique,Provence-PACA,Revendeur,14,49.99,5,664.87
+VNT00335,2024-10-19,CLI0016,Tablette graphique,Création,Provence-PACA,En ligne,5,249.99,0,1249.95
+VNT00336,2024-07-19,CLI0022,Imprimante laser,Impression,Hauts-de-France,B2B Direct,12,349.99,15,3569.9
+VNT00337,2024-01-27,CLI0175,Hub USB-C,Connectique,Grand Est,En ligne,4,49.99,15,169.97
+VNT00338,2024-06-10,CLI0155,Clavier mécanique,Périphériques,Île-de-France,B2B Direct,6,89.99,0,539.94
+VNT00339,2024-09-14,CLI0041,Clavier mécanique,Périphériques,Provence-PACA,Magasin,6,89.99,10,485.95
+VNT00340,2024-06-07,CLI0056,Imprimante laser,Impression,Grand Est,Revendeur,5,349.99,15,1487.46
+VNT00341,2024-08-04,CLI0065,Souris sans fil,Périphériques,Hauts-de-France,B2B Direct,4,39.99,10,143.96
+VNT00342,2024-06-27,CLI0114,Souris sans fil,Périphériques,Hauts-de-France,En ligne,13,39.99,15,441.89
+VNT00343,2024-09-30,CLI0187,Webcam HD,Vidéo,Hauts-de-France,Magasin,1,79.99,20,63.99
+VNT00344,2024-02-13,CLI0056,Écran 4K,Affichage,Grand Est,En ligne,4,449.99,15,1529.97
+VNT00345,2024-09-08,CLI0088,Disque SSD 1TB,Stockage,Hauts-de-France,Revendeur,6,99.99,15,509.95
+VNT00346,2024-09-25,CLI0018,Webcam HD,Vidéo,Occitanie,En ligne,14,79.99,10,1007.87
+VNT00347,2024-07-09,CLI0002,Casque audio,Audio,Île-de-France,B2B Direct,5,129.99,15,552.46
+VNT00348,2024-05-31,CLI0154,Souris sans fil,Périphériques,Normandie,Magasin,12,39.99,0,479.88
+VNT00349,2024-07-07,CLI0189,Clavier mécanique,Périphériques,Île-de-France,Magasin,9,89.99,20,647.93
+VNT00350,2024-10-02,CLI0115,Écran 4K,Affichage,Grand Est,B2B Direct,4,449.99,5,1709.96
+VNT00351,2024-03-15,CLI0037,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Revendeur,1,39.99,0,39.99
+VNT00352,2024-02-23,CLI0093,Clavier mécanique,Périphériques,Bretagne,Revendeur,4,89.99,15,305.97
+VNT00353,2024-03-25,CLI0200,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,En ligne,10,1299.99,5,12349.9
+VNT00354,2024-06-01,CLI0132,Laptop Pro,Informatique,Normandie,Magasin,7,1299.99,10,8189.94
+VNT00355,2024-03-25,CLI0148,Souris sans fil,Périphériques,Occitanie,En ligne,6,39.99,10,215.95
+VNT00356,2024-09-21,CLI0089,Tablette graphique,Création,Bretagne,Magasin,11,249.99,15,2337.41
+VNT00357,2024-12-23,CLI0153,Hub USB-C,Connectique,Bretagne,B2B Direct,10,49.99,15,424.92
+VNT00358,2024-12-12,CLI0006,Imprimante laser,Impression,Occitanie,Magasin,9,349.99,0,3149.91
+VNT00359,2024-01-14,CLI0065,Disque SSD 1TB,Stockage,Hauts-de-France,En ligne,15,99.99,5,1424.86
+VNT00360,2024-02-04,CLI0033,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Revendeur,7,99.99,20,559.94
+VNT00361,2024-06-30,CLI0016,Hub USB-C,Connectique,Hauts-de-France,Revendeur,14,49.99,20,559.89
+VNT00362,2024-04-08,CLI0119,Webcam HD,Vidéo,Grand Est,Revendeur,4,79.99,0,319.96
+VNT00363,2024-08-22,CLI0007,Souris sans fil,Périphériques,Bretagne,Revendeur,14,39.99,20,447.89
+VNT00364,2024-03-07,CLI0136,Souris sans fil,Périphériques,Grand Est,Magasin,8,39.99,5,303.92
+VNT00365,2024-10-06,CLI0012,Écran 4K,Affichage,Auvergne-Rhône-Alpes,Revendeur,8,449.99,15,3059.93
+VNT00366,2024-08-03,CLI0009,Laptop Pro,Informatique,Hauts-de-France,Revendeur,14,1299.99,5,17289.87
+VNT00367,2024-01-07,CLI0160,Casque audio,Audio,Occitanie,En ligne,8,129.99,15,883.93
+VNT00368,2024-04-07,CLI0019,Webcam HD,Vidéo,Occitanie,Revendeur,5,79.99,20,319.96
+VNT00369,2024-06-15,CLI0111,Webcam HD,Vidéo,Provence-PACA,B2B Direct,1,79.99,10,71.99
+VNT00370,2024-01-27,CLI0141,Clavier mécanique,Périphériques,Provence-PACA,B2B Direct,5,89.99,20,359.96
+VNT00371,2024-02-19,CLI0018,Imprimante laser,Impression,Grand Est,Magasin,6,349.99,5,1994.94
+VNT00372,2024-02-15,CLI0146,Webcam HD,Vidéo,Normandie,B2B Direct,3,79.99,15,203.97
+VNT00373,2024-09-06,CLI0086,Imprimante laser,Impression,Provence-PACA,B2B Direct,6,349.99,0,2099.94
+VNT00374,2024-06-08,CLI0199,Souris sans fil,Périphériques,Occitanie,Magasin,14,39.99,10,503.87
+VNT00375,2024-08-05,CLI0145,Hub USB-C,Connectique,Occitanie,En ligne,15,49.99,20,599.88
+VNT00376,2024-11-08,CLI0094,Tablette graphique,Création,Occitanie,En ligne,6,249.99,15,1274.95
+VNT00377,2024-07-14,CLI0029,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,12,39.99,20,383.9
+VNT00378,2024-12-16,CLI0163,Clavier mécanique,Périphériques,Île-de-France,Magasin,1,89.99,10,80.99
+VNT00379,2024-10-17,CLI0049,Laptop Pro,Informatique,Occitanie,B2B Direct,9,1299.99,0,11699.91
+VNT00380,2024-11-16,CLI0068,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,En ligne,12,79.99,10,863.89
+VNT00381,2024-10-26,CLI0105,Hub USB-C,Connectique,Hauts-de-France,Magasin,11,49.99,5,522.4
+VNT00382,2024-03-16,CLI0134,Écran 4K,Affichage,Bretagne,En ligne,1,449.99,20,359.99
+VNT00383,2024-12-14,CLI0159,Écran 4K,Affichage,Occitanie,Revendeur,6,449.99,0,2699.94
+VNT00384,2024-03-12,CLI0108,Tablette graphique,Création,Hauts-de-France,Magasin,12,249.99,0,2999.88
+VNT00385,2024-04-05,CLI0151,Tablette graphique,Création,Normandie,Magasin,5,249.99,0,1249.95
+VNT00386,2024-12-24,CLI0003,Tablette graphique,Création,Provence-PACA,Magasin,7,249.99,5,1662.43
+VNT00387,2024-05-29,CLI0117,Hub USB-C,Connectique,Bretagne,En ligne,1,49.99,10,44.99
+VNT00388,2024-06-23,CLI0189,Clavier mécanique,Périphériques,Provence-PACA,En ligne,1,89.99,20,71.99
+VNT00389,2024-10-15,CLI0035,Casque audio,Audio,Auvergne-Rhône-Alpes,Magasin,8,129.99,15,883.93
+VNT00390,2024-07-29,CLI0160,Écran 4K,Affichage,Normandie,En ligne,15,449.99,10,6074.87
+VNT00391,2024-10-07,CLI0184,Imprimante laser,Impression,Grand Est,B2B Direct,7,349.99,20,1959.94
+VNT00392,2024-10-12,CLI0125,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Magasin,14,349.99,10,4409.87
+VNT00393,2024-12-17,CLI0165,Casque audio,Audio,Provence-PACA,Magasin,6,129.99,15,662.95
+VNT00394,2024-01-28,CLI0178,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Revendeur,13,99.99,5,1234.88
+VNT00395,2024-01-12,CLI0082,Écran 4K,Affichage,Auvergne-Rhône-Alpes,En ligne,15,449.99,20,5399.88
+VNT00396,2024-09-04,CLI0048,Clavier mécanique,Périphériques,Hauts-de-France,Revendeur,10,89.99,5,854.9
+VNT00397,2024-01-18,CLI0111,Webcam HD,Vidéo,Île-de-France,En ligne,12,79.99,15,815.9
+VNT00398,2024-08-21,CLI0116,Clavier mécanique,Périphériques,Île-de-France,Magasin,2,89.99,10,161.98
+VNT00399,2024-04-10,CLI0059,Imprimante laser,Impression,Provence-PACA,Magasin,11,349.99,20,3079.91
+VNT00400,2024-12-04,CLI0075,Tablette graphique,Création,Occitanie,En ligne,15,249.99,0,3749.85
+VNT00401,2024-10-01,CLI0133,Clavier mécanique,Périphériques,Bretagne,Magasin,4,89.99,0,359.96
+VNT00402,2024-05-13,CLI0087,Tablette graphique,Création,Normandie,Revendeur,13,249.99,20,2599.9
+VNT00403,2024-08-13,CLI0045,Tablette graphique,Création,Île-de-France,Magasin,4,249.99,20,799.97
+VNT00404,2024-07-25,CLI0170,Souris sans fil,Périphériques,Normandie,Magasin,3,39.99,5,113.97
+VNT00405,2024-06-12,CLI0120,Imprimante laser,Impression,Provence-PACA,B2B Direct,14,349.99,20,3919.89
+VNT00406,2024-09-11,CLI0034,Webcam HD,Vidéo,Hauts-de-France,Revendeur,7,79.99,0,559.93
+VNT00407,2024-02-27,CLI0199,Casque audio,Audio,Occitanie,Revendeur,15,129.99,20,1559.88
+VNT00408,2024-02-23,CLI0078,Écran 4K,Affichage,Provence-PACA,B2B Direct,15,449.99,20,5399.88
+VNT00409,2024-07-02,CLI0157,Clavier mécanique,Périphériques,Île-de-France,Magasin,14,89.99,20,1007.89
+VNT00410,2024-05-18,CLI0077,Tablette graphique,Création,Bretagne,Revendeur,11,249.99,15,2337.41
+VNT00411,2024-01-02,CLI0185,Hub USB-C,Connectique,Île-de-France,Magasin,7,49.99,10,314.94
+VNT00412,2024-10-30,CLI0063,Webcam HD,Vidéo,Grand Est,Revendeur,2,79.99,20,127.98
+VNT00413,2024-07-01,CLI0157,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Revendeur,15,39.99,0,599.85
+VNT00414,2024-01-06,CLI0198,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,B2B Direct,11,99.99,10,989.9
+VNT00415,2024-07-24,CLI0086,Disque SSD 1TB,Stockage,Grand Est,B2B Direct,9,99.99,15,764.92
+VNT00416,2024-10-15,CLI0168,Écran 4K,Affichage,Normandie,Revendeur,14,449.99,0,6299.86
+VNT00417,2024-11-24,CLI0178,Souris sans fil,Périphériques,Île-de-France,Revendeur,11,39.99,0,439.89
+VNT00418,2024-01-13,CLI0119,Imprimante laser,Impression,Grand Est,Revendeur,11,349.99,15,3272.41
+VNT00419,2024-02-23,CLI0064,Imprimante laser,Impression,Bretagne,B2B Direct,13,349.99,10,4094.88
+VNT00420,2024-12-09,CLI0187,Webcam HD,Vidéo,Île-de-France,B2B Direct,1,79.99,10,71.99
+VNT00421,2024-03-30,CLI0142,Casque audio,Audio,Bretagne,En ligne,6,129.99,5,740.94
+VNT00422,2024-02-06,CLI0198,Tablette graphique,Création,Provence-PACA,Revendeur,9,249.99,20,1799.93
+VNT00423,2024-10-12,CLI0168,Hub USB-C,Connectique,Île-de-France,Magasin,10,49.99,0,499.9
+VNT00424,2024-01-17,CLI0161,Tablette graphique,Création,Occitanie,En ligne,1,249.99,5,237.49
+VNT00425,2024-05-12,CLI0042,Imprimante laser,Impression,Bretagne,Magasin,1,349.99,0,349.99
+VNT00426,2024-01-18,CLI0147,Tablette graphique,Création,Hauts-de-France,Revendeur,3,249.99,10,674.97
+VNT00427,2024-12-01,CLI0194,Tablette graphique,Création,Île-de-France,B2B Direct,3,249.99,15,637.47
+VNT00428,2024-01-05,CLI0167,Tablette graphique,Création,Provence-PACA,Revendeur,4,249.99,20,799.97
+VNT00429,2024-12-08,CLI0045,Souris sans fil,Périphériques,Provence-PACA,En ligne,2,39.99,0,79.98
+VNT00430,2024-09-01,CLI0015,Écran 4K,Affichage,Provence-PACA,En ligne,1,449.99,15,382.49
+VNT00431,2024-10-29,CLI0029,Disque SSD 1TB,Stockage,Île-de-France,En ligne,2,99.99,0,199.98
+VNT00432,2024-06-01,CLI0009,Hub USB-C,Connectique,Grand Est,Magasin,3,49.99,0,149.97
+VNT00433,2024-07-23,CLI0028,Laptop Pro,Informatique,Provence-PACA,B2B Direct,14,1299.99,15,15469.88
+VNT00434,2024-02-23,CLI0165,Laptop Pro,Informatique,Occitanie,Magasin,1,1299.99,20,1039.99
+VNT00435,2024-01-28,CLI0026,Clavier mécanique,Périphériques,Provence-PACA,B2B Direct,2,89.99,0,179.98
+VNT00436,2024-12-04,CLI0143,Casque audio,Audio,Auvergne-Rhône-Alpes,B2B Direct,1,129.99,20,103.99
+VNT00437,2024-09-06,CLI0187,Imprimante laser,Impression,Occitanie,Magasin,5,349.99,20,1399.96
+VNT00438,2024-10-30,CLI0063,Souris sans fil,Périphériques,Occitanie,Magasin,2,39.99,15,67.98
+VNT00439,2024-05-12,CLI0171,Webcam HD,Vidéo,Hauts-de-France,Revendeur,9,79.99,10,647.92
+VNT00440,2024-09-01,CLI0019,Écran 4K,Affichage,Occitanie,B2B Direct,5,449.99,20,1799.96
+VNT00441,2024-04-01,CLI0179,Hub USB-C,Connectique,Occitanie,Revendeur,10,49.99,5,474.91
+VNT00442,2024-09-04,CLI0112,Clavier mécanique,Périphériques,Grand Est,Magasin,14,89.99,10,1133.87
+VNT00443,2024-02-04,CLI0066,Laptop Pro,Informatique,Bretagne,Revendeur,5,1299.99,10,5849.95
+VNT00444,2024-08-27,CLI0133,Hub USB-C,Connectique,Occitanie,B2B Direct,5,49.99,15,212.46
+VNT00445,2024-02-15,CLI0008,Imprimante laser,Impression,Bretagne,Magasin,5,349.99,0,1749.95
+VNT00446,2024-01-16,CLI0144,Hub USB-C,Connectique,Île-de-France,Revendeur,6,49.99,20,239.95
+VNT00447,2024-09-22,CLI0112,Tablette graphique,Création,Auvergne-Rhône-Alpes,Magasin,5,249.99,10,1124.96
+VNT00448,2024-11-11,CLI0107,Webcam HD,Vidéo,Hauts-de-France,Revendeur,4,79.99,5,303.96
+VNT00449,2024-08-11,CLI0137,Laptop Pro,Informatique,Normandie,B2B Direct,11,1299.99,5,13584.9
+VNT00450,2024-03-31,CLI0131,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Revendeur,8,39.99,20,255.94
+VNT00451,2024-02-12,CLI0188,Souris sans fil,Périphériques,Occitanie,Magasin,4,39.99,5,151.96
+VNT00452,2024-12-02,CLI0163,Casque audio,Audio,Bretagne,Revendeur,8,129.99,15,883.93
+VNT00453,2024-12-24,CLI0115,Imprimante laser,Impression,Auvergne-Rhône-Alpes,En ligne,13,349.99,15,3867.39
+VNT00454,2024-09-24,CLI0096,Hub USB-C,Connectique,Occitanie,En ligne,14,49.99,20,559.89
+VNT00455,2024-10-31,CLI0013,Imprimante laser,Impression,Provence-PACA,B2B Direct,14,349.99,5,4654.87
+VNT00456,2024-06-09,CLI0057,Hub USB-C,Connectique,Hauts-de-France,En ligne,2,49.99,5,94.98
+VNT00457,2024-03-31,CLI0185,Disque SSD 1TB,Stockage,Normandie,En ligne,1,99.99,0,99.99
+VNT00458,2024-01-23,CLI0065,Écran 4K,Affichage,Provence-PACA,Magasin,13,449.99,10,5264.88
+VNT00459,2024-07-04,CLI0142,Disque SSD 1TB,Stockage,Normandie,Magasin,6,99.99,15,509.95
+VNT00460,2024-08-12,CLI0126,Tablette graphique,Création,Bretagne,Revendeur,2,249.99,10,449.98
+VNT00461,2024-01-07,CLI0067,Écran 4K,Affichage,Hauts-de-France,Revendeur,2,449.99,0,899.98
+VNT00462,2024-08-23,CLI0018,Imprimante laser,Impression,Grand Est,En ligne,13,349.99,20,3639.9
+VNT00463,2024-08-16,CLI0050,Disque SSD 1TB,Stockage,Bretagne,B2B Direct,13,99.99,20,1039.9
+VNT00464,2024-06-02,CLI0144,Souris sans fil,Périphériques,Provence-PACA,Magasin,12,39.99,20,383.9
+VNT00465,2024-03-09,CLI0034,Tablette graphique,Création,Occitanie,En ligne,10,249.99,10,2249.91
+VNT00466,2024-07-20,CLI0083,Casque audio,Audio,Normandie,B2B Direct,11,129.99,15,1215.41
+VNT00467,2024-06-04,CLI0148,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,B2B Direct,12,49.99,10,539.89
+VNT00468,2024-01-10,CLI0100,Tablette graphique,Création,Provence-PACA,B2B Direct,11,249.99,20,2199.91
+VNT00469,2024-12-02,CLI0042,Souris sans fil,Périphériques,Hauts-de-France,Magasin,7,39.99,10,251.94
+VNT00470,2024-10-29,CLI0146,Écran 4K,Affichage,Hauts-de-France,Revendeur,4,449.99,15,1529.97
+VNT00471,2024-12-21,CLI0198,Hub USB-C,Connectique,Île-de-France,En ligne,13,49.99,20,519.9
+VNT00472,2024-11-05,CLI0024,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,En ligne,14,49.99,10,629.87
+VNT00473,2024-02-13,CLI0078,Clavier mécanique,Périphériques,Normandie,Magasin,2,89.99,10,161.98
+VNT00474,2024-03-11,CLI0081,Casque audio,Audio,Grand Est,B2B Direct,1,129.99,20,103.99
+VNT00475,2024-06-13,CLI0160,Laptop Pro,Informatique,Normandie,En ligne,15,1299.99,5,18524.86
+VNT00476,2024-05-25,CLI0072,Clavier mécanique,Périphériques,Grand Est,En ligne,14,89.99,0,1259.86
+VNT00477,2024-07-19,CLI0168,Laptop Pro,Informatique,Bretagne,Revendeur,14,1299.99,0,18199.86
+VNT00478,2024-11-25,CLI0173,Souris sans fil,Périphériques,Occitanie,Magasin,11,39.99,0,439.89
+VNT00479,2024-01-04,CLI0106,Clavier mécanique,Périphériques,Normandie,Magasin,15,89.99,10,1214.87
+VNT00480,2024-12-10,CLI0200,Disque SSD 1TB,Stockage,Occitanie,Revendeur,10,99.99,15,849.91
+VNT00481,2024-11-13,CLI0156,Tablette graphique,Création,Hauts-de-France,Revendeur,5,249.99,10,1124.96
+VNT00482,2024-03-09,CLI0194,Disque SSD 1TB,Stockage,Bretagne,Revendeur,12,99.99,10,1079.89
+VNT00483,2024-03-19,CLI0011,Casque audio,Audio,Hauts-de-France,B2B Direct,14,129.99,10,1637.87
+VNT00484,2024-08-12,CLI0092,Clavier mécanique,Périphériques,Grand Est,En ligne,10,89.99,15,764.91
+VNT00485,2024-03-02,CLI0043,Hub USB-C,Connectique,Provence-PACA,En ligne,11,49.99,5,522.4
+VNT00486,2024-04-25,CLI0083,Écran 4K,Affichage,Normandie,Magasin,7,449.99,15,2677.44
+VNT00487,2024-03-08,CLI0192,Imprimante laser,Impression,Occitanie,Revendeur,13,349.99,10,4094.88
+VNT00488,2024-02-22,CLI0030,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,9,89.99,15,688.42
+VNT00489,2024-12-29,CLI0009,Tablette graphique,Création,Grand Est,En ligne,14,249.99,5,3324.87
+VNT00490,2024-10-10,CLI0115,Tablette graphique,Création,Île-de-France,Magasin,14,249.99,5,3324.87
+VNT00491,2024-12-09,CLI0181,Casque audio,Audio,Grand Est,Magasin,4,129.99,0,519.96
+VNT00492,2024-08-02,CLI0115,Clavier mécanique,Périphériques,Île-de-France,Magasin,3,89.99,10,242.97
+VNT00493,2024-01-28,CLI0146,Webcam HD,Vidéo,Hauts-de-France,Revendeur,15,79.99,5,1139.86
+VNT00494,2024-10-01,CLI0170,Hub USB-C,Connectique,Grand Est,En ligne,4,49.99,20,159.97
+VNT00495,2024-10-08,CLI0033,Souris sans fil,Périphériques,Occitanie,Magasin,3,39.99,0,119.97
+VNT00496,2024-02-02,CLI0075,Laptop Pro,Informatique,Normandie,Magasin,11,1299.99,20,11439.91
+VNT00497,2024-11-11,CLI0102,Laptop Pro,Informatique,Grand Est,B2B Direct,12,1299.99,15,13259.9
+VNT00498,2024-09-05,CLI0059,Imprimante laser,Impression,Bretagne,B2B Direct,6,349.99,15,1784.95
+VNT00499,2024-11-20,CLI0184,Tablette graphique,Création,Grand Est,B2B Direct,7,249.99,20,1399.94
+VNT00500,2024-06-18,CLI0003,Laptop Pro,Informatique,Provence-PACA,Revendeur,3,1299.99,0,3899.97
+VNT00501,2024-06-24,CLI0005,Clavier mécanique,Périphériques,Occitanie,En ligne,15,89.99,20,1079.88
+VNT00502,2024-01-12,CLI0138,Tablette graphique,Création,Occitanie,En ligne,13,249.99,10,2924.88
+VNT00503,2024-08-16,CLI0101,Tablette graphique,Création,Île-de-France,Revendeur,1,249.99,20,199.99
+VNT00504,2024-10-02,CLI0073,Tablette graphique,Création,Grand Est,En ligne,13,249.99,0,3249.87
+VNT00505,2024-02-18,CLI0127,Clavier mécanique,Périphériques,Île-de-France,B2B Direct,6,89.99,0,539.94
+VNT00506,2024-11-24,CLI0095,Laptop Pro,Informatique,Grand Est,En ligne,2,1299.99,0,2599.98
+VNT00507,2024-01-09,CLI0085,Clavier mécanique,Périphériques,Bretagne,B2B Direct,9,89.99,15,688.42
+VNT00508,2024-04-05,CLI0105,Tablette graphique,Création,Provence-PACA,En ligne,5,249.99,15,1062.46
+VNT00509,2024-07-24,CLI0095,Disque SSD 1TB,Stockage,Provence-PACA,B2B Direct,13,99.99,20,1039.9
+VNT00510,2024-01-01,CLI0136,Laptop Pro,Informatique,Grand Est,B2B Direct,7,1299.99,0,9099.93
+VNT00511,2024-03-31,CLI0022,Disque SSD 1TB,Stockage,Grand Est,Magasin,3,99.99,15,254.97
+VNT00512,2024-12-06,CLI0104,Imprimante laser,Impression,Auvergne-Rhône-Alpes,B2B Direct,11,349.99,15,3272.41
+VNT00513,2024-07-01,CLI0078,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Revendeur,4,39.99,5,151.96
+VNT00514,2024-11-07,CLI0165,Webcam HD,Vidéo,Occitanie,En ligne,12,79.99,5,911.89
+VNT00515,2024-07-08,CLI0130,Laptop Pro,Informatique,Île-de-France,B2B Direct,6,1299.99,15,6629.95
+VNT00516,2024-05-07,CLI0117,Casque audio,Audio,Hauts-de-France,En ligne,10,129.99,0,1299.9
+VNT00517,2024-04-24,CLI0190,Disque SSD 1TB,Stockage,Bretagne,En ligne,9,99.99,15,764.92
+VNT00518,2024-01-25,CLI0031,Clavier mécanique,Périphériques,Île-de-France,Revendeur,3,89.99,20,215.98
+VNT00519,2024-06-02,CLI0080,Disque SSD 1TB,Stockage,Occitanie,En ligne,2,99.99,15,169.98
+VNT00520,2024-09-03,CLI0113,Casque audio,Audio,Bretagne,En ligne,8,129.99,10,935.93
+VNT00521,2024-05-21,CLI0065,Hub USB-C,Connectique,Hauts-de-France,En ligne,2,49.99,5,94.98
+VNT00522,2024-06-13,CLI0019,Tablette graphique,Création,Bretagne,Magasin,2,249.99,0,499.98
+VNT00523,2024-08-13,CLI0023,Hub USB-C,Connectique,Hauts-de-France,B2B Direct,12,49.99,5,569.89
+VNT00524,2024-12-23,CLI0042,Casque audio,Audio,Auvergne-Rhône-Alpes,En ligne,13,129.99,15,1436.39
+VNT00525,2024-05-09,CLI0091,Laptop Pro,Informatique,Occitanie,Revendeur,13,1299.99,0,16899.87
+VNT00526,2024-08-22,CLI0052,Webcam HD,Vidéo,Île-de-France,Revendeur,4,79.99,20,255.97
+VNT00527,2024-11-24,CLI0094,Laptop Pro,Informatique,Île-de-France,En ligne,12,1299.99,10,14039.89
+VNT00528,2024-04-01,CLI0119,Laptop Pro,Informatique,Occitanie,B2B Direct,13,1299.99,20,13519.9
+VNT00529,2024-10-11,CLI0066,Souris sans fil,Périphériques,Bretagne,Revendeur,9,39.99,0,359.91
+VNT00530,2024-11-05,CLI0067,Hub USB-C,Connectique,Bretagne,B2B Direct,9,49.99,15,382.42
+VNT00531,2024-02-19,CLI0020,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,Revendeur,11,79.99,15,747.91
+VNT00532,2024-04-22,CLI0181,Disque SSD 1TB,Stockage,Grand Est,B2B Direct,3,99.99,5,284.97
+VNT00533,2024-08-13,CLI0171,Laptop Pro,Informatique,Grand Est,Revendeur,15,1299.99,10,17549.86
+VNT00534,2024-04-09,CLI0023,Disque SSD 1TB,Stockage,Hauts-de-France,En ligne,5,99.99,20,399.96
+VNT00535,2024-03-01,CLI0175,Laptop Pro,Informatique,Grand Est,En ligne,5,1299.99,5,6174.95
+VNT00536,2024-08-04,CLI0153,Tablette graphique,Création,Occitanie,Magasin,6,249.99,0,1499.94
+VNT00537,2024-11-27,CLI0154,Hub USB-C,Connectique,Occitanie,B2B Direct,15,49.99,15,637.37
+VNT00538,2024-04-30,CLI0070,Écran 4K,Affichage,Occitanie,Revendeur,8,449.99,0,3599.92
+VNT00539,2024-05-26,CLI0191,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,Revendeur,5,49.99,0,249.95
+VNT00540,2024-10-13,CLI0193,Casque audio,Audio,Provence-PACA,Revendeur,13,129.99,15,1436.39
+VNT00541,2024-12-05,CLI0046,Souris sans fil,Périphériques,Occitanie,Magasin,11,39.99,5,417.9
+VNT00542,2024-11-26,CLI0179,Casque audio,Audio,Grand Est,Revendeur,8,129.99,20,831.94
+VNT00543,2024-10-20,CLI0042,Clavier mécanique,Périphériques,Occitanie,Revendeur,5,89.99,15,382.46
+VNT00544,2024-11-10,CLI0193,Souris sans fil,Périphériques,Île-de-France,B2B Direct,15,39.99,20,479.88
+VNT00545,2024-12-10,CLI0019,Imprimante laser,Impression,Occitanie,En ligne,9,349.99,0,3149.91
+VNT00546,2024-04-30,CLI0172,Laptop Pro,Informatique,Île-de-France,En ligne,3,1299.99,0,3899.97
+VNT00547,2024-09-08,CLI0067,Laptop Pro,Informatique,Île-de-France,B2B Direct,1,1299.99,10,1169.99
+VNT00548,2024-12-23,CLI0108,Imprimante laser,Impression,Grand Est,En ligne,9,349.99,5,2992.41
+VNT00549,2024-03-02,CLI0065,Casque audio,Audio,Bretagne,Revendeur,5,129.99,10,584.96
+VNT00550,2024-04-23,CLI0152,Écran 4K,Affichage,Hauts-de-France,Revendeur,5,449.99,10,2024.95
+VNT00551,2024-04-09,CLI0067,Imprimante laser,Impression,Île-de-France,B2B Direct,11,349.99,10,3464.9
+VNT00552,2024-07-02,CLI0050,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,5,89.99,10,404.95
+VNT00553,2024-07-28,CLI0021,Imprimante laser,Impression,Provence-PACA,B2B Direct,13,349.99,10,4094.88
+VNT00554,2024-06-05,CLI0138,Tablette graphique,Création,Hauts-de-France,B2B Direct,13,249.99,15,2762.39
+VNT00555,2024-11-03,CLI0076,Clavier mécanique,Périphériques,Île-de-France,Revendeur,13,89.99,15,994.39
+VNT00556,2024-03-24,CLI0140,Écran 4K,Affichage,Hauts-de-France,En ligne,6,449.99,5,2564.94
+VNT00557,2024-11-05,CLI0032,Imprimante laser,Impression,Grand Est,B2B Direct,4,349.99,10,1259.96
+VNT00558,2024-03-03,CLI0088,Disque SSD 1TB,Stockage,Île-de-France,B2B Direct,3,99.99,20,239.98
+VNT00559,2024-10-06,CLI0028,Disque SSD 1TB,Stockage,Hauts-de-France,Revendeur,6,99.99,20,479.95
+VNT00560,2024-02-09,CLI0072,Souris sans fil,Périphériques,Normandie,Magasin,6,39.99,10,215.95
+VNT00561,2024-02-08,CLI0015,Casque audio,Audio,Provence-PACA,Magasin,2,129.99,10,233.98
+VNT00562,2024-12-21,CLI0186,Hub USB-C,Connectique,Bretagne,Revendeur,9,49.99,0,449.91
+VNT00563,2024-05-08,CLI0013,Souris sans fil,Périphériques,Île-de-France,En ligne,2,39.99,10,71.98
+VNT00564,2024-12-09,CLI0084,Casque audio,Audio,Hauts-de-France,Magasin,2,129.99,5,246.98
+VNT00565,2024-08-08,CLI0155,Clavier mécanique,Périphériques,Normandie,B2B Direct,4,89.99,0,359.96
+VNT00566,2024-06-30,CLI0099,Webcam HD,Vidéo,Provence-PACA,Revendeur,7,79.99,5,531.93
+VNT00567,2024-05-21,CLI0101,Clavier mécanique,Périphériques,Provence-PACA,Magasin,14,89.99,5,1196.87
+VNT00568,2024-10-16,CLI0118,Hub USB-C,Connectique,Provence-PACA,B2B Direct,5,49.99,15,212.46
+VNT00569,2024-02-05,CLI0068,Laptop Pro,Informatique,Île-de-France,Revendeur,8,1299.99,5,9879.92
+VNT00570,2024-12-28,CLI0128,Imprimante laser,Impression,Occitanie,En ligne,9,349.99,15,2677.42
+VNT00571,2024-10-18,CLI0039,Imprimante laser,Impression,Normandie,Magasin,8,349.99,5,2659.92
+VNT00572,2024-10-24,CLI0193,Webcam HD,Vidéo,Provence-PACA,En ligne,7,79.99,5,531.93
+VNT00573,2024-07-21,CLI0021,Hub USB-C,Connectique,Hauts-de-France,Revendeur,7,49.99,0,349.93
+VNT00574,2024-01-21,CLI0100,Clavier mécanique,Périphériques,Provence-PACA,Revendeur,5,89.99,20,359.96
+VNT00575,2024-03-05,CLI0035,Disque SSD 1TB,Stockage,Grand Est,Magasin,2,99.99,15,169.98
+VNT00576,2024-03-24,CLI0187,Écran 4K,Affichage,Bretagne,Magasin,3,449.99,5,1282.47
+VNT00577,2024-12-10,CLI0028,Hub USB-C,Connectique,Grand Est,En ligne,3,49.99,0,149.97
+VNT00578,2024-02-20,CLI0167,Souris sans fil,Périphériques,Bretagne,B2B Direct,12,39.99,0,479.88
+VNT00579,2024-04-25,CLI0138,Clavier mécanique,Périphériques,Provence-PACA,B2B Direct,7,89.99,0,629.93
+VNT00580,2024-12-01,CLI0117,Hub USB-C,Connectique,Occitanie,Magasin,3,49.99,0,149.97
+VNT00581,2024-11-10,CLI0189,Hub USB-C,Connectique,Occitanie,Magasin,4,49.99,20,159.97
+VNT00582,2024-12-08,CLI0062,Imprimante laser,Impression,Occitanie,En ligne,2,349.99,0,699.98
+VNT00583,2024-10-14,CLI0036,Hub USB-C,Connectique,Occitanie,B2B Direct,4,49.99,5,189.96
+VNT00584,2024-07-26,CLI0010,Casque audio,Audio,Occitanie,En ligne,12,129.99,5,1481.89
+VNT00585,2024-04-25,CLI0192,Disque SSD 1TB,Stockage,Bretagne,Revendeur,9,99.99,10,809.92
+VNT00586,2024-08-01,CLI0199,Casque audio,Audio,Auvergne-Rhône-Alpes,En ligne,3,129.99,5,370.47
+VNT00587,2024-12-26,CLI0080,Souris sans fil,Périphériques,Île-de-France,Revendeur,7,39.99,20,223.94
+VNT00588,2024-03-01,CLI0126,Clavier mécanique,Périphériques,Bretagne,Magasin,3,89.99,20,215.98
+VNT00589,2024-07-05,CLI0067,Hub USB-C,Connectique,Occitanie,En ligne,1,49.99,5,47.49
+VNT00590,2024-04-28,CLI0127,Souris sans fil,Périphériques,Normandie,En ligne,7,39.99,15,237.94
+VNT00591,2024-07-29,CLI0083,Laptop Pro,Informatique,Hauts-de-France,En ligne,4,1299.99,5,4939.96
+VNT00592,2024-12-29,CLI0054,Disque SSD 1TB,Stockage,Hauts-de-France,En ligne,15,99.99,10,1349.87
+VNT00593,2024-12-03,CLI0052,Tablette graphique,Création,Auvergne-Rhône-Alpes,B2B Direct,8,249.99,15,1699.93
+VNT00594,2024-11-27,CLI0129,Clavier mécanique,Périphériques,Occitanie,B2B Direct,15,89.99,20,1079.88
+VNT00595,2024-11-06,CLI0136,Écran 4K,Affichage,Occitanie,En ligne,4,449.99,15,1529.97
+VNT00596,2024-04-05,CLI0101,Webcam HD,Vidéo,Provence-PACA,Revendeur,12,79.99,5,911.89
+VNT00597,2024-05-20,CLI0095,Laptop Pro,Informatique,Île-de-France,Magasin,9,1299.99,10,10529.92
+VNT00598,2024-11-26,CLI0072,Casque audio,Audio,Bretagne,Revendeur,15,129.99,10,1754.87
+VNT00599,2024-06-14,CLI0186,Casque audio,Audio,Île-de-France,B2B Direct,2,129.99,10,233.98
+VNT00600,2024-09-13,CLI0057,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,Magasin,10,89.99,15,764.91
+VNT00601,2024-04-12,CLI0134,Hub USB-C,Connectique,Hauts-de-France,En ligne,7,49.99,0,349.93
+VNT00602,2024-09-12,CLI0052,Webcam HD,Vidéo,Bretagne,Revendeur,3,79.99,15,203.97
+VNT00603,2024-01-27,CLI0072,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Magasin,11,349.99,5,3657.4
+VNT00604,2024-12-27,CLI0193,Laptop Pro,Informatique,Normandie,B2B Direct,2,1299.99,15,2209.98
+VNT00605,2024-09-15,CLI0171,Disque SSD 1TB,Stockage,Provence-PACA,Revendeur,8,99.99,15,679.93
+VNT00606,2024-03-31,CLI0058,Casque audio,Audio,Île-de-France,Magasin,10,129.99,10,1169.91
+VNT00607,2024-06-25,CLI0160,Clavier mécanique,Périphériques,Île-de-France,Revendeur,8,89.99,0,719.92
+VNT00608,2024-12-27,CLI0088,Tablette graphique,Création,Île-de-France,Revendeur,10,249.99,15,2124.91
+VNT00609,2024-04-27,CLI0178,Écran 4K,Affichage,Hauts-de-France,Revendeur,11,449.99,15,4207.41
+VNT00610,2024-06-02,CLI0145,Écran 4K,Affichage,Occitanie,Magasin,5,449.99,5,2137.45
+VNT00611,2024-04-12,CLI0129,Laptop Pro,Informatique,Occitanie,B2B Direct,13,1299.99,15,14364.89
+VNT00612,2024-03-18,CLI0096,Tablette graphique,Création,Grand Est,Magasin,2,249.99,15,424.98
+VNT00613,2024-06-03,CLI0187,Laptop Pro,Informatique,Bretagne,B2B Direct,11,1299.99,0,14299.89
+VNT00614,2024-09-25,CLI0126,Hub USB-C,Connectique,Occitanie,Magasin,11,49.99,10,494.9
+VNT00615,2024-04-17,CLI0156,Webcam HD,Vidéo,Normandie,B2B Direct,10,79.99,0,799.9
+VNT00616,2024-04-11,CLI0005,Écran 4K,Affichage,Normandie,Revendeur,3,449.99,10,1214.97
+VNT00617,2024-11-04,CLI0019,Clavier mécanique,Périphériques,Bretagne,En ligne,3,89.99,20,215.98
+VNT00618,2024-12-06,CLI0151,Webcam HD,Vidéo,Bretagne,Revendeur,12,79.99,20,767.9
+VNT00619,2024-01-25,CLI0022,Écran 4K,Affichage,Provence-PACA,En ligne,3,449.99,0,1349.97
+VNT00620,2024-02-25,CLI0180,Hub USB-C,Connectique,Grand Est,En ligne,6,49.99,0,299.94
+VNT00621,2024-11-11,CLI0096,Écran 4K,Affichage,Normandie,En ligne,11,449.99,20,3959.91
+VNT00622,2024-01-24,CLI0095,Laptop Pro,Informatique,Occitanie,B2B Direct,14,1299.99,15,15469.88
+VNT00623,2024-01-07,CLI0106,Hub USB-C,Connectique,Grand Est,B2B Direct,11,49.99,20,439.91
+VNT00624,2024-09-19,CLI0143,Casque audio,Audio,Hauts-de-France,Magasin,10,129.99,10,1169.91
+VNT00625,2024-12-04,CLI0170,Imprimante laser,Impression,Auvergne-Rhône-Alpes,B2B Direct,5,349.99,15,1487.46
+VNT00626,2024-10-23,CLI0184,Webcam HD,Vidéo,Grand Est,Revendeur,10,79.99,5,759.9
+VNT00627,2024-04-20,CLI0049,Écran 4K,Affichage,Occitanie,B2B Direct,5,449.99,15,1912.46
+VNT00628,2024-05-29,CLI0142,Laptop Pro,Informatique,Normandie,En ligne,13,1299.99,15,14364.89
+VNT00629,2024-12-28,CLI0101,Webcam HD,Vidéo,Bretagne,Magasin,13,79.99,0,1039.87
+VNT00630,2024-02-04,CLI0013,Disque SSD 1TB,Stockage,Normandie,Magasin,15,99.99,10,1349.87
+VNT00631,2024-09-04,CLI0145,Tablette graphique,Création,Provence-PACA,En ligne,6,249.99,15,1274.95
+VNT00632,2024-10-13,CLI0163,Souris sans fil,Périphériques,Bretagne,Revendeur,6,39.99,0,239.94
+VNT00633,2024-01-10,CLI0120,Laptop Pro,Informatique,Normandie,B2B Direct,9,1299.99,20,9359.93
+VNT00634,2024-05-03,CLI0165,Clavier mécanique,Périphériques,Provence-PACA,Magasin,8,89.99,5,683.92
+VNT00635,2024-01-16,CLI0077,Imprimante laser,Impression,Bretagne,Revendeur,2,349.99,15,594.98
+VNT00636,2024-10-27,CLI0140,Souris sans fil,Périphériques,Bretagne,Revendeur,7,39.99,10,251.94
+VNT00637,2024-10-03,CLI0166,Clavier mécanique,Périphériques,Île-de-France,Magasin,8,89.99,5,683.92
+VNT00638,2024-08-15,CLI0069,Imprimante laser,Impression,Bretagne,B2B Direct,2,349.99,5,664.98
+VNT00639,2024-06-04,CLI0200,Souris sans fil,Périphériques,Hauts-de-France,En ligne,9,39.99,0,359.91
+VNT00640,2024-05-01,CLI0145,Clavier mécanique,Périphériques,Normandie,Magasin,11,89.99,15,841.41
+VNT00641,2024-03-20,CLI0161,Casque audio,Audio,Île-de-France,Revendeur,4,129.99,20,415.97
+VNT00642,2024-02-22,CLI0130,Souris sans fil,Périphériques,Provence-PACA,Magasin,15,39.99,20,479.88
+VNT00643,2024-12-11,CLI0114,Laptop Pro,Informatique,Bretagne,En ligne,14,1299.99,15,15469.88
+VNT00644,2024-10-25,CLI0077,Souris sans fil,Périphériques,Île-de-France,Magasin,11,39.99,15,373.91
+VNT00645,2024-06-24,CLI0169,Tablette graphique,Création,Grand Est,Revendeur,6,249.99,5,1424.94
+VNT00646,2024-03-23,CLI0184,Casque audio,Audio,Auvergne-Rhône-Alpes,Magasin,10,129.99,20,1039.92
+VNT00647,2024-09-18,CLI0064,Disque SSD 1TB,Stockage,Occitanie,Magasin,8,99.99,15,679.93
+VNT00648,2024-09-13,CLI0044,Casque audio,Audio,Hauts-de-France,B2B Direct,1,129.99,0,129.99
+VNT00649,2024-08-27,CLI0038,Casque audio,Audio,Normandie,Revendeur,15,129.99,20,1559.88
+VNT00650,2024-09-08,CLI0110,Disque SSD 1TB,Stockage,Hauts-de-France,Magasin,11,99.99,15,934.91
+VNT00651,2024-01-11,CLI0200,Imprimante laser,Impression,Hauts-de-France,Magasin,8,349.99,10,2519.93
+VNT00652,2024-07-01,CLI0136,Webcam HD,Vidéo,Grand Est,Magasin,4,79.99,10,287.96
+VNT00653,2024-12-26,CLI0056,Webcam HD,Vidéo,Provence-PACA,Magasin,3,79.99,15,203.97
+VNT00654,2024-01-27,CLI0098,Écran 4K,Affichage,Île-de-France,Revendeur,4,449.99,15,1529.97
+VNT00655,2024-10-28,CLI0005,Hub USB-C,Connectique,Île-de-France,Magasin,2,49.99,15,84.98
+VNT00656,2024-09-14,CLI0052,Casque audio,Audio,Provence-PACA,Magasin,6,129.99,0,779.94
+VNT00657,2024-08-14,CLI0105,Hub USB-C,Connectique,Hauts-de-France,Revendeur,3,49.99,5,142.47
+VNT00658,2024-04-14,CLI0129,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,B2B Direct,12,1299.99,20,12479.9
+VNT00659,2024-10-06,CLI0182,Imprimante laser,Impression,Île-de-France,Magasin,6,349.99,15,1784.95
+VNT00660,2024-10-07,CLI0056,Laptop Pro,Informatique,Hauts-de-France,Revendeur,13,1299.99,0,16899.87
+VNT00661,2024-05-31,CLI0038,Webcam HD,Vidéo,Provence-PACA,En ligne,6,79.99,20,383.95
+VNT00662,2024-05-20,CLI0015,Imprimante laser,Impression,Auvergne-Rhône-Alpes,B2B Direct,10,349.99,5,3324.9
+VNT00663,2024-11-17,CLI0079,Imprimante laser,Impression,Bretagne,B2B Direct,14,349.99,10,4409.87
+VNT00664,2024-05-05,CLI0196,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,3,39.99,15,101.97
+VNT00665,2024-05-11,CLI0061,Casque audio,Audio,Île-de-France,Magasin,6,129.99,5,740.94
+VNT00666,2024-01-27,CLI0100,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,En ligne,13,99.99,5,1234.88
+VNT00667,2024-04-27,CLI0141,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,8,39.99,15,271.93
+VNT00668,2024-07-23,CLI0163,Écran 4K,Affichage,Hauts-de-France,B2B Direct,5,449.99,15,1912.46
+VNT00669,2024-06-09,CLI0163,Tablette graphique,Création,Provence-PACA,Magasin,5,249.99,0,1249.95
+VNT00670,2024-11-13,CLI0163,Casque audio,Audio,Bretagne,Revendeur,13,129.99,20,1351.9
+VNT00671,2024-05-05,CLI0157,Tablette graphique,Création,Hauts-de-France,B2B Direct,15,249.99,20,2999.88
+VNT00672,2024-06-30,CLI0131,Disque SSD 1TB,Stockage,Normandie,B2B Direct,10,99.99,0,999.9
+VNT00673,2024-09-18,CLI0022,Souris sans fil,Périphériques,Île-de-France,Revendeur,1,39.99,0,39.99
+VNT00674,2024-01-28,CLI0158,Hub USB-C,Connectique,Provence-PACA,En ligne,14,49.99,5,664.87
+VNT00675,2024-07-27,CLI0016,Clavier mécanique,Périphériques,Occitanie,En ligne,12,89.99,0,1079.88
+VNT00676,2024-07-24,CLI0078,Clavier mécanique,Périphériques,Bretagne,B2B Direct,10,89.99,0,899.9
+VNT00677,2024-01-10,CLI0079,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Revendeur,15,349.99,15,4462.37
+VNT00678,2024-07-12,CLI0097,Casque audio,Audio,Bretagne,B2B Direct,3,129.99,15,331.47
+VNT00679,2024-06-20,CLI0131,Imprimante laser,Impression,Occitanie,Revendeur,7,349.99,10,2204.94
+VNT00680,2024-12-15,CLI0080,Imprimante laser,Impression,Hauts-de-France,Revendeur,12,349.99,5,3989.89
+VNT00681,2024-07-01,CLI0107,Écran 4K,Affichage,Provence-PACA,Magasin,6,449.99,10,2429.95
+VNT00682,2024-05-11,CLI0053,Casque audio,Audio,Grand Est,B2B Direct,13,129.99,5,1605.38
+VNT00683,2024-04-11,CLI0134,Clavier mécanique,Périphériques,Normandie,Revendeur,10,89.99,10,809.91
+VNT00684,2024-05-08,CLI0117,Souris sans fil,Périphériques,Grand Est,Revendeur,11,39.99,5,417.9
+VNT00685,2024-08-29,CLI0061,Tablette graphique,Création,Occitanie,En ligne,1,249.99,10,224.99
+VNT00686,2024-05-06,CLI0090,Webcam HD,Vidéo,Normandie,B2B Direct,10,79.99,20,639.92
+VNT00687,2024-03-14,CLI0167,Disque SSD 1TB,Stockage,Bretagne,Magasin,14,99.99,15,1189.88
+VNT00688,2024-04-17,CLI0051,Disque SSD 1TB,Stockage,Normandie,Magasin,14,99.99,15,1189.88
+VNT00689,2024-05-05,CLI0092,Casque audio,Audio,Grand Est,B2B Direct,14,129.99,5,1728.87
+VNT00690,2024-05-08,CLI0146,Casque audio,Audio,Bretagne,Revendeur,6,129.99,5,740.94
+VNT00691,2024-03-29,CLI0141,Imprimante laser,Impression,Normandie,B2B Direct,11,349.99,5,3657.4
+VNT00692,2024-02-27,CLI0108,Webcam HD,Vidéo,Provence-PACA,En ligne,2,79.99,10,143.98
+VNT00693,2024-11-05,CLI0068,Casque audio,Audio,Hauts-de-France,Magasin,11,129.99,20,1143.91
+VNT00694,2024-02-15,CLI0159,Hub USB-C,Connectique,Île-de-France,Revendeur,10,49.99,15,424.92
+VNT00695,2024-03-16,CLI0088,Hub USB-C,Connectique,Normandie,B2B Direct,15,49.99,20,599.88
+VNT00696,2024-07-28,CLI0140,Écran 4K,Affichage,Bretagne,En ligne,10,449.99,20,3599.92
+VNT00697,2024-04-20,CLI0175,Disque SSD 1TB,Stockage,Hauts-de-France,B2B Direct,2,99.99,10,179.98
+VNT00698,2024-04-27,CLI0035,Disque SSD 1TB,Stockage,Normandie,Revendeur,1,99.99,10,89.99
+VNT00699,2024-01-07,CLI0019,Écran 4K,Affichage,Bretagne,B2B Direct,12,449.99,15,4589.9
+VNT00700,2024-03-02,CLI0015,Clavier mécanique,Périphériques,Grand Est,B2B Direct,8,89.99,5,683.92
+VNT00701,2024-12-24,CLI0030,Disque SSD 1TB,Stockage,Provence-PACA,En ligne,14,99.99,0,1399.86
+VNT00702,2024-02-12,CLI0094,Disque SSD 1TB,Stockage,Grand Est,B2B Direct,1,99.99,0,99.99
+VNT00703,2024-02-23,CLI0017,Souris sans fil,Périphériques,Île-de-France,En ligne,11,39.99,20,351.91
+VNT00704,2024-08-27,CLI0110,Casque audio,Audio,Hauts-de-France,Magasin,10,129.99,0,1299.9
+VNT00705,2024-04-17,CLI0125,Casque audio,Audio,Occitanie,Magasin,15,129.99,0,1949.85
+VNT00706,2024-10-24,CLI0172,Clavier mécanique,Périphériques,Grand Est,B2B Direct,10,89.99,5,854.9
+VNT00707,2024-09-25,CLI0093,Imprimante laser,Impression,Provence-PACA,Revendeur,11,349.99,20,3079.91
+VNT00708,2024-05-09,CLI0109,Écran 4K,Affichage,Grand Est,Magasin,1,449.99,20,359.99
+VNT00709,2024-01-15,CLI0073,Tablette graphique,Création,Bretagne,Magasin,15,249.99,15,3187.37
+VNT00710,2024-07-10,CLI0176,Disque SSD 1TB,Stockage,Normandie,B2B Direct,4,99.99,20,319.97
+VNT00711,2024-04-15,CLI0199,Clavier mécanique,Périphériques,Île-de-France,En ligne,10,89.99,5,854.9
+VNT00712,2024-02-19,CLI0028,Webcam HD,Vidéo,Grand Est,Revendeur,12,79.99,0,959.88
+VNT00713,2024-11-26,CLI0137,Imprimante laser,Impression,Occitanie,En ligne,2,349.99,10,629.98
+VNT00714,2024-08-23,CLI0131,Webcam HD,Vidéo,Normandie,Revendeur,6,79.99,0,479.94
+VNT00715,2024-08-29,CLI0110,Écran 4K,Affichage,Île-de-France,Magasin,1,449.99,0,449.99
+VNT00716,2024-05-12,CLI0169,Casque audio,Audio,Bretagne,En ligne,2,129.99,20,207.98
+VNT00717,2024-11-01,CLI0103,Imprimante laser,Impression,Grand Est,Magasin,13,349.99,5,4322.38
+VNT00718,2024-07-08,CLI0084,Hub USB-C,Connectique,Normandie,Magasin,9,49.99,15,382.42
+VNT00719,2024-07-16,CLI0062,Webcam HD,Vidéo,Hauts-de-France,Magasin,7,79.99,0,559.93
+VNT00720,2024-08-29,CLI0177,Clavier mécanique,Périphériques,Bretagne,B2B Direct,14,89.99,10,1133.87
+VNT00721,2024-07-09,CLI0149,Casque audio,Audio,Île-de-France,Magasin,3,129.99,0,389.97
+VNT00722,2024-02-14,CLI0159,Casque audio,Audio,Auvergne-Rhône-Alpes,Magasin,9,129.99,5,1111.41
+VNT00723,2024-11-25,CLI0124,Webcam HD,Vidéo,Hauts-de-France,En ligne,10,79.99,20,639.92
+VNT00724,2024-11-06,CLI0182,Imprimante laser,Impression,Bretagne,En ligne,2,349.99,0,699.98
+VNT00725,2024-08-14,CLI0173,Écran 4K,Affichage,Normandie,En ligne,10,449.99,5,4274.9
+VNT00726,2024-09-07,CLI0148,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,Revendeur,7,1299.99,15,7734.94
+VNT00727,2024-05-13,CLI0114,Écran 4K,Affichage,Île-de-France,B2B Direct,14,449.99,10,5669.87
+VNT00728,2024-06-26,CLI0160,Casque audio,Audio,Occitanie,B2B Direct,2,129.99,20,207.98
+VNT00729,2024-09-11,CLI0164,Laptop Pro,Informatique,Occitanie,En ligne,14,1299.99,20,14559.89
+VNT00730,2024-06-06,CLI0003,Tablette graphique,Création,Normandie,En ligne,10,249.99,15,2124.91
+VNT00731,2024-03-16,CLI0042,Imprimante laser,Impression,Normandie,B2B Direct,8,349.99,5,2659.92
+VNT00732,2024-01-31,CLI0147,Écran 4K,Affichage,Provence-PACA,Revendeur,5,449.99,0,2249.95
+VNT00733,2024-04-24,CLI0067,Casque audio,Audio,Occitanie,Revendeur,11,129.99,5,1358.4
+VNT00734,2024-05-30,CLI0015,Disque SSD 1TB,Stockage,Grand Est,Revendeur,14,99.99,10,1259.87
+VNT00735,2024-08-22,CLI0168,Écran 4K,Affichage,Normandie,En ligne,9,449.99,10,3644.92
+VNT00736,2024-01-31,CLI0127,Disque SSD 1TB,Stockage,Île-de-France,Magasin,8,99.99,10,719.93
+VNT00737,2024-02-15,CLI0197,Souris sans fil,Périphériques,Occitanie,En ligne,7,39.99,0,279.93
+VNT00738,2024-10-31,CLI0040,Webcam HD,Vidéo,Occitanie,En ligne,5,79.99,5,379.95
+VNT00739,2024-07-24,CLI0161,Tablette graphique,Création,Île-de-France,Magasin,12,249.99,5,2849.89
+VNT00740,2024-02-09,CLI0062,Casque audio,Audio,Provence-PACA,B2B Direct,1,129.99,5,123.49
+VNT00741,2024-09-02,CLI0116,Imprimante laser,Impression,Provence-PACA,Revendeur,5,349.99,5,1662.45
+VNT00742,2024-04-23,CLI0180,Souris sans fil,Périphériques,Occitanie,Magasin,14,39.99,10,503.87
+VNT00743,2024-11-29,CLI0014,Hub USB-C,Connectique,Occitanie,B2B Direct,9,49.99,10,404.92
+VNT00744,2024-09-16,CLI0104,Webcam HD,Vidéo,Occitanie,En ligne,6,79.99,15,407.95
+VNT00745,2024-06-16,CLI0181,Imprimante laser,Impression,Normandie,En ligne,13,349.99,10,4094.88
+VNT00746,2024-06-16,CLI0199,Écran 4K,Affichage,Hauts-de-France,Magasin,6,449.99,10,2429.95
+VNT00747,2024-10-24,CLI0186,Casque audio,Audio,Grand Est,Revendeur,2,129.99,5,246.98
+VNT00748,2024-08-23,CLI0136,Souris sans fil,Périphériques,Occitanie,Revendeur,7,39.99,20,223.94
+VNT00749,2024-01-09,CLI0127,Tablette graphique,Création,Bretagne,En ligne,2,249.99,10,449.98
+VNT00750,2024-02-09,CLI0016,Hub USB-C,Connectique,Occitanie,Revendeur,3,49.99,15,127.47
+VNT00751,2024-12-03,CLI0129,Écran 4K,Affichage,Hauts-de-France,Revendeur,3,449.99,0,1349.97
+VNT00752,2024-08-24,CLI0051,Souris sans fil,Périphériques,Bretagne,B2B Direct,4,39.99,15,135.97
+VNT00753,2024-09-01,CLI0098,Hub USB-C,Connectique,Occitanie,En ligne,1,49.99,10,44.99
+VNT00754,2024-06-13,CLI0077,Laptop Pro,Informatique,Île-de-France,B2B Direct,2,1299.99,15,2209.98
+VNT00755,2024-05-18,CLI0139,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,3,39.99,10,107.97
+VNT00756,2024-07-06,CLI0184,Écran 4K,Affichage,Grand Est,Magasin,11,449.99,5,4702.4
+VNT00757,2024-12-12,CLI0103,Casque audio,Audio,Occitanie,B2B Direct,14,129.99,0,1819.86
+VNT00758,2024-03-30,CLI0038,Souris sans fil,Périphériques,Normandie,Revendeur,15,39.99,20,479.88
+VNT00759,2024-10-23,CLI0068,Tablette graphique,Création,Grand Est,B2B Direct,9,249.99,5,2137.41
+VNT00760,2024-12-24,CLI0031,Laptop Pro,Informatique,Grand Est,Magasin,1,1299.99,20,1039.99
+VNT00761,2024-02-01,CLI0034,Webcam HD,Vidéo,Grand Est,En ligne,3,79.99,0,239.97
+VNT00762,2024-11-12,CLI0098,Disque SSD 1TB,Stockage,Normandie,En ligne,10,99.99,10,899.91
+VNT00763,2024-11-28,CLI0187,Imprimante laser,Impression,Grand Est,Revendeur,5,349.99,10,1574.96
+VNT00764,2024-09-15,CLI0003,Laptop Pro,Informatique,Grand Est,Magasin,12,1299.99,15,13259.9
+VNT00765,2024-07-05,CLI0163,Disque SSD 1TB,Stockage,Normandie,B2B Direct,1,99.99,20,79.99
+VNT00766,2024-04-19,CLI0100,Disque SSD 1TB,Stockage,Île-de-France,Magasin,6,99.99,0,599.94
+VNT00767,2024-12-05,CLI0151,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,12,89.99,0,1079.88
+VNT00768,2024-04-19,CLI0008,Clavier mécanique,Périphériques,Île-de-France,B2B Direct,10,89.99,5,854.9
+VNT00769,2024-08-15,CLI0133,Imprimante laser,Impression,Provence-PACA,En ligne,5,349.99,5,1662.45
+VNT00770,2024-03-29,CLI0143,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,Revendeur,9,89.99,5,769.41
+VNT00771,2024-07-28,CLI0122,Casque audio,Audio,Auvergne-Rhône-Alpes,B2B Direct,6,129.99,20,623.95
+VNT00772,2024-01-23,CLI0108,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Revendeur,9,99.99,0,899.91
+VNT00773,2024-04-24,CLI0141,Laptop Pro,Informatique,Hauts-de-France,Revendeur,11,1299.99,0,14299.89
+VNT00774,2024-11-19,CLI0010,Souris sans fil,Périphériques,Bretagne,En ligne,4,39.99,0,159.96
+VNT00775,2024-03-18,CLI0082,Clavier mécanique,Périphériques,Normandie,Revendeur,4,89.99,10,323.96
+VNT00776,2024-08-18,CLI0098,Tablette graphique,Création,Auvergne-Rhône-Alpes,B2B Direct,13,249.99,10,2924.88
+VNT00777,2024-08-18,CLI0068,Laptop Pro,Informatique,Grand Est,B2B Direct,9,1299.99,20,9359.93
+VNT00778,2024-05-06,CLI0049,Webcam HD,Vidéo,Occitanie,En ligne,10,79.99,10,719.91
+VNT00779,2024-12-09,CLI0189,Disque SSD 1TB,Stockage,Bretagne,B2B Direct,3,99.99,15,254.97
+VNT00780,2024-06-19,CLI0078,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Magasin,13,39.99,20,415.9
+VNT00781,2024-05-03,CLI0056,Clavier mécanique,Périphériques,Hauts-de-France,Revendeur,10,89.99,10,809.91
+VNT00782,2024-01-07,CLI0055,Webcam HD,Vidéo,Hauts-de-France,Magasin,9,79.99,15,611.92
+VNT00783,2024-12-23,CLI0168,Clavier mécanique,Périphériques,Occitanie,Magasin,15,89.99,5,1282.36
+VNT00784,2024-07-22,CLI0148,Clavier mécanique,Périphériques,Bretagne,En ligne,7,89.99,0,629.93
+VNT00785,2024-05-03,CLI0049,Webcam HD,Vidéo,Occitanie,Magasin,3,79.99,0,239.97
+VNT00786,2024-03-20,CLI0002,Disque SSD 1TB,Stockage,Occitanie,B2B Direct,13,99.99,15,1104.89
+VNT00787,2024-03-05,CLI0042,Hub USB-C,Connectique,Bretagne,En ligne,14,49.99,10,629.87
+VNT00788,2024-04-08,CLI0045,Imprimante laser,Impression,Bretagne,En ligne,14,349.99,15,4164.88
+VNT00789,2024-06-01,CLI0113,Imprimante laser,Impression,Bretagne,Revendeur,2,349.99,0,699.98
+VNT00790,2024-10-19,CLI0072,Casque audio,Audio,Normandie,Revendeur,13,129.99,20,1351.9
+VNT00791,2024-09-28,CLI0164,Laptop Pro,Informatique,Occitanie,En ligne,5,1299.99,5,6174.95
+VNT00792,2024-02-05,CLI0111,Disque SSD 1TB,Stockage,Île-de-France,B2B Direct,7,99.99,10,629.94
+VNT00793,2024-06-13,CLI0010,Laptop Pro,Informatique,Normandie,Magasin,4,1299.99,5,4939.96
+VNT00794,2024-04-13,CLI0140,Tablette graphique,Création,Provence-PACA,En ligne,11,249.99,10,2474.9
+VNT00795,2024-10-03,CLI0102,Écran 4K,Affichage,Occitanie,Revendeur,10,449.99,10,4049.91
+VNT00796,2024-05-10,CLI0169,Laptop Pro,Informatique,Occitanie,Revendeur,14,1299.99,0,18199.86
+VNT00797,2024-05-03,CLI0195,Écran 4K,Affichage,Île-de-France,B2B Direct,15,449.99,15,5737.37
+VNT00798,2024-04-17,CLI0097,Écran 4K,Affichage,Île-de-France,Magasin,9,449.99,10,3644.92
+VNT00799,2024-07-27,CLI0137,Disque SSD 1TB,Stockage,Normandie,Revendeur,13,99.99,5,1234.88
+VNT00800,2024-12-03,CLI0052,Écran 4K,Affichage,Hauts-de-France,Revendeur,15,449.99,15,5737.37
+VNT00801,2024-12-22,CLI0110,Souris sans fil,Périphériques,Île-de-France,En ligne,1,39.99,20,31.99
+VNT00802,2024-09-28,CLI0002,Disque SSD 1TB,Stockage,Hauts-de-France,B2B Direct,11,99.99,15,934.91
+VNT00803,2024-03-02,CLI0074,Clavier mécanique,Périphériques,Bretagne,Magasin,12,89.99,5,1025.89
+VNT00804,2024-09-15,CLI0151,Casque audio,Audio,Île-de-France,B2B Direct,9,129.99,20,935.93
+VNT00805,2024-03-23,CLI0159,Imprimante laser,Impression,Occitanie,Magasin,1,349.99,20,279.99
+VNT00806,2024-12-28,CLI0078,Clavier mécanique,Périphériques,Île-de-France,Revendeur,2,89.99,20,143.98
+VNT00807,2024-04-17,CLI0017,Laptop Pro,Informatique,Provence-PACA,En ligne,9,1299.99,10,10529.92
+VNT00808,2024-12-05,CLI0085,Écran 4K,Affichage,Provence-PACA,En ligne,9,449.99,0,4049.91
+VNT00809,2024-12-18,CLI0200,Disque SSD 1TB,Stockage,Bretagne,Revendeur,3,99.99,15,254.97
+VNT00810,2024-02-07,CLI0122,Imprimante laser,Impression,Bretagne,B2B Direct,15,349.99,10,4724.87
+VNT00811,2024-01-11,CLI0053,Hub USB-C,Connectique,Provence-PACA,B2B Direct,9,49.99,20,359.93
+VNT00812,2024-03-12,CLI0117,Disque SSD 1TB,Stockage,Occitanie,Magasin,15,99.99,5,1424.86
+VNT00813,2024-02-28,CLI0086,Imprimante laser,Impression,Bretagne,Magasin,2,349.99,20,559.98
+VNT00814,2024-01-20,CLI0026,Webcam HD,Vidéo,Hauts-de-France,Revendeur,14,79.99,0,1119.86
+VNT00815,2024-11-16,CLI0199,Tablette graphique,Création,Hauts-de-France,En ligne,3,249.99,0,749.97
+VNT00816,2024-03-23,CLI0177,Tablette graphique,Création,Auvergne-Rhône-Alpes,Revendeur,10,249.99,10,2249.91
+VNT00817,2024-04-28,CLI0036,Clavier mécanique,Périphériques,Provence-PACA,Revendeur,9,89.99,15,688.42
+VNT00818,2024-11-02,CLI0167,Écran 4K,Affichage,Auvergne-Rhône-Alpes,En ligne,11,449.99,0,4949.89
+VNT00819,2024-09-18,CLI0184,Souris sans fil,Périphériques,Bretagne,Revendeur,5,39.99,10,179.96
+VNT00820,2024-04-13,CLI0150,Hub USB-C,Connectique,Provence-PACA,Magasin,13,49.99,10,584.88
+VNT00821,2024-03-15,CLI0091,Laptop Pro,Informatique,Normandie,Revendeur,10,1299.99,0,12999.9
+VNT00822,2024-05-26,CLI0182,Imprimante laser,Impression,Grand Est,Magasin,14,349.99,15,4164.88
+VNT00823,2024-03-10,CLI0197,Disque SSD 1TB,Stockage,Provence-PACA,Revendeur,14,99.99,20,1119.89
+VNT00824,2024-07-27,CLI0013,Hub USB-C,Connectique,Bretagne,B2B Direct,2,49.99,20,79.98
+VNT00825,2024-06-04,CLI0125,Tablette graphique,Création,Île-de-France,En ligne,4,249.99,15,849.97
+VNT00826,2024-07-03,CLI0082,Tablette graphique,Création,Normandie,Magasin,7,249.99,15,1487.44
+VNT00827,2024-09-20,CLI0028,Souris sans fil,Périphériques,Occitanie,Revendeur,15,39.99,0,599.85
+VNT00828,2024-03-06,CLI0002,Imprimante laser,Impression,Occitanie,B2B Direct,2,349.99,20,559.98
+VNT00829,2024-08-05,CLI0140,Hub USB-C,Connectique,Grand Est,Magasin,9,49.99,0,449.91
+VNT00830,2024-01-30,CLI0015,Tablette graphique,Création,Provence-PACA,Magasin,8,249.99,5,1899.92
+VNT00831,2024-10-19,CLI0093,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,En ligne,3,49.99,0,149.97
+VNT00832,2024-10-09,CLI0078,Laptop Pro,Informatique,Île-de-France,B2B Direct,14,1299.99,0,18199.86
+VNT00833,2024-08-31,CLI0115,Hub USB-C,Connectique,Provence-PACA,En ligne,1,49.99,5,47.49
+VNT00834,2024-09-23,CLI0015,Clavier mécanique,Périphériques,Bretagne,En ligne,12,89.99,5,1025.89
+VNT00835,2024-04-01,CLI0171,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,14,89.99,20,1007.89
+VNT00836,2024-02-02,CLI0110,Tablette graphique,Création,Occitanie,B2B Direct,7,249.99,20,1399.94
+VNT00837,2024-07-04,CLI0065,Casque audio,Audio,Grand Est,Magasin,4,129.99,15,441.97
+VNT00838,2024-12-13,CLI0015,Tablette graphique,Création,Hauts-de-France,Magasin,1,249.99,20,199.99
+VNT00839,2024-02-25,CLI0024,Clavier mécanique,Périphériques,Occitanie,Revendeur,15,89.99,20,1079.88
+VNT00840,2024-06-09,CLI0139,Écran 4K,Affichage,Auvergne-Rhône-Alpes,En ligne,11,449.99,0,4949.89
+VNT00841,2024-10-24,CLI0196,Écran 4K,Affichage,Normandie,En ligne,5,449.99,10,2024.95
+VNT00842,2024-09-02,CLI0117,Imprimante laser,Impression,Bretagne,En ligne,9,349.99,0,3149.91
+VNT00843,2024-05-29,CLI0051,Webcam HD,Vidéo,Grand Est,B2B Direct,12,79.99,5,911.89
+VNT00844,2024-06-14,CLI0065,Imprimante laser,Impression,Provence-PACA,Magasin,15,349.99,0,5249.85
+VNT00845,2024-02-20,CLI0134,Disque SSD 1TB,Stockage,Bretagne,B2B Direct,5,99.99,5,474.95
+VNT00846,2024-11-30,CLI0116,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,1,39.99,20,31.99
+VNT00847,2024-04-15,CLI0130,Clavier mécanique,Périphériques,Bretagne,Revendeur,14,89.99,0,1259.86
+VNT00848,2024-08-10,CLI0135,Laptop Pro,Informatique,Bretagne,Magasin,10,1299.99,5,12349.9
+VNT00849,2024-12-05,CLI0050,Disque SSD 1TB,Stockage,Grand Est,Magasin,6,99.99,20,479.95
+VNT00850,2024-08-03,CLI0134,Hub USB-C,Connectique,Bretagne,En ligne,1,49.99,5,47.49
+VNT00851,2024-03-29,CLI0194,Clavier mécanique,Périphériques,Provence-PACA,Magasin,1,89.99,0,89.99
+VNT00852,2024-10-16,CLI0130,Casque audio,Audio,Normandie,En ligne,14,129.99,10,1637.87
+VNT00853,2024-09-27,CLI0058,Clavier mécanique,Périphériques,Grand Est,Revendeur,12,89.99,5,1025.89
+VNT00854,2024-11-05,CLI0016,Écran 4K,Affichage,Île-de-France,Magasin,2,449.99,20,719.98
+VNT00855,2024-09-28,CLI0095,Webcam HD,Vidéo,Bretagne,Revendeur,11,79.99,5,835.9
+VNT00856,2024-08-26,CLI0160,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,10,89.99,0,899.9
+VNT00857,2024-04-25,CLI0036,Casque audio,Audio,Grand Est,B2B Direct,8,129.99,10,935.93
+VNT00858,2024-02-27,CLI0173,Souris sans fil,Périphériques,Occitanie,Magasin,9,39.99,0,359.91
+VNT00859,2024-06-02,CLI0058,Clavier mécanique,Périphériques,Normandie,En ligne,2,89.99,10,161.98
+VNT00860,2024-11-30,CLI0118,Souris sans fil,Périphériques,Bretagne,B2B Direct,1,39.99,20,31.99
+VNT00861,2024-11-11,CLI0009,Casque audio,Audio,Bretagne,Magasin,10,129.99,0,1299.9
+VNT00862,2024-07-14,CLI0140,Laptop Pro,Informatique,Hauts-de-France,B2B Direct,12,1299.99,0,15599.88
+VNT00863,2024-01-04,CLI0021,Casque audio,Audio,Grand Est,En ligne,9,129.99,10,1052.92
+VNT00864,2024-06-01,CLI0156,Disque SSD 1TB,Stockage,Normandie,Revendeur,14,99.99,10,1259.87
+VNT00865,2024-05-11,CLI0064,Webcam HD,Vidéo,Hauts-de-France,En ligne,1,79.99,15,67.99
+VNT00866,2024-02-13,CLI0086,Casque audio,Audio,Normandie,Revendeur,5,129.99,10,584.96
+VNT00867,2024-09-30,CLI0053,Laptop Pro,Informatique,Normandie,En ligne,9,1299.99,0,11699.91
+VNT00868,2024-10-15,CLI0132,Imprimante laser,Impression,Occitanie,En ligne,14,349.99,5,4654.87
+VNT00869,2024-06-08,CLI0068,Disque SSD 1TB,Stockage,Hauts-de-France,En ligne,1,99.99,20,79.99
+VNT00870,2024-11-15,CLI0085,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,Revendeur,15,1299.99,0,19499.85
+VNT00871,2024-03-11,CLI0029,Tablette graphique,Création,Île-de-France,En ligne,4,249.99,15,849.97
+VNT00872,2024-07-28,CLI0150,Disque SSD 1TB,Stockage,Provence-PACA,Magasin,15,99.99,15,1274.87
+VNT00873,2024-01-16,CLI0048,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Magasin,12,349.99,20,3359.9
+VNT00874,2024-07-06,CLI0032,Clavier mécanique,Périphériques,Occitanie,B2B Direct,14,89.99,20,1007.89
+VNT00875,2024-01-04,CLI0094,Souris sans fil,Périphériques,Hauts-de-France,En ligne,15,39.99,20,479.88
+VNT00876,2024-04-22,CLI0071,Webcam HD,Vidéo,Occitanie,B2B Direct,4,79.99,0,319.96
+VNT00877,2024-10-07,CLI0152,Casque audio,Audio,Bretagne,B2B Direct,12,129.99,15,1325.9
+VNT00878,2024-01-09,CLI0124,Clavier mécanique,Périphériques,Île-de-France,Revendeur,5,89.99,20,359.96
+VNT00879,2024-01-24,CLI0072,Clavier mécanique,Périphériques,Occitanie,Magasin,10,89.99,0,899.9
+VNT00880,2024-12-25,CLI0132,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,B2B Direct,5,79.99,5,379.95
+VNT00881,2024-08-05,CLI0153,Écran 4K,Affichage,Occitanie,Revendeur,10,449.99,20,3599.92
+VNT00882,2024-02-08,CLI0024,Tablette graphique,Création,Auvergne-Rhône-Alpes,En ligne,4,249.99,10,899.96
+VNT00883,2024-02-13,CLI0041,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,En ligne,6,89.99,0,539.94
+VNT00884,2024-09-12,CLI0026,Casque audio,Audio,Île-de-France,B2B Direct,2,129.99,0,259.98
+VNT00885,2024-12-29,CLI0007,Imprimante laser,Impression,Occitanie,En ligne,5,349.99,0,1749.95
+VNT00886,2024-10-29,CLI0092,Webcam HD,Vidéo,Île-de-France,Magasin,13,79.99,10,935.88
+VNT00887,2024-07-09,CLI0137,Hub USB-C,Connectique,Île-de-France,En ligne,3,49.99,0,149.97
+VNT00888,2024-03-16,CLI0155,Imprimante laser,Impression,Île-de-France,Revendeur,12,349.99,10,3779.89
+VNT00889,2024-08-03,CLI0107,Tablette graphique,Création,Hauts-de-France,B2B Direct,2,249.99,15,424.98
+VNT00890,2024-12-24,CLI0030,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Revendeur,4,99.99,15,339.97
+VNT00891,2024-02-27,CLI0177,Écran 4K,Affichage,Bretagne,En ligne,4,449.99,15,1529.97
+VNT00892,2024-02-27,CLI0100,Imprimante laser,Impression,Île-de-France,B2B Direct,14,349.99,10,4409.87
+VNT00893,2024-10-02,CLI0148,Disque SSD 1TB,Stockage,Provence-PACA,Revendeur,1,99.99,15,84.99
+VNT00894,2024-12-11,CLI0099,Écran 4K,Affichage,Provence-PACA,Magasin,14,449.99,5,5984.87
+VNT00895,2024-10-05,CLI0090,Souris sans fil,Périphériques,Île-de-France,Revendeur,14,39.99,15,475.88
+VNT00896,2024-05-04,CLI0152,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Revendeur,5,39.99,20,159.96
+VNT00897,2024-09-07,CLI0179,Hub USB-C,Connectique,Occitanie,Magasin,9,49.99,15,382.42
+VNT00898,2024-07-06,CLI0121,Écran 4K,Affichage,Bretagne,B2B Direct,5,449.99,10,2024.95
+VNT00899,2024-04-13,CLI0060,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,Magasin,2,49.99,0,99.98
+VNT00900,2024-06-08,CLI0073,Hub USB-C,Connectique,Provence-PACA,Revendeur,14,49.99,5,664.87
+VNT00901,2024-03-03,CLI0136,Imprimante laser,Impression,Provence-PACA,Revendeur,1,349.99,10,314.99
+VNT00902,2024-05-19,CLI0023,Écran 4K,Affichage,Normandie,Revendeur,2,449.99,10,809.98
+VNT00903,2024-02-10,CLI0015,Tablette graphique,Création,Occitanie,Magasin,2,249.99,15,424.98
+VNT00904,2024-05-14,CLI0128,Casque audio,Audio,Hauts-de-France,B2B Direct,8,129.99,15,883.93
+VNT00905,2024-09-11,CLI0032,Clavier mécanique,Périphériques,Provence-PACA,Revendeur,2,89.99,5,170.98
+VNT00906,2024-05-22,CLI0159,Clavier mécanique,Périphériques,Occitanie,Magasin,8,89.99,20,575.94
+VNT00907,2024-06-28,CLI0150,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,En ligne,14,79.99,10,1007.87
+VNT00908,2024-01-28,CLI0198,Hub USB-C,Connectique,Bretagne,Magasin,13,49.99,15,552.39
+VNT00909,2024-12-22,CLI0199,Imprimante laser,Impression,Auvergne-Rhône-Alpes,B2B Direct,6,349.99,0,2099.94
+VNT00910,2024-12-02,CLI0028,Webcam HD,Vidéo,Normandie,Revendeur,13,79.99,15,883.89
+VNT00911,2024-08-13,CLI0126,Tablette graphique,Création,Provence-PACA,Magasin,9,249.99,15,1912.42
+VNT00912,2024-05-07,CLI0077,Casque audio,Audio,Occitanie,B2B Direct,14,129.99,15,1546.88
+VNT00913,2024-03-17,CLI0194,Écran 4K,Affichage,Bretagne,B2B Direct,1,449.99,10,404.99
+VNT00914,2024-06-19,CLI0025,Clavier mécanique,Périphériques,Hauts-de-France,B2B Direct,1,89.99,10,80.99
+VNT00915,2024-08-28,CLI0179,Hub USB-C,Connectique,Occitanie,Revendeur,10,49.99,20,399.92
+VNT00916,2024-08-12,CLI0198,Disque SSD 1TB,Stockage,Grand Est,Revendeur,12,99.99,0,1199.88
+VNT00917,2024-02-28,CLI0130,Casque audio,Audio,Île-de-France,B2B Direct,14,129.99,20,1455.89
+VNT00918,2024-09-26,CLI0135,Souris sans fil,Périphériques,Provence-PACA,Magasin,11,39.99,20,351.91
+VNT00919,2024-12-07,CLI0151,Tablette graphique,Création,Bretagne,Magasin,15,249.99,10,3374.87
+VNT00920,2024-03-19,CLI0021,Hub USB-C,Connectique,Grand Est,Magasin,15,49.99,20,599.88
+VNT00921,2024-03-14,CLI0056,Webcam HD,Vidéo,Provence-PACA,Magasin,7,79.99,10,503.94
+VNT00922,2024-02-14,CLI0017,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Revendeur,7,349.99,10,2204.94
+VNT00923,2024-07-18,CLI0019,Tablette graphique,Création,Provence-PACA,Magasin,15,249.99,10,3374.87
+VNT00924,2024-08-06,CLI0025,Tablette graphique,Création,Bretagne,En ligne,14,249.99,15,2974.88
+VNT00925,2024-10-23,CLI0017,Tablette graphique,Création,Île-de-France,En ligne,2,249.99,15,424.98
+VNT00926,2024-11-08,CLI0100,Laptop Pro,Informatique,Grand Est,B2B Direct,5,1299.99,10,5849.95
+VNT00927,2024-08-26,CLI0058,Hub USB-C,Connectique,Occitanie,En ligne,9,49.99,10,404.92
+VNT00928,2024-07-09,CLI0135,Casque audio,Audio,Normandie,Revendeur,14,129.99,20,1455.89
+VNT00929,2024-08-21,CLI0011,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,5,89.99,10,404.95
+VNT00930,2024-09-08,CLI0159,Webcam HD,Vidéo,Occitanie,Revendeur,4,79.99,20,255.97
+VNT00931,2024-07-24,CLI0036,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,Revendeur,5,89.99,10,404.95
+VNT00932,2024-10-06,CLI0089,Casque audio,Audio,Provence-PACA,Magasin,4,129.99,15,441.97
+VNT00933,2024-12-22,CLI0195,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,Magasin,5,89.99,15,382.46
+VNT00934,2024-12-14,CLI0019,Souris sans fil,Périphériques,Hauts-de-France,Magasin,3,39.99,10,107.97
+VNT00935,2024-03-30,CLI0043,Souris sans fil,Périphériques,Hauts-de-France,Magasin,15,39.99,5,569.86
+VNT00936,2024-01-10,CLI0139,Webcam HD,Vidéo,Île-de-France,En ligne,6,79.99,15,407.95
+VNT00937,2024-04-07,CLI0112,Clavier mécanique,Périphériques,Île-de-France,En ligne,6,89.99,20,431.95
+VNT00938,2024-05-24,CLI0082,Souris sans fil,Périphériques,Normandie,En ligne,12,39.99,10,431.89
+VNT00939,2024-06-17,CLI0044,Webcam HD,Vidéo,Occitanie,B2B Direct,1,79.99,20,63.99
+VNT00940,2024-01-27,CLI0023,Casque audio,Audio,Île-de-France,En ligne,6,129.99,10,701.95
+VNT00941,2024-10-12,CLI0139,Souris sans fil,Périphériques,Bretagne,En ligne,1,39.99,15,33.99
+VNT00942,2024-12-04,CLI0035,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,En ligne,12,1299.99,15,13259.9
+VNT00943,2024-12-30,CLI0005,Hub USB-C,Connectique,Bretagne,Revendeur,8,49.99,20,319.94
+VNT00944,2024-04-02,CLI0105,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,12,89.99,20,863.9
+VNT00945,2024-12-17,CLI0147,Écran 4K,Affichage,Hauts-de-France,Magasin,4,449.99,15,1529.97
+VNT00946,2024-02-04,CLI0005,Laptop Pro,Informatique,Occitanie,B2B Direct,3,1299.99,20,3119.98
+VNT00947,2024-04-23,CLI0053,Disque SSD 1TB,Stockage,Grand Est,B2B Direct,2,99.99,15,169.98
+VNT00948,2024-08-10,CLI0199,Tablette graphique,Création,Grand Est,Magasin,5,249.99,5,1187.45
+VNT00949,2024-02-04,CLI0129,Webcam HD,Vidéo,Provence-PACA,B2B Direct,6,79.99,20,383.95
+VNT00950,2024-05-22,CLI0027,Webcam HD,Vidéo,Occitanie,En ligne,3,79.99,5,227.97
+VNT00951,2024-05-16,CLI0083,Imprimante laser,Impression,Occitanie,Revendeur,15,349.99,0,5249.85
+VNT00952,2024-10-18,CLI0193,Clavier mécanique,Périphériques,Normandie,B2B Direct,8,89.99,5,683.92
+VNT00953,2024-05-27,CLI0111,Casque audio,Audio,Auvergne-Rhône-Alpes,En ligne,6,129.99,20,623.95
+VNT00954,2024-02-07,CLI0065,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,En ligne,3,49.99,0,149.97
+VNT00955,2024-08-14,CLI0198,Souris sans fil,Périphériques,Occitanie,Magasin,3,39.99,5,113.97
+VNT00956,2024-08-16,CLI0029,Clavier mécanique,Périphériques,Normandie,Magasin,6,89.99,0,539.94
+VNT00957,2024-11-13,CLI0143,Laptop Pro,Informatique,Île-de-France,En ligne,12,1299.99,0,15599.88
+VNT00958,2024-08-06,CLI0020,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,B2B Direct,14,1299.99,20,14559.89
+VNT00959,2024-03-24,CLI0110,Clavier mécanique,Périphériques,Provence-PACA,B2B Direct,9,89.99,15,688.42
+VNT00960,2024-05-08,CLI0009,Souris sans fil,Périphériques,Normandie,Revendeur,12,39.99,5,455.89
+VNT00961,2024-01-07,CLI0177,Hub USB-C,Connectique,Hauts-de-France,Revendeur,11,49.99,0,549.89
+VNT00962,2024-09-30,CLI0046,Disque SSD 1TB,Stockage,Île-de-France,Magasin,8,99.99,5,759.92
+VNT00963,2024-08-13,CLI0182,Imprimante laser,Impression,Occitanie,Magasin,4,349.99,0,1399.96
+VNT00964,2024-03-22,CLI0150,Tablette graphique,Création,Auvergne-Rhône-Alpes,Magasin,12,249.99,15,2549.9
+VNT00965,2024-07-18,CLI0015,Webcam HD,Vidéo,Provence-PACA,B2B Direct,1,79.99,20,63.99
+VNT00966,2024-07-20,CLI0133,Souris sans fil,Périphériques,Provence-PACA,Magasin,15,39.99,15,509.87
+VNT00967,2024-10-20,CLI0126,Imprimante laser,Impression,Normandie,Revendeur,7,349.99,5,2327.43
+VNT00968,2024-05-29,CLI0087,Laptop Pro,Informatique,Provence-PACA,Revendeur,8,1299.99,20,8319.94
+VNT00969,2024-03-24,CLI0133,Hub USB-C,Connectique,Provence-PACA,Magasin,13,49.99,10,584.88
+VNT00970,2024-02-21,CLI0005,Hub USB-C,Connectique,Grand Est,Revendeur,1,49.99,5,47.49
+VNT00971,2024-08-20,CLI0091,Tablette graphique,Création,Normandie,B2B Direct,11,249.99,10,2474.9
+VNT00972,2024-09-14,CLI0019,Disque SSD 1TB,Stockage,Normandie,B2B Direct,15,99.99,10,1349.87
+VNT00973,2024-04-10,CLI0114,Souris sans fil,Périphériques,Grand Est,Revendeur,12,39.99,10,431.89
+VNT00974,2024-05-09,CLI0186,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,Revendeur,10,79.99,10,719.91
+VNT00975,2024-06-15,CLI0064,Hub USB-C,Connectique,Grand Est,En ligne,14,49.99,20,559.89
+VNT00976,2024-12-27,CLI0112,Souris sans fil,Périphériques,Bretagne,Revendeur,8,39.99,5,303.92
+VNT00977,2024-07-26,CLI0117,Tablette graphique,Création,Provence-PACA,Magasin,9,249.99,15,1912.42
+VNT00978,2024-10-03,CLI0115,Hub USB-C,Connectique,Hauts-de-France,En ligne,12,49.99,15,509.9
+VNT00979,2024-02-10,CLI0122,Disque SSD 1TB,Stockage,Provence-PACA,En ligne,12,99.99,0,1199.88
+VNT00980,2024-10-25,CLI0169,Clavier mécanique,Périphériques,Occitanie,Magasin,11,89.99,5,940.4
+VNT00981,2024-10-18,CLI0127,Laptop Pro,Informatique,Normandie,B2B Direct,6,1299.99,5,7409.94
+VNT00982,2024-02-11,CLI0119,Webcam HD,Vidéo,Hauts-de-France,Magasin,13,79.99,15,883.89
+VNT00983,2024-01-13,CLI0153,Disque SSD 1TB,Stockage,Occitanie,Revendeur,10,99.99,5,949.9
+VNT00984,2024-07-06,CLI0010,Tablette graphique,Création,Hauts-de-France,B2B Direct,9,249.99,5,2137.41
+VNT00985,2024-01-07,CLI0098,Tablette graphique,Création,Occitanie,En ligne,14,249.99,10,3149.87
+VNT00986,2024-07-28,CLI0063,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,Magasin,1,89.99,20,71.99
+VNT00987,2024-03-13,CLI0141,Webcam HD,Vidéo,Île-de-France,Magasin,7,79.99,0,559.93
+VNT00988,2024-10-23,CLI0144,Écran 4K,Affichage,Hauts-de-France,B2B Direct,9,449.99,10,3644.92
+VNT00989,2024-09-16,CLI0048,Tablette graphique,Création,Grand Est,En ligne,3,249.99,15,637.47
+VNT00990,2024-07-16,CLI0121,Casque audio,Audio,Grand Est,En ligne,4,129.99,0,519.96
+VNT00991,2024-02-28,CLI0166,Imprimante laser,Impression,Provence-PACA,Revendeur,9,349.99,0,3149.91
+VNT00992,2024-02-25,CLI0196,Casque audio,Audio,Provence-PACA,B2B Direct,8,129.99,0,1039.92
+VNT00993,2024-10-07,CLI0156,Écran 4K,Affichage,Normandie,En ligne,5,449.99,20,1799.96
+VNT00994,2024-07-19,CLI0061,Casque audio,Audio,Normandie,Revendeur,13,129.99,20,1351.9
+VNT00995,2024-04-26,CLI0015,Écran 4K,Affichage,Occitanie,En ligne,2,449.99,15,764.98
+VNT00996,2024-12-15,CLI0124,Souris sans fil,Périphériques,Occitanie,Magasin,2,39.99,5,75.98
+VNT00997,2024-09-14,CLI0156,Souris sans fil,Périphériques,Hauts-de-France,Magasin,8,39.99,0,319.92
+VNT00998,2024-10-02,CLI0025,Webcam HD,Vidéo,Île-de-France,Magasin,7,79.99,10,503.94
+VNT00999,2024-03-14,CLI0093,Laptop Pro,Informatique,Île-de-France,En ligne,13,1299.99,10,15209.88
+VNT01000,2024-02-26,CLI0199,Disque SSD 1TB,Stockage,Hauts-de-France,B2B Direct,13,99.99,0,1299.87
+VNT01001,2024-09-14,CLI0114,Tablette graphique,Création,Auvergne-Rhône-Alpes,Magasin,1,249.99,10,224.99
+VNT01002,2024-01-07,CLI0121,Laptop Pro,Informatique,Provence-PACA,En ligne,8,1299.99,10,9359.93
+VNT01003,2024-03-29,CLI0064,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,En ligne,15,79.99,10,1079.87
+VNT01004,2024-02-13,CLI0144,Tablette graphique,Création,Île-de-France,Revendeur,15,249.99,20,2999.88
+VNT01005,2024-09-02,CLI0127,Casque audio,Audio,Bretagne,En ligne,15,129.99,10,1754.87
+VNT01006,2024-12-28,CLI0076,Laptop Pro,Informatique,Normandie,En ligne,8,1299.99,5,9879.92
+VNT01007,2024-02-01,CLI0115,Casque audio,Audio,Normandie,Revendeur,10,129.99,0,1299.9
+VNT01008,2024-01-13,CLI0130,Imprimante laser,Impression,Provence-PACA,Magasin,6,349.99,5,1994.94
+VNT01009,2024-01-19,CLI0118,Écran 4K,Affichage,Île-de-France,Magasin,4,449.99,0,1799.96
+VNT01010,2024-02-21,CLI0197,Tablette graphique,Création,Bretagne,Revendeur,7,249.99,0,1749.93
+VNT01011,2024-10-05,CLI0191,Imprimante laser,Impression,Île-de-France,En ligne,5,349.99,10,1574.96
+VNT01012,2024-11-28,CLI0037,Hub USB-C,Connectique,Bretagne,Magasin,5,49.99,10,224.96
+VNT01013,2024-10-31,CLI0114,Souris sans fil,Périphériques,Bretagne,B2B Direct,7,39.99,5,265.93
+VNT01014,2024-11-07,CLI0134,Casque audio,Audio,Bretagne,En ligne,6,129.99,0,779.94
+VNT01015,2024-10-23,CLI0019,Webcam HD,Vidéo,Grand Est,En ligne,6,79.99,5,455.94
+VNT01016,2024-01-15,CLI0188,Imprimante laser,Impression,Provence-PACA,B2B Direct,1,349.99,20,279.99
+VNT01017,2024-12-26,CLI0052,Écran 4K,Affichage,Normandie,Revendeur,9,449.99,5,3847.41
+VNT01018,2024-03-09,CLI0171,Webcam HD,Vidéo,Bretagne,B2B Direct,9,79.99,0,719.91
+VNT01019,2024-08-21,CLI0123,Hub USB-C,Connectique,Île-de-France,Magasin,8,49.99,5,379.92
+VNT01020,2024-08-21,CLI0017,Laptop Pro,Informatique,Occitanie,Revendeur,8,1299.99,5,9879.92
+VNT01021,2024-11-25,CLI0140,Laptop Pro,Informatique,Grand Est,Revendeur,14,1299.99,5,17289.87
+VNT01022,2024-05-31,CLI0083,Écran 4K,Affichage,Île-de-France,Revendeur,2,449.99,15,764.98
+VNT01023,2024-06-30,CLI0011,Écran 4K,Affichage,Hauts-de-France,Magasin,4,449.99,5,1709.96
+VNT01024,2024-05-22,CLI0122,Imprimante laser,Impression,Hauts-de-France,En ligne,9,349.99,5,2992.41
+VNT01025,2024-05-23,CLI0062,Webcam HD,Vidéo,Île-de-France,En ligne,8,79.99,10,575.93
+VNT01026,2024-08-01,CLI0196,Écran 4K,Affichage,Normandie,Revendeur,12,449.99,10,4859.89
+VNT01027,2024-02-15,CLI0194,Imprimante laser,Impression,Occitanie,B2B Direct,6,349.99,15,1784.95
+VNT01028,2024-11-14,CLI0092,Clavier mécanique,Périphériques,Provence-PACA,En ligne,14,89.99,15,1070.88
+VNT01029,2024-03-29,CLI0084,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,En ligne,1,79.99,20,63.99
+VNT01030,2024-06-28,CLI0037,Clavier mécanique,Périphériques,Grand Est,Magasin,12,89.99,20,863.9
+VNT01031,2024-01-25,CLI0151,Tablette graphique,Création,Grand Est,B2B Direct,13,249.99,5,3087.38
+VNT01032,2024-09-02,CLI0024,Disque SSD 1TB,Stockage,Normandie,Revendeur,12,99.99,10,1079.89
+VNT01033,2024-09-02,CLI0152,Clavier mécanique,Périphériques,Normandie,En ligne,11,89.99,10,890.9
+VNT01034,2024-04-13,CLI0049,Tablette graphique,Création,Auvergne-Rhône-Alpes,Magasin,11,249.99,0,2749.89
+VNT01035,2024-02-21,CLI0197,Clavier mécanique,Périphériques,Occitanie,Magasin,9,89.99,10,728.92
+VNT01036,2024-04-10,CLI0067,Tablette graphique,Création,Bretagne,En ligne,14,249.99,20,2799.89
+VNT01037,2024-01-29,CLI0127,Souris sans fil,Périphériques,Bretagne,B2B Direct,4,39.99,10,143.96
+VNT01038,2024-07-02,CLI0144,Écran 4K,Affichage,Normandie,B2B Direct,5,449.99,15,1912.46
+VNT01039,2024-10-28,CLI0049,Clavier mécanique,Périphériques,Île-de-France,Revendeur,4,89.99,0,359.96
+VNT01040,2024-10-28,CLI0061,Hub USB-C,Connectique,Bretagne,Magasin,8,49.99,20,319.94
+VNT01041,2024-11-18,CLI0177,Hub USB-C,Connectique,Île-de-France,Magasin,7,49.99,10,314.94
+VNT01042,2024-10-16,CLI0006,Tablette graphique,Création,Normandie,En ligne,7,249.99,5,1662.43
+VNT01043,2024-10-26,CLI0171,Écran 4K,Affichage,Hauts-de-France,B2B Direct,1,449.99,20,359.99
+VNT01044,2024-02-10,CLI0035,Tablette graphique,Création,Provence-PACA,Magasin,7,249.99,5,1662.43
+VNT01045,2024-05-29,CLI0085,Disque SSD 1TB,Stockage,Grand Est,Revendeur,8,99.99,0,799.92
+VNT01046,2024-05-30,CLI0054,Écran 4K,Affichage,Provence-PACA,En ligne,8,449.99,5,3419.92
+VNT01047,2024-01-27,CLI0050,Tablette graphique,Création,Grand Est,Magasin,14,249.99,10,3149.87
+VNT01048,2024-04-03,CLI0028,Casque audio,Audio,Île-de-France,B2B Direct,10,129.99,5,1234.9
+VNT01049,2024-01-16,CLI0161,Souris sans fil,Périphériques,Normandie,Revendeur,11,39.99,0,439.89
+VNT01050,2024-05-16,CLI0109,Webcam HD,Vidéo,Occitanie,En ligne,2,79.99,5,151.98
+VNT01051,2024-04-19,CLI0090,Casque audio,Audio,Hauts-de-France,Revendeur,1,129.99,15,110.49
+VNT01052,2024-07-28,CLI0081,Webcam HD,Vidéo,Normandie,Revendeur,2,79.99,15,135.98
+VNT01053,2024-04-23,CLI0158,Casque audio,Audio,Grand Est,Magasin,1,129.99,0,129.99
+VNT01054,2024-08-12,CLI0179,Tablette graphique,Création,Hauts-de-France,En ligne,11,249.99,15,2337.41
+VNT01055,2024-07-17,CLI0107,Hub USB-C,Connectique,Grand Est,En ligne,9,49.99,5,427.41
+VNT01056,2024-05-11,CLI0180,Clavier mécanique,Périphériques,Hauts-de-France,Magasin,1,89.99,20,71.99
+VNT01057,2024-11-26,CLI0050,Clavier mécanique,Périphériques,Île-de-France,Magasin,15,89.99,10,1214.87
+VNT01058,2024-01-26,CLI0173,Disque SSD 1TB,Stockage,Normandie,Magasin,8,99.99,20,639.94
+VNT01059,2024-07-24,CLI0191,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,B2B Direct,13,49.99,10,584.88
+VNT01060,2024-12-07,CLI0068,Disque SSD 1TB,Stockage,Hauts-de-France,Revendeur,10,99.99,10,899.91
+VNT01061,2024-10-27,CLI0160,Tablette graphique,Création,Île-de-France,Magasin,12,249.99,10,2699.89
+VNT01062,2024-01-16,CLI0035,Imprimante laser,Impression,Hauts-de-France,B2B Direct,13,349.99,20,3639.9
+VNT01063,2024-04-07,CLI0154,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,En ligne,10,79.99,0,799.9
+VNT01064,2024-05-03,CLI0153,Casque audio,Audio,Occitanie,B2B Direct,9,129.99,10,1052.92
+VNT01065,2024-10-02,CLI0124,Casque audio,Audio,Bretagne,Revendeur,5,129.99,15,552.46
+VNT01066,2024-05-08,CLI0018,Clavier mécanique,Périphériques,Provence-PACA,En ligne,6,89.99,5,512.94
+VNT01067,2024-03-26,CLI0102,Écran 4K,Affichage,Provence-PACA,B2B Direct,8,449.99,0,3599.92
+VNT01068,2024-11-26,CLI0150,Hub USB-C,Connectique,Hauts-de-France,En ligne,12,49.99,15,509.9
+VNT01069,2024-02-25,CLI0077,Souris sans fil,Périphériques,Bretagne,B2B Direct,6,39.99,10,215.95
+VNT01070,2024-02-22,CLI0150,Laptop Pro,Informatique,Normandie,En ligne,15,1299.99,10,17549.86
+VNT01071,2024-09-07,CLI0065,Écran 4K,Affichage,Normandie,Magasin,10,449.99,20,3599.92
+VNT01072,2024-07-21,CLI0034,Disque SSD 1TB,Stockage,Normandie,Revendeur,3,99.99,20,239.98
+VNT01073,2024-05-02,CLI0096,Hub USB-C,Connectique,Grand Est,Revendeur,13,49.99,5,617.38
+VNT01074,2024-01-13,CLI0089,Clavier mécanique,Périphériques,Grand Est,Revendeur,7,89.99,0,629.93
+VNT01075,2024-11-07,CLI0183,Souris sans fil,Périphériques,Grand Est,Revendeur,14,39.99,15,475.88
+VNT01076,2024-03-06,CLI0190,Souris sans fil,Périphériques,Bretagne,En ligne,3,39.99,10,107.97
+VNT01077,2024-04-02,CLI0121,Laptop Pro,Informatique,Hauts-de-France,B2B Direct,6,1299.99,5,7409.94
+VNT01078,2024-10-09,CLI0151,Hub USB-C,Connectique,Hauts-de-France,B2B Direct,14,49.99,5,664.87
+VNT01079,2024-07-17,CLI0163,Souris sans fil,Périphériques,Provence-PACA,Revendeur,15,39.99,0,599.85
+VNT01080,2024-01-12,CLI0031,Souris sans fil,Périphériques,Occitanie,B2B Direct,7,39.99,10,251.94
+VNT01081,2024-12-04,CLI0106,Clavier mécanique,Périphériques,Normandie,Revendeur,15,89.99,10,1214.87
+VNT01082,2024-11-06,CLI0007,Écran 4K,Affichage,Occitanie,B2B Direct,10,449.99,10,4049.91
+VNT01083,2024-01-21,CLI0113,Tablette graphique,Création,Occitanie,Revendeur,15,249.99,15,3187.37
+VNT01084,2024-05-03,CLI0061,Casque audio,Audio,Normandie,En ligne,6,129.99,20,623.95
+VNT01085,2024-10-11,CLI0040,Tablette graphique,Création,Île-de-France,Magasin,5,249.99,5,1187.45
+VNT01086,2024-05-08,CLI0010,Webcam HD,Vidéo,Occitanie,Revendeur,2,79.99,10,143.98
+VNT01087,2024-02-12,CLI0110,Tablette graphique,Création,Normandie,Revendeur,3,249.99,0,749.97
+VNT01088,2024-04-13,CLI0067,Hub USB-C,Connectique,Normandie,En ligne,14,49.99,10,629.87
+VNT01089,2024-10-09,CLI0053,Casque audio,Audio,Occitanie,Magasin,5,129.99,20,519.96
+VNT01090,2024-04-02,CLI0054,Tablette graphique,Création,Normandie,B2B Direct,1,249.99,20,199.99
+VNT01091,2024-02-06,CLI0086,Webcam HD,Vidéo,Bretagne,Revendeur,7,79.99,0,559.93
+VNT01092,2024-07-07,CLI0140,Hub USB-C,Connectique,Hauts-de-France,Magasin,15,49.99,10,674.87
+VNT01093,2024-12-23,CLI0124,Casque audio,Audio,Grand Est,Revendeur,4,129.99,5,493.96
+VNT01094,2024-06-03,CLI0100,Imprimante laser,Impression,Grand Est,En ligne,2,349.99,10,629.98
+VNT01095,2024-03-13,CLI0048,Webcam HD,Vidéo,Normandie,B2B Direct,5,79.99,5,379.95
+VNT01096,2024-11-13,CLI0136,Hub USB-C,Connectique,Bretagne,Magasin,2,49.99,5,94.98
+VNT01097,2024-02-28,CLI0091,Écran 4K,Affichage,Auvergne-Rhône-Alpes,B2B Direct,2,449.99,15,764.98
+VNT01098,2024-11-12,CLI0086,Webcam HD,Vidéo,Normandie,Revendeur,2,79.99,5,151.98
+VNT01099,2024-09-29,CLI0196,Laptop Pro,Informatique,Bretagne,B2B Direct,10,1299.99,5,12349.9
+VNT01100,2024-03-07,CLI0030,Écran 4K,Affichage,Bretagne,En ligne,7,449.99,20,2519.94
+VNT01101,2024-08-27,CLI0170,Casque audio,Audio,Auvergne-Rhône-Alpes,B2B Direct,13,129.99,10,1520.88
+VNT01102,2024-10-11,CLI0041,Imprimante laser,Impression,Occitanie,En ligne,4,349.99,5,1329.96
+VNT01103,2024-12-05,CLI0181,Laptop Pro,Informatique,Grand Est,B2B Direct,3,1299.99,0,3899.97
+VNT01104,2024-08-01,CLI0185,Laptop Pro,Informatique,Normandie,Magasin,12,1299.99,10,14039.89
+VNT01105,2024-12-28,CLI0001,Souris sans fil,Périphériques,Normandie,Revendeur,7,39.99,20,223.94
+VNT01106,2024-08-06,CLI0009,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Magasin,1,349.99,15,297.49
+VNT01107,2024-10-11,CLI0167,Imprimante laser,Impression,Occitanie,En ligne,8,349.99,0,2799.92
+VNT01108,2024-11-09,CLI0069,Clavier mécanique,Périphériques,Bretagne,B2B Direct,3,89.99,20,215.98
+VNT01109,2024-02-05,CLI0087,Disque SSD 1TB,Stockage,Hauts-de-France,Magasin,7,99.99,10,629.94
+VNT01110,2024-04-12,CLI0195,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,B2B Direct,6,99.99,15,509.95
+VNT01111,2024-02-25,CLI0070,Laptop Pro,Informatique,Île-de-France,Magasin,7,1299.99,5,8644.93
+VNT01112,2024-03-09,CLI0121,Hub USB-C,Connectique,Hauts-de-France,B2B Direct,8,49.99,10,359.93
+VNT01113,2024-01-25,CLI0186,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,B2B Direct,6,49.99,5,284.94
+VNT01114,2024-12-16,CLI0051,Disque SSD 1TB,Stockage,Normandie,Revendeur,14,99.99,10,1259.87
+VNT01115,2024-03-07,CLI0191,Imprimante laser,Impression,Provence-PACA,En ligne,11,349.99,15,3272.41
+VNT01116,2024-05-19,CLI0042,Souris sans fil,Périphériques,Normandie,B2B Direct,10,39.99,0,399.9
+VNT01117,2024-05-08,CLI0199,Écran 4K,Affichage,Occitanie,En ligne,7,449.99,5,2992.43
+VNT01118,2024-02-28,CLI0050,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,Magasin,11,49.99,5,522.4
+VNT01119,2024-08-04,CLI0005,Souris sans fil,Périphériques,Provence-PACA,En ligne,6,39.99,20,191.95
+VNT01120,2024-10-09,CLI0189,Disque SSD 1TB,Stockage,Occitanie,En ligne,6,99.99,5,569.94
+VNT01121,2024-06-10,CLI0138,Webcam HD,Vidéo,Normandie,En ligne,12,79.99,20,767.9
+VNT01122,2024-09-11,CLI0005,Laptop Pro,Informatique,Île-de-France,B2B Direct,15,1299.99,5,18524.86
+VNT01123,2024-04-08,CLI0083,Imprimante laser,Impression,Provence-PACA,Revendeur,3,349.99,10,944.97
+VNT01124,2024-04-29,CLI0133,Souris sans fil,Périphériques,Île-de-France,Magasin,3,39.99,20,95.98
+VNT01125,2024-07-05,CLI0025,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,Magasin,14,1299.99,5,17289.87
+VNT01126,2024-07-08,CLI0002,Casque audio,Audio,Auvergne-Rhône-Alpes,Magasin,2,129.99,10,233.98
+VNT01127,2024-11-04,CLI0194,Écran 4K,Affichage,Occitanie,En ligne,14,449.99,5,5984.87
+VNT01128,2024-02-09,CLI0179,Webcam HD,Vidéo,Île-de-France,B2B Direct,1,79.99,15,67.99
+VNT01129,2024-04-07,CLI0090,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Magasin,14,39.99,0,559.86
+VNT01130,2024-08-03,CLI0089,Tablette graphique,Création,Normandie,En ligne,13,249.99,15,2762.39
+VNT01131,2024-08-09,CLI0175,Souris sans fil,Périphériques,Occitanie,Magasin,11,39.99,20,351.91
+VNT01132,2024-03-28,CLI0146,Hub USB-C,Connectique,Île-de-France,Revendeur,15,49.99,5,712.36
+VNT01133,2024-05-19,CLI0185,Casque audio,Audio,Normandie,B2B Direct,13,129.99,5,1605.38
+VNT01134,2024-10-01,CLI0032,Hub USB-C,Connectique,Île-de-France,En ligne,15,49.99,10,674.87
+VNT01135,2024-11-13,CLI0095,Webcam HD,Vidéo,Grand Est,Magasin,8,79.99,10,575.93
+VNT01136,2024-03-04,CLI0045,Casque audio,Audio,Bretagne,Magasin,1,129.99,0,129.99
+VNT01137,2024-10-22,CLI0067,Casque audio,Audio,Grand Est,Revendeur,5,129.99,5,617.45
+VNT01138,2024-05-18,CLI0164,Disque SSD 1TB,Stockage,Normandie,B2B Direct,13,99.99,0,1299.87
+VNT01139,2024-06-28,CLI0152,Clavier mécanique,Périphériques,Grand Est,Magasin,15,89.99,15,1147.37
+VNT01140,2024-11-09,CLI0179,Casque audio,Audio,Auvergne-Rhône-Alpes,Magasin,10,129.99,20,1039.92
+VNT01141,2024-05-25,CLI0128,Hub USB-C,Connectique,Normandie,B2B Direct,9,49.99,5,427.41
+VNT01142,2024-10-17,CLI0083,Casque audio,Audio,Normandie,En ligne,15,129.99,20,1559.88
+VNT01143,2024-08-08,CLI0194,Casque audio,Audio,Île-de-France,En ligne,3,129.99,0,389.97
+VNT01144,2024-08-16,CLI0112,Clavier mécanique,Périphériques,Île-de-France,En ligne,3,89.99,5,256.47
+VNT01145,2024-11-05,CLI0168,Clavier mécanique,Périphériques,Normandie,B2B Direct,7,89.99,0,629.93
+VNT01146,2024-03-02,CLI0002,Tablette graphique,Création,Île-de-France,Magasin,14,249.99,15,2974.88
+VNT01147,2024-02-13,CLI0153,Hub USB-C,Connectique,Bretagne,Magasin,4,49.99,0,199.96
+VNT01148,2024-09-29,CLI0068,Hub USB-C,Connectique,Hauts-de-France,En ligne,7,49.99,15,297.44
+VNT01149,2024-11-07,CLI0181,Tablette graphique,Création,Hauts-de-France,B2B Direct,10,249.99,0,2499.9
+VNT01150,2024-07-31,CLI0022,Clavier mécanique,Périphériques,Occitanie,Magasin,14,89.99,5,1196.87
+VNT01151,2024-04-28,CLI0024,Disque SSD 1TB,Stockage,Bretagne,Magasin,6,99.99,15,509.95
+VNT01152,2024-12-11,CLI0106,Clavier mécanique,Périphériques,Normandie,Magasin,2,89.99,20,143.98
+VNT01153,2024-12-27,CLI0096,Hub USB-C,Connectique,Provence-PACA,B2B Direct,6,49.99,20,239.95
+VNT01154,2024-09-29,CLI0150,Écran 4K,Affichage,Hauts-de-France,En ligne,5,449.99,5,2137.45
+VNT01155,2024-06-19,CLI0188,Tablette graphique,Création,Grand Est,Revendeur,10,249.99,5,2374.91
+VNT01156,2024-03-28,CLI0188,Webcam HD,Vidéo,Provence-PACA,B2B Direct,15,79.99,20,959.88
+VNT01157,2024-05-08,CLI0131,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,B2B Direct,8,99.99,5,759.92
+VNT01158,2024-03-17,CLI0083,Casque audio,Audio,Hauts-de-France,B2B Direct,1,129.99,20,103.99
+VNT01159,2024-08-14,CLI0131,Disque SSD 1TB,Stockage,Bretagne,En ligne,13,99.99,15,1104.89
+VNT01160,2024-08-27,CLI0170,Écran 4K,Affichage,Auvergne-Rhône-Alpes,Magasin,7,449.99,5,2992.43
+VNT01161,2024-07-08,CLI0024,Tablette graphique,Création,Occitanie,B2B Direct,14,249.99,15,2974.88
+VNT01162,2024-09-05,CLI0146,Laptop Pro,Informatique,Hauts-de-France,B2B Direct,4,1299.99,15,4419.97
+VNT01163,2024-11-28,CLI0124,Clavier mécanique,Périphériques,Grand Est,Revendeur,6,89.99,15,458.95
+VNT01164,2024-05-02,CLI0154,Webcam HD,Vidéo,Île-de-France,En ligne,3,79.99,10,215.97
+VNT01165,2024-03-16,CLI0088,Webcam HD,Vidéo,Hauts-de-France,En ligne,5,79.99,10,359.95
+VNT01166,2024-07-22,CLI0147,Souris sans fil,Périphériques,Hauts-de-France,Revendeur,10,39.99,15,339.92
+VNT01167,2024-10-27,CLI0008,Écran 4K,Affichage,Hauts-de-France,Magasin,2,449.99,15,764.98
+VNT01168,2024-09-18,CLI0158,Tablette graphique,Création,Occitanie,Revendeur,3,249.99,5,712.47
+VNT01169,2024-04-29,CLI0058,Casque audio,Audio,Bretagne,Revendeur,8,129.99,20,831.94
+VNT01170,2024-01-31,CLI0051,Disque SSD 1TB,Stockage,Hauts-de-France,En ligne,10,99.99,0,999.9
+VNT01171,2024-04-03,CLI0193,Hub USB-C,Connectique,Grand Est,B2B Direct,6,49.99,5,284.94
+VNT01172,2024-02-02,CLI0170,Casque audio,Audio,Normandie,Magasin,5,129.99,20,519.96
+VNT01173,2024-07-29,CLI0065,Souris sans fil,Périphériques,Grand Est,Magasin,1,39.99,10,35.99
+VNT01174,2024-02-14,CLI0107,Clavier mécanique,Périphériques,Île-de-France,B2B Direct,1,89.99,10,80.99
+VNT01175,2024-06-06,CLI0030,Laptop Pro,Informatique,Provence-PACA,B2B Direct,10,1299.99,15,11049.91
+VNT01176,2024-04-01,CLI0120,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,B2B Direct,6,49.99,0,299.94
+VNT01177,2024-10-18,CLI0018,Laptop Pro,Informatique,Grand Est,En ligne,4,1299.99,20,4159.97
+VNT01178,2024-12-13,CLI0099,Écran 4K,Affichage,Provence-PACA,En ligne,15,449.99,10,6074.87
+VNT01179,2024-07-12,CLI0013,Souris sans fil,Périphériques,Bretagne,Magasin,1,39.99,5,37.99
+VNT01180,2024-03-25,CLI0086,Tablette graphique,Création,Grand Est,B2B Direct,11,249.99,10,2474.9
+VNT01181,2024-03-02,CLI0187,Disque SSD 1TB,Stockage,Provence-PACA,Magasin,7,99.99,0,699.93
+VNT01182,2024-01-30,CLI0082,Souris sans fil,Périphériques,Normandie,B2B Direct,13,39.99,15,441.89
+VNT01183,2024-02-04,CLI0049,Imprimante laser,Impression,Hauts-de-France,B2B Direct,9,349.99,20,2519.93
+VNT01184,2024-02-02,CLI0165,Souris sans fil,Périphériques,Grand Est,B2B Direct,3,39.99,0,119.97
+VNT01185,2024-10-23,CLI0087,Imprimante laser,Impression,Île-de-France,B2B Direct,3,349.99,5,997.47
+VNT01186,2024-09-21,CLI0084,Clavier mécanique,Périphériques,Normandie,En ligne,1,89.99,5,85.49
+VNT01187,2024-09-29,CLI0181,Clavier mécanique,Périphériques,Provence-PACA,Magasin,3,89.99,20,215.98
+VNT01188,2024-08-04,CLI0147,Webcam HD,Vidéo,Bretagne,En ligne,2,79.99,20,127.98
+VNT01189,2024-03-31,CLI0059,Imprimante laser,Impression,Occitanie,Revendeur,14,349.99,10,4409.87
+VNT01190,2024-09-08,CLI0083,Souris sans fil,Périphériques,Provence-PACA,Magasin,14,39.99,0,559.86
+VNT01191,2024-01-21,CLI0022,Webcam HD,Vidéo,Île-de-France,Revendeur,8,79.99,20,511.94
+VNT01192,2024-04-28,CLI0030,Hub USB-C,Connectique,Normandie,Revendeur,11,49.99,10,494.9
+VNT01193,2024-08-24,CLI0137,Casque audio,Audio,Occitanie,Revendeur,11,129.99,20,1143.91
+VNT01194,2024-04-14,CLI0048,Hub USB-C,Connectique,Occitanie,Magasin,9,49.99,0,449.91
+VNT01195,2024-10-19,CLI0115,Disque SSD 1TB,Stockage,Bretagne,Magasin,8,99.99,15,679.93
+VNT01196,2024-10-25,CLI0058,Écran 4K,Affichage,Hauts-de-France,Revendeur,7,449.99,0,3149.93
+VNT01197,2024-04-15,CLI0062,Souris sans fil,Périphériques,Grand Est,Magasin,4,39.99,0,159.96
+VNT01198,2024-04-21,CLI0157,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,Magasin,15,1299.99,10,17549.86
+VNT01199,2024-09-27,CLI0095,Clavier mécanique,Périphériques,Occitanie,En ligne,2,89.99,20,143.98
+VNT01200,2024-05-04,CLI0030,Tablette graphique,Création,Grand Est,Revendeur,2,249.99,10,449.98
+VNT01201,2024-05-07,CLI0111,Imprimante laser,Impression,Provence-PACA,En ligne,10,349.99,5,3324.9
+VNT01202,2024-11-19,CLI0050,Hub USB-C,Connectique,Occitanie,En ligne,3,49.99,10,134.97
+VNT01203,2024-01-15,CLI0168,Imprimante laser,Impression,Normandie,B2B Direct,14,349.99,0,4899.86
+VNT01204,2024-11-23,CLI0022,Webcam HD,Vidéo,Provence-PACA,Magasin,4,79.99,5,303.96
+VNT01205,2024-01-05,CLI0068,Imprimante laser,Impression,Provence-PACA,Magasin,14,349.99,15,4164.88
+VNT01206,2024-01-20,CLI0185,Souris sans fil,Périphériques,Hauts-de-France,Magasin,13,39.99,10,467.88
+VNT01207,2024-08-04,CLI0172,Webcam HD,Vidéo,Île-de-France,Magasin,9,79.99,20,575.93
+VNT01208,2024-01-02,CLI0120,Disque SSD 1TB,Stockage,Provence-PACA,Revendeur,7,99.99,15,594.94
+VNT01209,2024-04-05,CLI0056,Laptop Pro,Informatique,Hauts-de-France,Revendeur,12,1299.99,0,15599.88
+VNT01210,2024-08-03,CLI0179,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,En ligne,13,1299.99,20,13519.9
+VNT01211,2024-12-17,CLI0168,Disque SSD 1TB,Stockage,Occitanie,B2B Direct,3,99.99,5,284.97
+VNT01212,2024-05-31,CLI0141,Souris sans fil,Périphériques,Occitanie,Magasin,15,39.99,10,539.87
+VNT01213,2024-02-14,CLI0048,Clavier mécanique,Périphériques,Grand Est,Magasin,7,89.99,15,535.44
+VNT01214,2024-07-28,CLI0115,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,7,89.99,15,535.44
+VNT01215,2024-01-21,CLI0198,Tablette graphique,Création,Bretagne,Revendeur,1,249.99,10,224.99
+VNT01216,2024-01-27,CLI0077,Webcam HD,Vidéo,Provence-PACA,B2B Direct,7,79.99,20,447.94
+VNT01217,2024-04-16,CLI0071,Casque audio,Audio,Normandie,En ligne,8,129.99,5,987.92
+VNT01218,2024-09-25,CLI0188,Laptop Pro,Informatique,Provence-PACA,B2B Direct,14,1299.99,15,15469.88
+VNT01219,2024-05-01,CLI0131,Écran 4K,Affichage,Auvergne-Rhône-Alpes,En ligne,14,449.99,15,5354.88
+VNT01220,2024-10-28,CLI0151,Écran 4K,Affichage,Hauts-de-France,En ligne,14,449.99,15,5354.88
+VNT01221,2024-10-20,CLI0116,Imprimante laser,Impression,Auvergne-Rhône-Alpes,B2B Direct,12,349.99,0,4199.88
+VNT01222,2024-02-04,CLI0131,Hub USB-C,Connectique,Bretagne,En ligne,9,49.99,20,359.93
+VNT01223,2024-04-11,CLI0034,Imprimante laser,Impression,Normandie,B2B Direct,1,349.99,20,279.99
+VNT01224,2024-04-20,CLI0012,Disque SSD 1TB,Stockage,Provence-PACA,Magasin,10,99.99,0,999.9
+VNT01225,2024-05-31,CLI0042,Souris sans fil,Périphériques,Bretagne,En ligne,2,39.99,20,63.98
+VNT01226,2024-09-14,CLI0014,Webcam HD,Vidéo,Grand Est,Magasin,9,79.99,15,611.92
+VNT01227,2024-09-16,CLI0140,Hub USB-C,Connectique,Provence-PACA,Magasin,12,49.99,20,479.9
+VNT01228,2024-07-20,CLI0103,Clavier mécanique,Périphériques,Grand Est,Revendeur,13,89.99,10,1052.88
+VNT01229,2024-07-05,CLI0162,Tablette graphique,Création,Provence-PACA,En ligne,14,249.99,15,2974.88
+VNT01230,2024-01-08,CLI0170,Webcam HD,Vidéo,Provence-PACA,Revendeur,1,79.99,15,67.99
+VNT01231,2024-09-09,CLI0007,Écran 4K,Affichage,Bretagne,En ligne,11,449.99,20,3959.91
+VNT01232,2024-09-11,CLI0097,Disque SSD 1TB,Stockage,Hauts-de-France,Revendeur,8,99.99,20,639.94
+VNT01233,2024-11-09,CLI0023,Tablette graphique,Création,Bretagne,B2B Direct,1,249.99,0,249.99
+VNT01234,2024-11-25,CLI0138,Webcam HD,Vidéo,Provence-PACA,B2B Direct,14,79.99,15,951.88
+VNT01235,2024-05-04,CLI0159,Souris sans fil,Périphériques,Normandie,Revendeur,1,39.99,10,35.99
+VNT01236,2024-12-15,CLI0088,Imprimante laser,Impression,Île-de-France,Revendeur,6,349.99,10,1889.95
+VNT01237,2024-12-09,CLI0193,Laptop Pro,Informatique,Normandie,Revendeur,15,1299.99,5,18524.86
+VNT01238,2024-09-20,CLI0130,Clavier mécanique,Périphériques,Provence-PACA,Magasin,5,89.99,0,449.95
+VNT01239,2024-09-28,CLI0076,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,En ligne,12,89.99,20,863.9
+VNT01240,2024-06-29,CLI0151,Disque SSD 1TB,Stockage,Île-de-France,En ligne,5,99.99,10,449.95
+VNT01241,2024-05-12,CLI0138,Souris sans fil,Périphériques,Grand Est,Magasin,7,39.99,15,237.94
+VNT01242,2024-06-15,CLI0135,Souris sans fil,Périphériques,Grand Est,B2B Direct,10,39.99,10,359.91
+VNT01243,2024-04-21,CLI0134,Clavier mécanique,Périphériques,Grand Est,Revendeur,11,89.99,10,890.9
+VNT01244,2024-11-26,CLI0058,Laptop Pro,Informatique,Occitanie,Revendeur,7,1299.99,15,7734.94
+VNT01245,2024-05-31,CLI0040,Clavier mécanique,Périphériques,Grand Est,Revendeur,3,89.99,20,215.98
+VNT01246,2024-08-05,CLI0131,Clavier mécanique,Périphériques,Île-de-France,Revendeur,12,89.99,5,1025.89
+VNT01247,2024-03-06,CLI0073,Casque audio,Audio,Bretagne,En ligne,14,129.99,20,1455.89
+VNT01248,2024-07-08,CLI0153,Disque SSD 1TB,Stockage,Grand Est,B2B Direct,2,99.99,20,159.98
+VNT01249,2024-02-18,CLI0020,Imprimante laser,Impression,Occitanie,Magasin,15,349.99,15,4462.37
+VNT01250,2024-09-09,CLI0153,Souris sans fil,Périphériques,Occitanie,Magasin,12,39.99,15,407.9
+VNT01251,2024-10-16,CLI0072,Tablette graphique,Création,Hauts-de-France,En ligne,4,249.99,5,949.96
+VNT01252,2024-09-10,CLI0077,Webcam HD,Vidéo,Île-de-France,Magasin,7,79.99,0,559.93
+VNT01253,2024-04-05,CLI0019,Clavier mécanique,Périphériques,Île-de-France,Magasin,13,89.99,0,1169.87
+VNT01254,2024-01-05,CLI0049,Webcam HD,Vidéo,Occitanie,Magasin,14,79.99,0,1119.86
+VNT01255,2024-05-28,CLI0067,Casque audio,Audio,Grand Est,Revendeur,9,129.99,10,1052.92
+VNT01256,2024-07-03,CLI0020,Clavier mécanique,Périphériques,Occitanie,B2B Direct,10,89.99,5,854.9
+VNT01257,2024-02-02,CLI0135,Hub USB-C,Connectique,Bretagne,Magasin,8,49.99,20,319.94
+VNT01258,2024-10-29,CLI0073,Clavier mécanique,Périphériques,Grand Est,Magasin,7,89.99,5,598.43
+VNT01259,2024-04-23,CLI0101,Disque SSD 1TB,Stockage,Grand Est,En ligne,7,99.99,20,559.94
+VNT01260,2024-04-28,CLI0064,Imprimante laser,Impression,Normandie,Magasin,1,349.99,5,332.49
+VNT01261,2024-07-06,CLI0129,Tablette graphique,Création,Occitanie,En ligne,4,249.99,15,849.97
+VNT01262,2024-03-15,CLI0001,Tablette graphique,Création,Bretagne,Revendeur,3,249.99,5,712.47
+VNT01263,2024-11-25,CLI0175,Disque SSD 1TB,Stockage,Normandie,B2B Direct,7,99.99,5,664.93
+VNT01264,2024-12-02,CLI0044,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,3,39.99,20,95.98
+VNT01265,2024-04-06,CLI0034,Tablette graphique,Création,Normandie,En ligne,7,249.99,20,1399.94
+VNT01266,2024-10-31,CLI0160,Imprimante laser,Impression,Normandie,B2B Direct,5,349.99,10,1574.96
+VNT01267,2024-05-02,CLI0197,Imprimante laser,Impression,Auvergne-Rhône-Alpes,B2B Direct,2,349.99,15,594.98
+VNT01268,2024-01-01,CLI0026,Casque audio,Audio,Île-de-France,En ligne,11,129.99,10,1286.9
+VNT01269,2024-03-24,CLI0067,Tablette graphique,Création,Provence-PACA,Revendeur,2,249.99,10,449.98
+VNT01270,2024-09-11,CLI0139,Imprimante laser,Impression,Île-de-France,En ligne,13,349.99,5,4322.38
+VNT01271,2024-06-01,CLI0038,Tablette graphique,Création,Auvergne-Rhône-Alpes,En ligne,7,249.99,10,1574.94
+VNT01272,2024-10-23,CLI0172,Casque audio,Audio,Auvergne-Rhône-Alpes,Magasin,1,129.99,5,123.49
+VNT01273,2024-01-15,CLI0022,Casque audio,Audio,Normandie,B2B Direct,13,129.99,15,1436.39
+VNT01274,2024-05-23,CLI0094,Souris sans fil,Périphériques,Hauts-de-France,Revendeur,11,39.99,0,439.89
+VNT01275,2024-01-19,CLI0104,Tablette graphique,Création,Bretagne,B2B Direct,6,249.99,15,1274.95
+VNT01276,2024-08-03,CLI0017,Hub USB-C,Connectique,Normandie,B2B Direct,8,49.99,15,339.93
+VNT01277,2024-09-14,CLI0078,Clavier mécanique,Périphériques,Normandie,B2B Direct,6,89.99,0,539.94
+VNT01278,2024-06-01,CLI0015,Disque SSD 1TB,Stockage,Grand Est,Revendeur,8,99.99,10,719.93
+VNT01279,2024-03-26,CLI0150,Casque audio,Audio,Auvergne-Rhône-Alpes,B2B Direct,10,129.99,15,1104.91
+VNT01280,2024-06-19,CLI0007,Casque audio,Audio,Provence-PACA,B2B Direct,7,129.99,10,818.94
+VNT01281,2024-05-17,CLI0123,Clavier mécanique,Périphériques,Île-de-France,B2B Direct,9,89.99,10,728.92
+VNT01282,2024-07-20,CLI0158,Laptop Pro,Informatique,Île-de-France,Magasin,3,1299.99,20,3119.98
+VNT01283,2024-10-11,CLI0126,Tablette graphique,Création,Île-de-France,B2B Direct,9,249.99,15,1912.42
+VNT01284,2024-09-12,CLI0021,Casque audio,Audio,Provence-PACA,Revendeur,2,129.99,5,246.98
+VNT01285,2024-08-11,CLI0144,Clavier mécanique,Périphériques,Hauts-de-France,En ligne,3,89.99,5,256.47
+VNT01286,2024-12-29,CLI0169,Disque SSD 1TB,Stockage,Bretagne,Magasin,10,99.99,20,799.92
+VNT01287,2024-06-25,CLI0011,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Magasin,7,99.99,20,559.94
+VNT01288,2024-11-07,CLI0092,Clavier mécanique,Périphériques,Occitanie,En ligne,4,89.99,20,287.97
+VNT01289,2024-02-10,CLI0153,Hub USB-C,Connectique,Grand Est,Magasin,14,49.99,0,699.86
+VNT01290,2024-07-15,CLI0056,Imprimante laser,Impression,Provence-PACA,En ligne,14,349.99,15,4164.88
+VNT01291,2024-08-20,CLI0168,Imprimante laser,Impression,Auvergne-Rhône-Alpes,B2B Direct,12,349.99,20,3359.9
+VNT01292,2024-05-30,CLI0045,Imprimante laser,Impression,Auvergne-Rhône-Alpes,En ligne,6,349.99,20,1679.95
+VNT01293,2024-09-11,CLI0156,Laptop Pro,Informatique,Grand Est,Revendeur,1,1299.99,0,1299.99
+VNT01294,2024-12-19,CLI0044,Disque SSD 1TB,Stockage,Hauts-de-France,En ligne,11,99.99,10,989.9
+VNT01295,2024-07-15,CLI0149,Laptop Pro,Informatique,Hauts-de-France,Magasin,2,1299.99,5,2469.98
+VNT01296,2024-03-08,CLI0149,Casque audio,Audio,Provence-PACA,Magasin,1,129.99,5,123.49
+VNT01297,2024-03-18,CLI0142,Casque audio,Audio,Provence-PACA,B2B Direct,3,129.99,15,331.47
+VNT01298,2024-10-31,CLI0138,Webcam HD,Vidéo,Occitanie,Magasin,10,79.99,15,679.91
+VNT01299,2024-06-30,CLI0155,Tablette graphique,Création,Occitanie,Revendeur,9,249.99,20,1799.93
+VNT01300,2024-02-23,CLI0102,Tablette graphique,Création,Hauts-de-France,Revendeur,11,249.99,20,2199.91
+VNT01301,2024-12-14,CLI0060,Webcam HD,Vidéo,Grand Est,B2B Direct,11,79.99,0,879.89
+VNT01302,2024-08-29,CLI0042,Hub USB-C,Connectique,Bretagne,Magasin,11,49.99,0,549.89
+VNT01303,2024-12-06,CLI0171,Tablette graphique,Création,Île-de-France,Magasin,13,249.99,5,3087.38
+VNT01304,2024-05-05,CLI0036,Souris sans fil,Périphériques,Hauts-de-France,En ligne,7,39.99,15,237.94
+VNT01305,2024-09-24,CLI0053,Casque audio,Audio,Grand Est,Magasin,12,129.99,0,1559.88
+VNT01306,2024-05-15,CLI0114,Hub USB-C,Connectique,Bretagne,En ligne,9,49.99,20,359.93
+VNT01307,2024-08-19,CLI0087,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Revendeur,9,39.99,10,323.92
+VNT01308,2024-04-29,CLI0090,Tablette graphique,Création,Bretagne,En ligne,9,249.99,20,1799.93
+VNT01309,2024-06-09,CLI0162,Imprimante laser,Impression,Bretagne,Magasin,15,349.99,5,4987.36
+VNT01310,2024-12-20,CLI0165,Souris sans fil,Périphériques,Hauts-de-France,B2B Direct,1,39.99,20,31.99
+VNT01311,2024-04-28,CLI0192,Écran 4K,Affichage,Grand Est,En ligne,13,449.99,15,4972.39
+VNT01312,2024-09-08,CLI0023,Imprimante laser,Impression,Île-de-France,B2B Direct,1,349.99,10,314.99
+VNT01313,2024-11-04,CLI0009,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,2,39.99,15,67.98
+VNT01314,2024-11-20,CLI0183,Écran 4K,Affichage,Occitanie,Revendeur,15,449.99,0,6749.85
+VNT01315,2024-11-07,CLI0192,Hub USB-C,Connectique,Bretagne,En ligne,1,49.99,0,49.99
+VNT01316,2024-11-14,CLI0073,Casque audio,Audio,Île-de-France,En ligne,15,129.99,0,1949.85
+VNT01317,2024-12-18,CLI0102,Écran 4K,Affichage,Île-de-France,En ligne,4,449.99,20,1439.97
+VNT01318,2024-11-22,CLI0028,Hub USB-C,Connectique,Hauts-de-France,En ligne,10,49.99,5,474.91
+VNT01319,2024-02-17,CLI0136,Webcam HD,Vidéo,Bretagne,Revendeur,4,79.99,15,271.97
+VNT01320,2024-09-16,CLI0161,Laptop Pro,Informatique,Bretagne,En ligne,7,1299.99,15,7734.94
+VNT01321,2024-10-16,CLI0116,Disque SSD 1TB,Stockage,Grand Est,Revendeur,4,99.99,10,359.96
+VNT01322,2024-02-06,CLI0016,Écran 4K,Affichage,Auvergne-Rhône-Alpes,En ligne,4,449.99,5,1709.96
+VNT01323,2024-04-17,CLI0048,Laptop Pro,Informatique,Bretagne,Magasin,12,1299.99,15,13259.9
+VNT01324,2024-02-25,CLI0168,Laptop Pro,Informatique,Normandie,Revendeur,14,1299.99,5,17289.87
+VNT01325,2024-03-14,CLI0116,Clavier mécanique,Périphériques,Île-de-France,B2B Direct,11,89.99,20,791.91
+VNT01326,2024-03-23,CLI0183,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,13,39.99,15,441.89
+VNT01327,2024-12-12,CLI0018,Tablette graphique,Création,Hauts-de-France,Magasin,9,249.99,10,2024.92
+VNT01328,2024-11-30,CLI0155,Casque audio,Audio,Hauts-de-France,B2B Direct,3,129.99,10,350.97
+VNT01329,2024-12-10,CLI0114,Écran 4K,Affichage,Bretagne,Revendeur,13,449.99,20,4679.9
+VNT01330,2024-04-03,CLI0123,Imprimante laser,Impression,Hauts-de-France,Revendeur,4,349.99,5,1329.96
+VNT01331,2024-06-16,CLI0152,Clavier mécanique,Périphériques,Auvergne-Rhône-Alpes,B2B Direct,15,89.99,10,1214.87
+VNT01332,2024-02-22,CLI0185,Souris sans fil,Périphériques,Occitanie,B2B Direct,9,39.99,0,359.91
+VNT01333,2024-06-17,CLI0172,Hub USB-C,Connectique,Hauts-de-France,En ligne,4,49.99,10,179.96
+VNT01334,2024-06-30,CLI0146,Écran 4K,Affichage,Grand Est,B2B Direct,4,449.99,0,1799.96
+VNT01335,2024-09-11,CLI0149,Hub USB-C,Connectique,Grand Est,Magasin,5,49.99,10,224.96
+VNT01336,2024-04-14,CLI0108,Imprimante laser,Impression,Hauts-de-France,En ligne,6,349.99,15,1784.95
+VNT01337,2024-06-27,CLI0051,Disque SSD 1TB,Stockage,Grand Est,Revendeur,10,99.99,0,999.9
+VNT01338,2024-02-12,CLI0143,Laptop Pro,Informatique,Provence-PACA,Revendeur,14,1299.99,5,17289.87
+VNT01339,2024-02-04,CLI0136,Tablette graphique,Création,Hauts-de-France,B2B Direct,6,249.99,5,1424.94
+VNT01340,2024-05-29,CLI0094,Webcam HD,Vidéo,Hauts-de-France,Magasin,11,79.99,20,703.91
+VNT01341,2024-07-09,CLI0024,Laptop Pro,Informatique,Grand Est,Revendeur,10,1299.99,10,11699.91
+VNT01342,2024-01-08,CLI0066,Laptop Pro,Informatique,Grand Est,Magasin,11,1299.99,10,12869.9
+VNT01343,2024-03-10,CLI0182,Webcam HD,Vidéo,Île-de-France,Revendeur,13,79.99,5,987.88
+VNT01344,2024-01-03,CLI0139,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Magasin,3,349.99,5,997.47
+VNT01345,2024-09-12,CLI0113,Hub USB-C,Connectique,Bretagne,B2B Direct,1,49.99,15,42.49
+VNT01346,2024-09-21,CLI0010,Clavier mécanique,Périphériques,Grand Est,B2B Direct,14,89.99,20,1007.89
+VNT01347,2024-09-05,CLI0065,Écran 4K,Affichage,Occitanie,B2B Direct,2,449.99,20,719.98
+VNT01348,2024-11-21,CLI0125,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,Magasin,4,1299.99,20,4159.97
+VNT01349,2024-12-29,CLI0050,Imprimante laser,Impression,Hauts-de-France,Revendeur,1,349.99,20,279.99
+VNT01350,2024-01-25,CLI0036,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Magasin,15,39.99,5,569.86
+VNT01351,2024-07-13,CLI0126,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,En ligne,9,49.99,20,359.93
+VNT01352,2024-04-27,CLI0181,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Revendeur,5,99.99,15,424.96
+VNT01353,2024-03-03,CLI0170,Imprimante laser,Impression,Bretagne,En ligne,12,349.99,15,3569.9
+VNT01354,2024-07-31,CLI0015,Hub USB-C,Connectique,Grand Est,En ligne,9,49.99,5,427.41
+VNT01355,2024-07-27,CLI0129,Tablette graphique,Création,Grand Est,Magasin,4,249.99,20,799.97
+VNT01356,2024-07-13,CLI0114,Imprimante laser,Impression,Grand Est,B2B Direct,14,349.99,10,4409.87
+VNT01357,2024-12-28,CLI0193,Tablette graphique,Création,Bretagne,En ligne,6,249.99,15,1274.95
+VNT01358,2024-01-15,CLI0057,Laptop Pro,Informatique,Provence-PACA,B2B Direct,1,1299.99,0,1299.99
+VNT01359,2024-02-21,CLI0153,Imprimante laser,Impression,Provence-PACA,Magasin,1,349.99,15,297.49
+VNT01360,2024-10-19,CLI0068,Tablette graphique,Création,Île-de-France,Magasin,14,249.99,0,3499.86
+VNT01361,2024-01-05,CLI0006,Souris sans fil,Périphériques,Grand Est,Revendeur,5,39.99,10,179.96
+VNT01362,2024-10-10,CLI0172,Laptop Pro,Informatique,Grand Est,En ligne,10,1299.99,5,12349.9
+VNT01363,2024-06-11,CLI0089,Écran 4K,Affichage,Provence-PACA,B2B Direct,1,449.99,15,382.49
+VNT01364,2024-12-11,CLI0014,Écran 4K,Affichage,Bretagne,B2B Direct,11,449.99,20,3959.91
+VNT01365,2024-07-16,CLI0076,Clavier mécanique,Périphériques,Occitanie,Revendeur,7,89.99,15,535.44
+VNT01366,2024-01-24,CLI0007,Casque audio,Audio,Hauts-de-France,B2B Direct,9,129.99,10,1052.92
+VNT01367,2024-07-09,CLI0029,Laptop Pro,Informatique,Hauts-de-France,Revendeur,1,1299.99,5,1234.99
+VNT01368,2024-10-24,CLI0005,Imprimante laser,Impression,Hauts-de-France,B2B Direct,8,349.99,5,2659.92
+VNT01369,2024-06-27,CLI0097,Souris sans fil,Périphériques,Bretagne,Revendeur,11,39.99,15,373.91
+VNT01370,2024-12-19,CLI0030,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Magasin,14,39.99,10,503.87
+VNT01371,2024-05-17,CLI0008,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,14,39.99,20,447.89
+VNT01372,2024-08-19,CLI0108,Clavier mécanique,Périphériques,Hauts-de-France,B2B Direct,15,89.99,5,1282.36
+VNT01373,2024-07-21,CLI0167,Clavier mécanique,Périphériques,Grand Est,B2B Direct,15,89.99,0,1349.85
+VNT01374,2024-08-04,CLI0105,Clavier mécanique,Périphériques,Île-de-France,Revendeur,7,89.99,5,598.43
+VNT01375,2024-03-14,CLI0183,Webcam HD,Vidéo,Grand Est,Revendeur,5,79.99,20,319.96
+VNT01376,2024-06-29,CLI0178,Hub USB-C,Connectique,Bretagne,Magasin,10,49.99,10,449.91
+VNT01377,2024-02-12,CLI0113,Casque audio,Audio,Hauts-de-France,Revendeur,11,129.99,10,1286.9
+VNT01378,2024-01-06,CLI0114,Tablette graphique,Création,Île-de-France,Magasin,12,249.99,20,2399.9
+VNT01379,2024-07-26,CLI0081,Laptop Pro,Informatique,Bretagne,En ligne,14,1299.99,15,15469.88
+VNT01380,2024-07-04,CLI0113,Webcam HD,Vidéo,Provence-PACA,Revendeur,1,79.99,15,67.99
+VNT01381,2024-03-29,CLI0146,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,B2B Direct,1,49.99,10,44.99
+VNT01382,2024-09-01,CLI0019,Webcam HD,Vidéo,Provence-PACA,En ligne,4,79.99,5,303.96
+VNT01383,2024-01-15,CLI0112,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,B2B Direct,15,99.99,10,1349.87
+VNT01384,2024-05-25,CLI0180,Écran 4K,Affichage,Occitanie,En ligne,8,449.99,5,3419.92
+VNT01385,2024-01-23,CLI0135,Tablette graphique,Création,Grand Est,B2B Direct,9,249.99,0,2249.91
+VNT01386,2024-03-18,CLI0139,Souris sans fil,Périphériques,Normandie,Magasin,14,39.99,5,531.87
+VNT01387,2024-08-24,CLI0186,Souris sans fil,Périphériques,Occitanie,B2B Direct,4,39.99,0,159.96
+VNT01388,2024-02-07,CLI0149,Laptop Pro,Informatique,Normandie,Magasin,9,1299.99,20,9359.93
+VNT01389,2024-12-25,CLI0005,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Magasin,2,349.99,5,664.98
+VNT01390,2024-08-18,CLI0064,Disque SSD 1TB,Stockage,Grand Est,En ligne,6,99.99,0,599.94
+VNT01391,2024-11-09,CLI0166,Clavier mécanique,Périphériques,Provence-PACA,En ligne,2,89.99,10,161.98
+VNT01392,2024-04-01,CLI0139,Casque audio,Audio,Occitanie,B2B Direct,13,129.99,10,1520.88
+VNT01393,2024-05-19,CLI0078,Casque audio,Audio,Grand Est,B2B Direct,12,129.99,5,1481.89
+VNT01394,2024-04-20,CLI0020,Disque SSD 1TB,Stockage,Bretagne,Magasin,3,99.99,5,284.97
+VNT01395,2024-05-15,CLI0013,Souris sans fil,Périphériques,Hauts-de-France,En ligne,4,39.99,20,127.97
+VNT01396,2024-06-09,CLI0151,Laptop Pro,Informatique,Normandie,Magasin,7,1299.99,0,9099.93
+VNT01397,2024-05-19,CLI0043,Laptop Pro,Informatique,Normandie,En ligne,12,1299.99,15,13259.9
+VNT01398,2024-06-01,CLI0107,Écran 4K,Affichage,Provence-PACA,En ligne,3,449.99,0,1349.97
+VNT01399,2024-12-13,CLI0160,Laptop Pro,Informatique,Provence-PACA,B2B Direct,8,1299.99,20,8319.94
+VNT01400,2024-12-16,CLI0135,Disque SSD 1TB,Stockage,Île-de-France,Revendeur,2,99.99,15,169.98
+VNT01401,2024-09-26,CLI0099,Hub USB-C,Connectique,Auvergne-Rhône-Alpes,Magasin,3,49.99,15,127.47
+VNT01402,2024-01-26,CLI0102,Imprimante laser,Impression,Auvergne-Rhône-Alpes,Revendeur,9,349.99,5,2992.41
+VNT01403,2024-10-05,CLI0044,Laptop Pro,Informatique,Grand Est,B2B Direct,9,1299.99,0,11699.91
+VNT01404,2024-12-04,CLI0173,Laptop Pro,Informatique,Normandie,B2B Direct,15,1299.99,0,19499.85
+VNT01405,2024-11-02,CLI0194,Écran 4K,Affichage,Bretagne,En ligne,10,449.99,20,3599.92
+VNT01406,2024-05-04,CLI0135,Webcam HD,Vidéo,Occitanie,En ligne,4,79.99,20,255.97
+VNT01407,2024-01-20,CLI0097,Écran 4K,Affichage,Auvergne-Rhône-Alpes,Revendeur,11,449.99,20,3959.91
+VNT01408,2024-10-19,CLI0167,Souris sans fil,Périphériques,Bretagne,Revendeur,2,39.99,10,71.98
+VNT01409,2024-05-18,CLI0085,Webcam HD,Vidéo,Normandie,En ligne,2,79.99,0,159.98
+VNT01410,2024-03-27,CLI0047,Écran 4K,Affichage,Bretagne,B2B Direct,3,449.99,15,1147.47
+VNT01411,2024-10-05,CLI0019,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,B2B Direct,13,1299.99,20,13519.9
+VNT01412,2024-06-13,CLI0110,Webcam HD,Vidéo,Occitanie,Revendeur,12,79.99,10,863.89
+VNT01413,2024-02-01,CLI0189,Casque audio,Audio,Occitanie,B2B Direct,10,129.99,20,1039.92
+VNT01414,2024-05-03,CLI0155,Disque SSD 1TB,Stockage,Occitanie,En ligne,2,99.99,10,179.98
+VNT01415,2024-05-16,CLI0171,Imprimante laser,Impression,Bretagne,Revendeur,6,349.99,0,2099.94
+VNT01416,2024-03-27,CLI0111,Clavier mécanique,Périphériques,Bretagne,Revendeur,13,89.99,5,1111.38
+VNT01417,2024-06-26,CLI0161,Clavier mécanique,Périphériques,Grand Est,B2B Direct,1,89.99,10,80.99
+VNT01418,2024-11-14,CLI0046,Écran 4K,Affichage,Grand Est,Revendeur,10,449.99,10,4049.91
+VNT01419,2024-02-29,CLI0168,Webcam HD,Vidéo,Provence-PACA,Revendeur,5,79.99,5,379.95
+VNT01420,2024-05-15,CLI0132,Casque audio,Audio,Occitanie,Magasin,5,129.99,0,649.95
+VNT01421,2024-02-20,CLI0059,Casque audio,Audio,Grand Est,Magasin,3,129.99,5,370.47
+VNT01422,2024-03-04,CLI0046,Imprimante laser,Impression,Provence-PACA,B2B Direct,8,349.99,10,2519.93
+VNT01423,2024-03-31,CLI0113,Hub USB-C,Connectique,Île-de-France,Magasin,5,49.99,0,249.95
+VNT01424,2024-02-21,CLI0115,Souris sans fil,Périphériques,Auvergne-Rhône-Alpes,Revendeur,13,39.99,5,493.88
+VNT01425,2024-06-04,CLI0028,Laptop Pro,Informatique,Hauts-de-France,B2B Direct,9,1299.99,0,11699.91
+VNT01426,2024-04-26,CLI0014,Écran 4K,Affichage,Hauts-de-France,En ligne,15,449.99,5,6412.36
+VNT01427,2024-06-10,CLI0088,Webcam HD,Vidéo,Hauts-de-France,Magasin,3,79.99,5,227.97
+VNT01428,2024-07-30,CLI0057,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,En ligne,12,1299.99,10,14039.89
+VNT01429,2024-05-01,CLI0108,Hub USB-C,Connectique,Provence-PACA,Magasin,3,49.99,0,149.97
+VNT01430,2024-03-29,CLI0097,Imprimante laser,Impression,Occitanie,En ligne,15,349.99,10,4724.87
+VNT01431,2024-10-28,CLI0026,Casque audio,Audio,Grand Est,B2B Direct,11,129.99,10,1286.9
+VNT01432,2024-04-28,CLI0122,Clavier mécanique,Périphériques,Grand Est,Magasin,12,89.99,10,971.89
+VNT01433,2024-08-20,CLI0049,Disque SSD 1TB,Stockage,Provence-PACA,Magasin,11,99.99,20,879.91
+VNT01434,2024-02-16,CLI0166,Écran 4K,Affichage,Provence-PACA,Revendeur,5,449.99,5,2137.45
+VNT01435,2024-08-28,CLI0132,Casque audio,Audio,Occitanie,En ligne,1,129.99,10,116.99
+VNT01436,2024-05-09,CLI0128,Disque SSD 1TB,Stockage,Hauts-de-France,Magasin,14,99.99,5,1329.87
+VNT01437,2024-10-04,CLI0154,Laptop Pro,Informatique,Provence-PACA,Revendeur,15,1299.99,10,17549.86
+VNT01438,2024-12-08,CLI0081,Laptop Pro,Informatique,Bretagne,Revendeur,8,1299.99,20,8319.94
+VNT01439,2024-06-16,CLI0058,Casque audio,Audio,Occitanie,Magasin,11,129.99,15,1215.41
+VNT01440,2024-04-07,CLI0138,Casque audio,Audio,Île-de-France,En ligne,4,129.99,5,493.96
+VNT01441,2024-08-16,CLI0018,Webcam HD,Vidéo,Provence-PACA,En ligne,8,79.99,10,575.93
+VNT01442,2024-04-04,CLI0131,Disque SSD 1TB,Stockage,Bretagne,En ligne,5,99.99,20,399.96
+VNT01443,2024-11-22,CLI0149,Écran 4K,Affichage,Île-de-France,Revendeur,7,449.99,5,2992.43
+VNT01444,2024-05-10,CLI0120,Laptop Pro,Informatique,Grand Est,En ligne,2,1299.99,20,2079.98
+VNT01445,2024-12-18,CLI0155,Laptop Pro,Informatique,Provence-PACA,B2B Direct,11,1299.99,20,11439.91
+VNT01446,2024-12-03,CLI0045,Tablette graphique,Création,Auvergne-Rhône-Alpes,B2B Direct,3,249.99,0,749.97
+VNT01447,2024-01-18,CLI0125,Hub USB-C,Connectique,Bretagne,Revendeur,10,49.99,5,474.91
+VNT01448,2024-11-01,CLI0083,Webcam HD,Vidéo,Hauts-de-France,Magasin,12,79.99,0,959.88
+VNT01449,2024-03-17,CLI0170,Souris sans fil,Périphériques,Occitanie,B2B Direct,9,39.99,5,341.91
+VNT01450,2024-03-25,CLI0019,Laptop Pro,Informatique,Île-de-France,Magasin,7,1299.99,10,8189.94
+VNT01451,2024-09-18,CLI0048,Tablette graphique,Création,Île-de-France,B2B Direct,13,249.99,20,2599.9
+VNT01452,2024-07-06,CLI0091,Imprimante laser,Impression,Île-de-France,En ligne,11,349.99,15,3272.41
+VNT01453,2024-01-03,CLI0037,Souris sans fil,Périphériques,Île-de-France,Magasin,6,39.99,20,191.95
+VNT01454,2024-08-12,CLI0010,Souris sans fil,Périphériques,Hauts-de-France,En ligne,4,39.99,5,151.96
+VNT01455,2024-04-16,CLI0003,Casque audio,Audio,Auvergne-Rhône-Alpes,Revendeur,4,129.99,0,519.96
+VNT01456,2024-10-24,CLI0048,Clavier mécanique,Périphériques,Hauts-de-France,B2B Direct,7,89.99,20,503.94
+VNT01457,2024-04-26,CLI0019,Disque SSD 1TB,Stockage,Occitanie,B2B Direct,8,99.99,10,719.93
+VNT01458,2024-03-18,CLI0186,Imprimante laser,Impression,Occitanie,B2B Direct,2,349.99,5,664.98
+VNT01459,2024-04-20,CLI0185,Casque audio,Audio,Grand Est,En ligne,1,129.99,0,129.99
+VNT01460,2024-08-16,CLI0115,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,Revendeur,7,1299.99,15,7734.94
+VNT01461,2024-06-28,CLI0061,Casque audio,Audio,Auvergne-Rhône-Alpes,Magasin,12,129.99,20,1247.9
+VNT01462,2024-03-10,CLI0191,Laptop Pro,Informatique,Occitanie,B2B Direct,5,1299.99,5,6174.95
+VNT01463,2024-08-26,CLI0110,Clavier mécanique,Périphériques,Provence-PACA,Magasin,6,89.99,20,431.95
+VNT01464,2024-05-30,CLI0081,Hub USB-C,Connectique,Provence-PACA,B2B Direct,6,49.99,20,239.95
+VNT01465,2024-09-16,CLI0086,Webcam HD,Vidéo,Grand Est,Magasin,14,79.99,10,1007.87
+VNT01466,2024-11-28,CLI0134,Disque SSD 1TB,Stockage,Île-de-France,Revendeur,8,99.99,20,639.94
+VNT01467,2024-06-14,CLI0040,Souris sans fil,Périphériques,Provence-PACA,B2B Direct,11,39.99,20,351.91
+VNT01468,2024-05-21,CLI0191,Clavier mécanique,Périphériques,Bretagne,B2B Direct,5,89.99,5,427.45
+VNT01469,2024-12-22,CLI0021,Clavier mécanique,Périphériques,Occitanie,Revendeur,6,89.99,20,431.95
+VNT01470,2024-07-27,CLI0099,Imprimante laser,Impression,Occitanie,Revendeur,7,349.99,0,2449.93
+VNT01471,2024-06-25,CLI0140,Imprimante laser,Impression,Occitanie,Revendeur,8,349.99,5,2659.92
+VNT01472,2024-10-27,CLI0115,Clavier mécanique,Périphériques,Occitanie,Magasin,2,89.99,20,143.98
+VNT01473,2024-12-15,CLI0045,Clavier mécanique,Périphériques,Provence-PACA,En ligne,10,89.99,10,809.91
+VNT01474,2024-04-11,CLI0163,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,Revendeur,15,99.99,0,1499.85
+VNT01475,2024-01-11,CLI0107,Webcam HD,Vidéo,Île-de-France,En ligne,5,79.99,15,339.96
+VNT01476,2024-02-05,CLI0195,Clavier mécanique,Périphériques,Provence-PACA,Magasin,9,89.99,20,647.93
+VNT01477,2024-02-27,CLI0157,Écran 4K,Affichage,Provence-PACA,B2B Direct,9,449.99,15,3442.42
+VNT01478,2024-12-23,CLI0058,Écran 4K,Affichage,Île-de-France,Revendeur,7,449.99,10,2834.94
+VNT01479,2024-02-15,CLI0067,Souris sans fil,Périphériques,Grand Est,En ligne,11,39.99,10,395.9
+VNT01480,2024-03-06,CLI0133,Écran 4K,Affichage,Île-de-France,Magasin,6,449.99,0,2699.94
+VNT01481,2024-03-09,CLI0071,Webcam HD,Vidéo,Grand Est,En ligne,12,79.99,15,815.9
+VNT01482,2024-08-22,CLI0162,Tablette graphique,Création,Auvergne-Rhône-Alpes,En ligne,14,249.99,5,3324.87
+VNT01483,2024-01-31,CLI0097,Clavier mécanique,Périphériques,Île-de-France,En ligne,7,89.99,10,566.94
+VNT01484,2024-01-19,CLI0157,Casque audio,Audio,Normandie,Revendeur,3,129.99,15,331.47
+VNT01485,2024-10-20,CLI0177,Laptop Pro,Informatique,Auvergne-Rhône-Alpes,B2B Direct,5,1299.99,10,5849.95
+VNT01486,2024-03-26,CLI0119,Disque SSD 1TB,Stockage,Normandie,B2B Direct,15,99.99,0,1499.85
+VNT01487,2024-03-09,CLI0036,Écran 4K,Affichage,Hauts-de-France,Magasin,1,449.99,5,427.49
+VNT01488,2024-08-27,CLI0038,Webcam HD,Vidéo,Grand Est,Magasin,13,79.99,0,1039.87
+VNT01489,2024-02-16,CLI0187,Webcam HD,Vidéo,Auvergne-Rhône-Alpes,En ligne,12,79.99,10,863.89
+VNT01490,2024-10-05,CLI0059,Imprimante laser,Impression,Île-de-France,B2B Direct,3,349.99,0,1049.97
+VNT01491,2024-07-17,CLI0196,Disque SSD 1TB,Stockage,Auvergne-Rhône-Alpes,B2B Direct,7,99.99,0,699.93
+VNT01492,2024-10-05,CLI0028,Clavier mécanique,Périphériques,Hauts-de-France,Revendeur,6,89.99,20,431.95
+VNT01493,2024-12-18,CLI0179,Disque SSD 1TB,Stockage,Provence-PACA,B2B Direct,3,99.99,10,269.97
+VNT01494,2024-11-23,CLI0070,Imprimante laser,Impression,Bretagne,Revendeur,6,349.99,0,2099.94
+VNT01495,2024-04-20,CLI0107,Imprimante laser,Impression,Grand Est,Magasin,2,349.99,15,594.98
+VNT01496,2024-09-05,CLI0041,Webcam HD,Vidéo,Normandie,B2B Direct,13,79.99,20,831.9
+VNT01497,2024-12-13,CLI0159,Clavier mécanique,Périphériques,Normandie,Revendeur,10,89.99,15,764.91
+VNT01498,2024-12-04,CLI0136,Clavier mécanique,Périphériques,Grand Est,En ligne,1,89.99,10,80.99
+VNT01499,2024-05-08,CLI0068,Clavier mécanique,Périphériques,Hauts-de-France,Revendeur,4,89.99,10,323.96
+VNT01500,2024-05-24,CLI0041,Écran 4K,Affichage,Bretagne,En ligne,14,449.99,0,6299.86

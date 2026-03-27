@@ -7,6 +7,15 @@ __pycache__/
 *.pyd
 .pytest_cache/
 uploads/
-source.db
 dist/
 .DS_Store
+
+# Fichiers temporaires générés par l'application
+pipeline.log
+resume_architecture.txt
+state_checkpoint.db
+state_checkpoint.db-shm
+state_checkpoint.db-wal
+test.db
+source.db
+*.csv
