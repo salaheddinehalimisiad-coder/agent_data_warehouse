@@ -5,8 +5,52 @@ import { X, Lock, Mail, User, ShieldCheck } from 'lucide-react';
 export default function AuthModal({ isOpen, onClose, onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [step, setStep] = useState(1); // 1: Info, 2: Code verification
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleRegisterInit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      // Simulation d'envoi de mail (Backend call)
+      const res = await fetch('http://localhost:8000/api/auth/register-init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, name: formData.name })
+      });
+      if (res.ok) setStep(2);
+      else alert("Erreur lors de l'envoi du code.");
+    } catch (err) {
+      alert("Erreur de connexion au serveur d'authentification.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegisterVerify = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/auth/register-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, code: verificationCode })
+      });
+      if (res.ok) {
+        const newUser = { name: formData.name, email: formData.email, role: 'Data Analyst', history: [] };
+        onLogin(newUser);
+      } else {
+        alert("Code de vérification incorrect.");
+      }
+    } catch (err) {
+      alert("Erreur de validation.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -16,9 +60,8 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
       const mockUser = storedUser || { name: 'Utilisateur', email: formData.email, role: 'Data Engineer', history: [] };
       onLogin(mockUser);
     } else {
-      // Mock register
-      const newUser = { name: formData.name, email: formData.email, role: 'Data Analyst', history: [] };
-      onLogin(newUser);
+      if (step === 1) handleRegisterInit(e);
+      else handleRegisterVerify(e);
     }
   };
 
@@ -52,7 +95,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
+              {!isLogin && step === 1 && (
                 <div>
                   <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Nom complet</label>
                   <div className="relative">
@@ -69,41 +112,66 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Email professionnel</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                  <input
-                    required
-                    type="email"
-                    className="w-full bg-[#18181b] border border-zinc-800 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-zinc-600"
-                    placeholder="jean@entreprise.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  />
-                </div>
-              </div>
+              {step === 1 ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Adresse mail</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                      <input
+                        required
+                        type="email"
+                        className="w-full bg-[#18181b] border border-zinc-800 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-zinc-600"
+                        placeholder="jean@gmail.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Mot de passe</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                  <input
-                    required
-                    type="password"
-                    className="w-full bg-[#18181b] border border-zinc-800 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-zinc-600"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  />
-                </div>
-              </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Mot de passe</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                      <input
+                        required
+                        type="password"
+                        className="w-full bg-[#18181b] border border-zinc-800 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-zinc-600"
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs text-center">
+                    Un code de vérification à 6 chiffres a été envoyé à <strong>{formData.email}</strong>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider text-center">Code de vérification</label>
+                    <input
+                      required
+                      type="text"
+                      maxLength="6"
+                      className="w-full bg-[#18181b] border border-zinc-800 rounded-lg py-3 text-center text-xl font-bold tracking-[0.5em] text-white focus:outline-none focus:border-emerald-500 transition-all placeholder-zinc-800"
+                      placeholder="000000"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                    />
+                  </div>
+                </motion.div>
+              )}
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-indigo-500/20 transition-all mt-4"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 text-white font-bold py-2.5 rounded-lg shadow-lg shadow-indigo-500/20 transition-all mt-4"
               >
-                {isLogin ? 'Se connecter' : "S'inscrire"}
+                {isLoading ? 'Vérification en cours...' : (
+                  isLogin ? 'Se connecter' : (step === 1 ? "S'inscrire" : "Confirmer l'inscription")
+                )}
               </button>
             </form>
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Network, Settings, PanelRightClose, PanelRightOpen, Database, History, LayoutGrid, Bot, Terminal, X, Loader2, Download, FileText, BookOpen } from 'lucide-react';
 import ConnectionModal from './ConnectionModal';
@@ -71,7 +71,7 @@ export default function App() {
       const resp = await fetch('http://localhost:8000/api/validate', { method: 'POST' });
       const data = await resp.json();
       if (data.status === 'success' || data.status === 'background') {
-        setMessages(prev => [...prev, { role: 'bot', content: "✅ Modèle validé par l'humain ! PySpark est en cours de création en arrière-plan..." }]);
+        setMessages(prev => [...prev, { role: 'bot', content: "✅ Modèle validé par l'humain ! La transformation Pentaho est en cours de création..." }]);
       } else {
         alert("Erreur de validation : " + data.message);
       }
@@ -82,9 +82,45 @@ export default function App() {
     }
   };
 
+  // Terminal resizing logic
+  const [terminalHeight, setTerminalHeight] = useState(240);
+  const [isResizingTerminal, setIsResizingTerminal] = useState(false);
+
+  const startResizing = useCallback((e) => {
+    e.preventDefault();
+    setIsResizingTerminal(true);
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizingTerminal(false);
+  }, []);
+
+  const resizeTerminal = useCallback((e) => {
+    if (isResizingTerminal) {
+      const newHeight = window.innerHeight - e.clientY;
+      if (newHeight > 64 && newHeight < window.innerHeight * 0.7) {
+        setTerminalHeight(newHeight);
+      }
+    }
+  }, [isResizingTerminal]);
+
+  useEffect(() => {
+    if (isResizingTerminal) {
+      window.addEventListener('mousemove', resizeTerminal);
+      window.addEventListener('mouseup', stopResizing);
+    } else {
+      window.removeEventListener('mousemove', resizeTerminal);
+      window.removeEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resizeTerminal);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizingTerminal, resizeTerminal, stopResizing]);
+
   const handleDownloadFile = (content, filename) => {
     if (!content) return alert("Aucun code à exporter !");
-    const blob = new Blob([content], { type: 'text/plain' });
+    const blob = new Blob([content], { type: filename.endsWith('.ktr') ? 'application/xml' : 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -92,7 +128,7 @@ export default function App() {
     a.click();
     URL.revokeObjectURL(url);
   };
-
+   
   const handleExportPdf = async () => {
     try {
       const res = await fetch('http://localhost:8000/api/export-pdf');
@@ -105,6 +141,22 @@ export default function App() {
       URL.revokeObjectURL(url);
     } catch (err) {
       alert("Erreur réseau du rapport.");
+    }
+  };
+
+  const handleExportMcdPdf = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/export-mcd-pdf');
+      if (!res.ok) throw new Error("Erreur serveur lors de la génération du PDF.");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Modele_Conceptuel_Donnees.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Erreur réseau de l'export MCD : " + err.message);
     }
   };
 
@@ -189,10 +241,19 @@ export default function App() {
               <button onClick={() => handleDownloadFile(sqlCode, "schema_dw.sql")} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all border border-white/10 group">
                 <Download size={14} className="text-indigo-400 group-hover:scale-110 transition-transform" /> DDL SQL
               </button>
-              <button onClick={() => handleDownloadFile(etlCode, "pipeline.py")} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all border border-white/10 group">
-                <Download size={14} className="text-amber-400 group-hover:scale-110 transition-transform" /> PySpark
+              <button 
+                onClick={() => handleDownloadFile(etlCode, "transformation_pentaho.ktr")} 
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all border border-indigo-500/20 group"
+              >
+                <Download size={14} className="group-hover:scale-110 transition-transform" /> .ktr
               </button>
-              <button onClick={handleExportPdf} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all border border-emerald-500/20 ml-2 group">
+              <button 
+                onClick={handleExportMcdPdf} 
+                className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all border border-amber-500/20 group"
+              >
+                <FileText size={14} className="group-hover:scale-110 transition-transform" /> MCD PDF
+              </button>
+              <button onClick={handleExportPdf} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all border border-emerald-500/20 group">
                 <FileText size={14} className="group-hover:scale-110 transition-transform" /> RAPPORT PDF
               </button>
               <button onClick={handleValidate} disabled={isValidating || !sqlCode} className="px-4 py-1.5 text-sm font-bold bg-white text-black hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors shadow-sm ml-2">
@@ -230,13 +291,20 @@ export default function App() {
             <AnimatePresence>
               {view === 'canvas' && showTerminal && (
                 <motion.div 
-                  initial={{ y: 300, opacity: 0 }}
+                  initial={{ y: 200, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 300, opacity: 0 }}
+                  exit={{ y: 200, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="absolute inset-x-0 bottom-0 h-64 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] z-40 flex flex-col shadow-2xl"
+                  className="fixed inset-x-0 bottom-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] z-50 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
+                  style={{ height: terminalHeight, left: 64 }} 
                 >
-                   <div className="px-4 py-2 bg-[#18181b] flex items-center justify-between border-b border-[#27272a]">
+                   {/* Resize Handle */}
+                   <div 
+                     onMouseDown={startResizing}
+                     className="absolute inset-x-0 -top-1 h-2 cursor-ns-resize z-50 hover:bg-indigo-500/50 transition-colors"
+                   />
+                   
+                   <div className="px-4 py-2 bg-[#18181b] flex items-center justify-between border-b border-[#27272a] shrink-0">
                      <div className="flex items-center gap-2">
                        <Terminal size={14} className="text-zinc-400"/>
                        <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest">Build Output Terminal</span>

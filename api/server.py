@@ -4,7 +4,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from fastapi import FastAPI, Request, File, UploadFile, BackgroundTasks
 import shutil
 import os
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, AsyncGenerator
@@ -122,6 +122,16 @@ class ChatRequest(BaseModel):
     message: str
     context: str = "sql"  # 'sql' ou 'etl'
 
+class RegisterInitRequest(BaseModel):
+    email: str
+    name: str
+
+class RegisterVerifyRequest(BaseModel):
+    email: str
+    code: str
+
+PENDING_VERIFICATIONS = {}
+
 
 # ── SSE endpoint ──────────────────────────────────────────────────────────────
 @app.get("/api/pipeline-stream")
@@ -156,9 +166,49 @@ def pipeline_status():
     return pipeline_state
 
 
+@app.get("/api/llm-status")
+def llm_status():
+    """Retourne le LLM actuellement utilisé (Ollama cloud, local ou Gemini)."""
+    import requests as req_lib
+    import os
+
+    ollama_url    = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    ollama_key    = os.getenv("OLLAMA_API_KEY", "")
+    cloud_model   = os.getenv("OLLAMA_CLOUD_MODEL", "glm-5:cloud")
+    gemini_key    = os.getenv("GOOGLE_API_KEY", "")
+
+    # Tester si Ollama tourne
+    try:
+        headers = {}
+        if ollama_key:
+            headers["Authorization"] = f"Bearer {ollama_key}"
+        r = req_lib.get(f"{ollama_url}/api/tags", headers=headers, timeout=3)
+        if r.status_code == 200:
+            available = [m["name"] for m in r.json().get("models", [])]
+            # Chercher le modèle cloud configuré
+            cloud_match = next((m for m in available if cloud_model.split(":")[0] in m), None)
+            if cloud_match:
+                return {"status": "cloud_ollama", "model": cloud_match, "url": ollama_url, "models": available}
+            # Chercher d'autres modèles cloud
+            cloud_any = next((m for m in available if "cloud" in m.lower()), None)
+            if cloud_any:
+                return {"status": "cloud_ollama", "model": cloud_any, "url": ollama_url, "models": available}
+            # Modèle local
+            if available:
+                return {"status": "local_ollama", "model": available[0], "url": ollama_url, "models": available}
+    except Exception:
+        pass
+
+    # Gemini fallback
+    if gemini_key:
+        return {"status": "gemini", "model": "gemini-1.5-flash", "url": "https://generativelanguage.googleapis.com", "models": []}
+
+    return {"status": "unavailable", "model": None, "url": None, "models": []}
+
+
 @app.post("/api/upload-csv")
 async def upload_csv(file: UploadFile = File(...)):
-    """Enregistre un fichier CSV envoyé par le frontend."""
+    """Enregistre un fichier CSV ou Excel envoyé par le frontend."""
     upload_dir = "uploads"
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
@@ -487,58 +537,226 @@ from fastapi.responses import Response
 @app.get("/api/export-pdf")
 def export_pipeline_pdf():
     from fpdf import FPDF
+    import os
     
     class PDF(FPDF):
         def header(self):
-            self.set_font('Helvetica', 'B', 15)
+            self.set_font('Arial', 'B', 16)
             self.set_fill_color(99, 102, 241)
             self.set_text_color(255, 255, 255)
-            self.cell(0, 15, 'Rapport : Data Warehouse Automatise', 0, 1, 'C', 1)
+            self.cell(0, 15, 'Rapport Technique : Pipeline ETL Agentique', 0, 1, 'C', 1)
             self.ln(10)
         def footer(self):
             self.set_y(-15)
-            self.set_font('Helvetica', 'I', 8)
-            self.set_text_color(128, 128, 128)
-            self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+            self.set_font('Arial', 'I', 8)
+            self.set_text_color(150, 150, 150)
+            self.cell(0, 10, f'Genere par AI Data Engineer - Page {self.page_no()}', 0, 0, 'C')
 
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, '1. Resume Executif', 0, 1)
-    pdf.set_font('Helvetica', '', 10)
-    pdf.set_text_color(80, 80, 80)
-    pdf.multi_cell(0, 6, "Ce rapport documente la creation et le deploiement automatiques de votre Data Warehouse via le systeme Multi-Agents d'Intelligence Artificielle. Le pipeline a suivi quatre grandes etapes pour achever le workflow (Extraction, Transformation, Modelisation et Chargement) par le biais du script genere en PySpark.")
-    pdf.ln(5)
-
-    config = {"configurable": {"thread_id": current_session_id}}
     try:
+        pdf = PDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        
+        # Section 1
+        pdf.set_font('Arial', 'B', 14)
+        pdf.set_text_color(30, 30, 30)
+        pdf.cell(0, 10, '1. Resume de l\'Architecture', 0, 1)
+        pdf.set_font('Arial', '', 11)
+        pdf.set_text_color(60, 60, 60)
+        intro = "Ce document recapitule la configuration du Data Warehouse et des processus ETL générés. L'architecture repose sur un schéma en étoile (Star Schema) optimisé pour les performances décisionnelles."
+        pdf.multi_cell(0, 7, intro.encode('latin-1', 'replace').decode('latin-1'))
+        pdf.ln(5)
+
+        config = get_config()
         state = agent_app.get_state(config).values if agent_app else {}
-    except:
-        state = {}
 
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, '2. Modele Conceptuel de Donnees (DDL)', 0, 1)
-    pdf.set_font('Helvetica', '', 8)
-    sql_text = state.get('sql_ddl', 'Aucun schema SQL genere')
-    if sql_text is None: sql_text = "Aucun schema SQL genere"
-    sql_text = sql_text.replace('é', 'e').replace('à', 'a').replace('è', 'e')
-    pdf.multi_cell(0, 5, sql_text)
-    pdf.ln(5)
+        # Section 2 : SQL
+        pdf.set_font('Arial', 'B', 14)
+        pdf.set_text_color(30, 30, 30)
+        pdf.cell(0, 10, '2. Schema SQL (DDL)', 0, 1)
+        pdf.set_font('Courier', '', 9)
+        pdf.set_fill_color(245, 245, 250)
+        sql_text = state.get('sql_ddl', '-- Aucun schema genere') or "-- Aucun schema"
+        # Remplacement manuel pour compatibilité PDF standard
+        sql_text = sql_text.replace('’', "'").replace('€', 'EUR')
+        pdf.multi_cell(0, 5, sql_text.encode('latin-1', 'replace').decode('latin-1'), fill=True)
+        pdf.ln(10)
 
+        # Section 3 : Pentaho
+        pdf.add_page()
+        pdf.set_font('Arial', 'B', 14)
+        pdf.cell(0, 10, '3. Transformation Pentaho (.ktr)', 0, 1)
+        pdf.set_font('Courier', '', 8)
+        etl_text = state.get('etl_code', '<!-- Aucun code ETL genere -->') or "<!-- Vide -->"
+        pdf.multi_cell(0, 4, etl_text.encode('latin-1', 'replace').decode('latin-1'), fill=True)
+
+        pdf_bytes = pdf.output()
+        content = bytes(pdf_bytes)
+        return Response(content=content, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=rapport_etl.pdf"})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/export-mcd-pdf")
+def export_mcd_pdf():
+    from fpdf import FPDF
+    import math
+
+    config = get_config()
+    state = agent_app.get_state(config).values if agent_app else {}
+    logical_model = state.get('logical_model', {})
+    tables = logical_model.get('tables', [])
+    
+    if not tables:
+        # Fallback si pas de modèle
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(0, 15, "Modele Conceptuel (MCD) - Indisponible", 0, 1, 'C')
+        pdf.ln(10)
+        pdf.set_font("Arial", '', 12)
+        pdf.cell(0, 10, "Veuillez generer un modele avant l'export.", 0, 1, 'C')
+        pdf_bytes = pdf.output()
+        return Response(content=bytes(pdf_bytes), media_type="application/pdf")
+
+    pdf = FPDF(orientation='L', unit='mm', format='A4') # Paysage pour plus d'espace
     pdf.add_page()
-    pdf.set_font('Helvetica', 'B', 12)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 10, '3. Code Source PySpark de l\'ETL', 0, 1)
-    pdf.set_font('Helvetica', '', 8)
-    etl_text = state.get('etl_code', 'Aucun code ETL genere')
-    if etl_text is None: etl_text = "Aucun code ETL genere"
-    etl_text = etl_text.replace('é', 'e').replace('à', 'a').replace('è', 'e')
-    pdf.multi_cell(0, 5, etl_text)
+    
+    # Header Premium
+    pdf.set_fill_color(15, 15, 20)
+    pdf.rect(0, 0, 297, 40, 'F')
+    pdf.set_font("Arial", 'B', 24)
+    pdf.set_text_color(255, 255, 255)
+    pdf.text(20, 25, "DATA WAREHOUSE SCHEMA")
+    pdf.set_font("Arial", '', 10)
+    pdf.set_text_color(150, 150, 150)
+    pdf.text(20, 32, "Architecture Conceptuelle - Star Schema (Modèle de Faits et Dimensions)")
 
-    pdf_bytes = bytearray(pdf.output(dest='S'))
-    return Response(content=bytes(pdf_bytes), media_type="application/pdf")
+    # --- Style & Layout Configuration ---
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf.add_page()
+    
+    # Background "Slate" very dark
+    pdf.set_fill_color(15, 17, 26)
+    pdf.rect(0, 0, 297, 210, 'F')
+    
+    # Modern Header
+    pdf.set_fill_color(22, 28, 45)
+    pdf.rect(0, 0, 297, 35, 'F')
+    pdf.set_draw_color(99, 102, 241) 
+    pdf.set_line_width(0.8)
+    pdf.line(0, 35, 297, 35)
+    
+    pdf.set_font("Arial", 'B', 20)
+    pdf.set_text_color(240, 240, 255)
+    pdf.text(15, 20, "ARCHITECTURE CONCEPTUELLE DU DATA WAREHOUSE")
+    pdf.set_font("Arial", '', 9)
+    pdf.set_text_color(148, 163, 184)
+    pdf.text(15, 27, "Visualisation Star Schema - Genere par Agentic ETL")
+
+    fact_tables = [t for t in tables if t.get('type') == 'FAIT']
+    dim_tables = [t for t in tables if t.get('type') != 'FAIT']
+    
+    coords = {} # t_name -> (x, y, w, h)
+    
+    def draw_table(t, x, y):
+        w = 58
+        h_head = 9
+        h_row = 5.5
+        rows = len(t.get('columns', []))
+        h_total = h_head + (rows * h_row) + 3
+        
+        is_fact = t.get('type') == 'FAIT'
+        
+        # Shadow / Glow
+        pdf.set_fill_color(30, 41, 59)
+        pdf.rect(x+0.5, y+0.5, w, h_total, 'F')
+        
+        # Table Body
+        pdf.set_fill_color(15, 23, 42)
+        pdf.set_draw_color(51, 65, 85)
+        pdf.set_line_width(0.3)
+        pdf.rect(x, y, w, h_total, 'FD')
+        
+        # Header
+        color = (99, 102, 241) if is_fact else (20, 184, 166)
+        pdf.set_fill_color(*color)
+        pdf.rect(x, y, w, h_head, 'F')
+        
+        pdf.set_font("Arial", 'B', 9)
+        pdf.set_text_color(255, 255, 255)
+        pdf.text(x + 4, y + 6, t['name'].upper())
+        
+        # Rows
+        cy = y + h_head + 4.5
+        for col in t.get('columns', []):
+            pdf.set_font("Arial", '', 8)
+            pdf.set_text_color(226, 232, 240)
+            
+            pfx = ""
+            if col.get('is_primary_key'): 
+                pfx = "PK "
+                pdf.set_text_color(250, 204, 21)
+            elif col.get('is_foreign_key'):
+                pfx = "FK "
+                pdf.set_text_color(167, 139, 250)
+                
+            pdf.text(x + 4, cy, pfx + col['name'])
+            
+            pdf.set_font("Arial", 'I', 7)
+            pdf.set_text_color(100, 116, 139)
+            t_str = col['type'].split('(')[0]
+            pdf.text(x + w - 4 - pdf.get_string_width(t_str), cy, t_str)
+            cy += h_row
+            
+        return w, h_total
+
+    # Placement
+    cx, cy = 148, 125
+    for i, ft in enumerate(fact_tables):
+        tx, ty = cx - 29, cy - 25 + (i * 60)
+        w, h = draw_table(ft, tx, ty)
+        coords[ft['name']] = (tx, ty, w, h)
+
+    radius = 85
+    for i, dt in enumerate(dim_tables):
+        ang = (i / len(dim_tables)) * 2 * math.pi
+        tx, ty = cx + radius * math.cos(ang) - 29, cy + radius * math.sin(ang) - 20
+        w, h = draw_table(dt, tx, ty)
+        coords[dt['name']] = (tx, ty, w, h)
+
+    # Relations behind tables (re-drawing tables after is better but we use coordinates)
+    # To draw lines BEHIND, we should have calculated coörds first.
+    # Let's just draw lines slightly lighter.
+    pdf.set_draw_color(71, 85, 105)
+    pdf.set_line_width(0.4)
+    for ft in fact_tables:
+        f_c = coords[ft['name']]
+        for col in ft['columns']:
+            ref = col.get('references')
+            if ref and ref in coords:
+                d_c = coords[ref]
+                # Line between centers but stopped at table borders would be hard without intersection math.
+                # We'll just draw them clearly.
+                pdf.line(f_c[0]+29, f_c[1]+15, d_c[0]+29, d_c[1]+15)
+
+    pdf_bytes = pdf.output()
+    return Response(content=bytes(pdf_bytes), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=architecture_dwh_premium.pdf"})
+
+
+@app.get("/api/export-ktr")
+def export_ktr():
+    """Téléchargement du fichier de transformation Pentaho (.ktr) généré."""
+    ktr_file = "outputs/transformation.ktr"
+    if os.path.exists(ktr_file):
+        return FileResponse(
+            path=ktr_file, 
+            filename="transformation_pentaho.ktr",
+            media_type='application/xml'
+        )
+    return {"status": "error", "message": "Fichier .ktr introuvable. Lancez le pipeline ETL d'abord."}
+
 
 @app.get("/api/export")
 def export_results():
@@ -548,45 +766,124 @@ def export_results():
         current_state = state_snapshot.values if state_snapshot else {}
         
         sql = current_state.get("sql_ddl", "-- Aucun modèle")
-        etl = current_state.get("etl_code", "# Aucun ETL")
+        etl = current_state.get("etl_code", "<!-- Aucun ETL -->")
         critic = current_state.get("critic_review", "Aucune remarque.")
-
-        summary = f"""# RESUME DU DATA WAREHOUSE\n\n## Rapport de l'Agent Critique:\n{critic}\n\n## 1) DDL SQL:\n```sql\n{sql}\n```\n\n## 2) Code PySpark ETL:\n```python\n{etl}\n```\n"""
-
-        # Enregistrement dans un fichier local pour la trace (point 5)
-        with open("resume_architecture.txt", "w", encoding="utf-8") as f:
-            f.write(summary)
-
+        
+        summary = f"""# RESUME DU DATA WAREHOUSE\n\n## Rapport de l'Agent Critique:\n{critic}\n\n## 1) DDL SQL:\n```sql\n{sql}\n```\n\n## 2) Transformation Pentaho .ktr (XML):\n```xml\n{etl}\n```\n"""
         return {"status": "success", "summary": summary, "sql": sql, "etl": etl}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 
+# ── Authentification & Email Verification ─────────────────────────────────────
+
+@app.post("/api/auth/register-init")
+async def register_init(req: RegisterInitRequest):
+    import random
+    code = f"{random.randint(100000, 999999)}"
+    PENDING_VERIFICATIONS[req.email] = code
+    
+    subject = "Votre code de vérification - Agentic ETL"
+    html_body = f"""
+    <html>
+    <body style="font-family: 'Inter', Arial, sans-serif; background-color: #0f1117; color: #e2e8f0; padding: 0; margin: 0;">
+      <div style="max-width: 560px; margin: 40px auto; background: #1a1f2e; border-radius: 16px; overflow: hidden; border: 1px solid #2d3748;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 32px 40px; text-align: center;">
+          <h1 style="margin: 0; color: #ffffff; font-size: 24px; letter-spacing: -0.5px;">🔐 Agentic ETL</h1>
+          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Plateforme d'Intelligence Data</p>
+        </div>
+        <!-- Body -->
+        <div style="padding: 40px;">
+          <p style="margin: 0 0 16px; font-size: 16px; color: #94a3b8;">Bonjour <strong style="color: #e2e8f0;">{req.name}</strong>,</p>
+          <p style="margin: 0 0 24px; font-size: 15px; color: #94a3b8; line-height: 1.6;">
+            Merci de rejoindre <strong style="color: #e2e8f0;">Agentic ETL</strong>. Voici votre code de vérification à 6 chiffres :
+          </p>
+          <!-- Code Block -->
+          <div style="background: #0f1117; border: 2px solid #6366f1; border-radius: 12px; padding: 28px; text-align: center; margin: 24px 0;">
+            <p style="margin: 0 0 8px; font-size: 12px; color: #6366f1; letter-spacing: 2px; text-transform: uppercase;">CODE DE VÉRIFICATION</p>
+            <p style="margin: 0; font-size: 42px; font-weight: 800; letter-spacing: 12px; color: #ffffff; font-family: 'Courier New', monospace;">{code}</p>
+          </div>
+          <p style="margin: 24px 0 0; font-size: 13px; color: #64748b; line-height: 1.6;">
+            ⚠️ Ce code expire dans <strong>10 minutes</strong>. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
+          </p>
+        </div>
+        <!-- Footer -->
+        <div style="background: #111827; padding: 20px 40px; text-align: center; border-top: 1px solid #1e2a3a;">
+          <p style="margin: 0; font-size: 12px; color: #475569;">© 2026 Agentic ETL — Plateforme d'automatisation Data Warehouse</p>
+          <p style="margin: 6px 0 0; font-size: 12px; color: #374151;">Envoyé depuis halimimohamedsalaheddine2026@gmail.com</p>
+        </div>
+      </div>
+    </body>
+    </html>
+    """
+    
+    # Envoi réel ou log
+    _send_notification(subject, html_body, req.email)
+    
+    # Toujours afficher le code en console pour debug
+    print(f"\n{'='*60}")
+    print(f"📧 EMAIL DE VÉRIFICATION")
+    print(f"   Destinataire : {req.email}")
+    print(f"   Nom          : {req.name}")
+    print(f"   CODE         : {code}")
+    print(f"{'='*60}\n")
+    
+    return {"status": "success", "message": "Code envoyé."}
+
+@app.post("/api/auth/register-verify")
+async def register_verify(req: RegisterVerifyRequest):
+    expected_code = PENDING_VERIFICATIONS.get(req.email)
+    if expected_code and expected_code == req.code:
+        # Nettoyer après succès
+        del PENDING_VERIFICATIONS[req.email]
+        return {"status": "success", "message": "Compte vérifié."}
+    return Response(content="Code invalide.", status_code=400)
+
 # ── Notifications ─────────────────────────────────────────────────────────────
 def _send_notification(subject: str, body: str, email: Optional[str] = None):
-    """Envoie un email de notification si configuré."""
+    """Envoie un email HTML de notification via SMTP Gmail."""
     if not email:
         return
     try:
         import smtplib
         from email.mime.text import MIMEText
-        # Utiliser un serveur SMTP public (Gmail par ex.)
-        # Configurer via variables d'environnement SMTP_*
+        from email.mime.multipart import MIMEMultipart
+        from email.utils import formataddr
         import os
+        
         smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
         smtp_user = os.getenv("SMTP_USER", "")
         smtp_pass = os.getenv("SMTP_PASS", "")
-        if not smtp_user:
+        
+        if not smtp_user or smtp_pass == "VOTRE_APP_PASSWORD_ICI":
+            logging.info(f"[MOCK] Email non envoyé (SMTP non configuré) → {email}: {subject}")
             return
-        msg = MIMEText(body)
-        msg["Subject"] = f"[Agent DW] {subject}"
-        msg["From"]    = smtp_user
+        
+        # Email multipart avec version HTML
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = formataddr(("Agentic ETL", smtp_user))  # Nom d'affichage
         msg["To"]      = email
+        
+        # Version texte brut (fallback)
+        import re
+        text_body = re.sub(r'<[^>]+>', '', body).strip()
+        msg.attach(MIMEText(text_body, "plain", "utf-8"))
+        
+        # Version HTML (prioritaire)
+        msg.attach(MIMEText(body, "html", "utf-8"))
+        
         with smtplib.SMTP(smtp_host, smtp_port) as s:
+            s.ehlo()
             s.starttls()
+            s.ehlo()
             s.login(smtp_user, smtp_pass)
-            s.send_message(msg)
-        print(f"📧 Email envoyé à {email}: {subject}")
+            s.sendmail(smtp_user, email, msg.as_string())
+            logging.info(f"✅ Email envoyé à {email} : {subject}")
+            print(f"✅ Email HTML envoyé à {email}")
+            
     except Exception as e:
+        logging.error(f"⚠️ Email non envoyé à {email}: {e}")
         print(f"⚠️ Email non envoyé: {e}")

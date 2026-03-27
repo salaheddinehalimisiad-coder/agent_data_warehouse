@@ -31,6 +31,12 @@ def explorer_node(state: AgentState) -> dict:
     elif source_type == "csv":
         file_path = config.get("file_path", "ventes.csv")
         connector = CSVConnector(file_path=file_path)
+
+    elif source_type in ("excel", "xlsx", "xls"):
+        from utils.connectors import ExcelConnector
+        file_path = config.get("file_path", "")
+        sheet_name = config.get("sheet_name", 0)
+        connector = ExcelConnector(file_path=file_path, sheet_name=sheet_name)
         
     else:
         raise ValueError(f"Type de source non supporté : {source_type}")

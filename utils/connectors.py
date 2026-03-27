@@ -91,3 +91,36 @@ class CSVConnector(BaseConnector):
             })
             
         return {self.table_name: {"columns": columns}}
+
+
+# 4. L'adaptateur pour les fichiers Excel (.xlsx / .xls)
+class ExcelConnector(BaseConnector):
+    """Connecteur pour fichiers Excel — supporte .xlsx et .xls via openpyxl/xlrd."""
+
+    def __init__(self, file_path: str, sheet_name: str = 0):
+        self.file_path = file_path
+        self.sheet_name = sheet_name  # 0 = première feuille par défaut
+        self.table_name = "excel_upload"
+
+    def connect(self) -> bool:
+        try:
+            pd.read_excel(self.file_path, sheet_name=self.sheet_name, nrows=1)
+            return True
+        except Exception as e:
+            print(f"Erreur de lecture Excel : {e}")
+            return False
+
+    def extract_metadata(self) -> Dict[str, Any]:
+        df = pd.read_excel(self.file_path, sheet_name=self.sheet_name, nrows=100)
+
+        columns = []
+        for col_name, dtype in df.dtypes.items():
+            columns.append({
+                "name": str(col_name),
+                "type": str(dtype),
+                "primary_key": False
+            })
+
+        # Utiliser le nom de la feuille comme nom de table si possible
+        table_name = str(self.sheet_name) if isinstance(self.sheet_name, str) else "excel_upload"
+        return {table_name: {"columns": columns}}

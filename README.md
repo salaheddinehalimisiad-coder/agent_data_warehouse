@@ -41,9 +41,9 @@ Source de Données (CSV / SQL)
 | 🧠 **Modeler** | `nodes/modeler.py` | Génération IA du schéma OLAP Star Schema + DDL SQL |
 | 🛡️ **Critic** | `nodes/critic.py` | Révision qualité du DDL : cohérence PK/FK, types de données |
 | 💬 **Chat Modifier** | `nodes/chat_modifier.py` | Modification itérative du modèle via chat conversationnel |
-| ⚙️ **ETL Generator** | `nodes/etl_generator.py` | Génération d'un script PySpark production-ready |
-| 🚀 **ETL Executor** | `nodes/etl_executor.py` | Création du schéma MySQL + chargement des données via Pandas/SQLAlchemy |
-| 🔧 **Healer** | `nodes/healer.py` | Auto-réparation du script ETL en cas d'erreur (jusqu'à 3 tentatives) |
+| ⚙️ **ETL Generator** | `nodes/etl_generator.py` | Génération d'une transformation Pentaho (.ktr XML) |
+| 🚀 **ETL Executor** | `nodes/etl_executor.py` | Création du schéma MySQL + exécution Kitchen CLI ou export .ktr |
+| 🔧 **Healer** | `nodes/healer.py` | Auto-réparation du fichier .ktr en cas d'erreur (jusqu'à 3 tentatives) |
 
 ---
 
@@ -61,6 +61,15 @@ Le projet utilise un **factory pattern intelligent** (`nodes/llm_factory.py`) qu
 ```
 
 > **Note :** Les modèles `glm-5:cloud` et `gpt-oss:120b-cloud` sont des modèles spéciaux configurés dans votre Ollama local et agissant comme proxy cloud. Ils sont interrogés via l'URL `localhost:11434`.
+
+---
+
+## 🚀 Pentaho Data Integration (Kettle)
+
+Le système génère désormais des fichiers **.ktr** compatibles avec Pentaho :
+- **Export direct** : Téléchargez le fichier `.ktr` depuis l'interface et ouvrez-le dans **Spoon**.
+- **Exécution automatique** : Si `kitchen.bat` est dans votre PATH ou dans les dossiers standards, le pipeline l'exécute automatiquement.
+- **Visualisation** : Le diagramme ETL est généré avec des coordonnées GUI pour une ouverture parfaite dans Spoon.
 
 ---
 

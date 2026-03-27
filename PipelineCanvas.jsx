@@ -164,23 +164,23 @@ const pipelineStepDetails = {
   },
   n6_1: {
     title: 'Extraction ETL',
-    description: "L'Agent ETL lit la source originale (CSV ou DB) via PySpark et crée un DataFrame avec les validations de schéma et le casting automatique des types.",
-    outputs: ['DataFrame Spark', 'Rapport types castés', 'Comptage de lignes'],
-    techStack: 'PySpark 3.x / SparkSession',
-    logs: '> Session Spark initialisée\n> Lecture: ventes.csv → 200 lignes\n> Types castés: DateType, FloatType, IntegerType\n> DataFrame validé.',
+    description: "L'Agent ETL lit la source originale (CSV ou Excel) via Pentaho et crée un flux de données avec les validations de schéma et le casting automatique des types.",
+    outputs: ['Flux de données Pentaho', 'Rapport types castés', 'Comptage de lignes'],
+    techStack: 'Pentaho Data Integration (Kettle)',
+    logs: '> Transformation initialisée\n> Lecture: ventes.csv → 200 lignes\n> Types castés: Date, Number, String\n> Flux validé.',
   },
   n6_2: {
-    title: 'Transformations PySpark',
-    description: "Applique le pipeline de transformation complet : nettoyage, enrichissement, déduplication, jointures enrichissantes et dérivation des clés de substitution (SK).",
-    outputs: ['DataFrame transformé', 'Colonnes SK ajoutées', 'Rapport déduplication'],
-    techStack: 'PySpark Functions + Window Functions',
-    logs: '> Nettoyage virgules superflues\n> SK dim_temps: hash(date_vente)\n> SK dim_produit: hash(reference_produit)\n> 0 doublons détectés\n> Transformation: SUCCESS',
+    title: 'Transformations Pentaho',
+    description: "Applique le pipeline de transformation complet dans Pentaho : nettoyage, enrichissement, déduplication, jointures et dérivation des clés de substitution (SK) via des steps dédiés.",
+    outputs: ['Transformations XML (.ktr)', 'Colonnes SK ajoutées', 'Rapport déduplication'],
+    techStack: 'Pentaho Steps (Select Values, Calculator, etc.)',
+    logs: '> Nettoyage virgules superflues\n> SK dim_temps: Calculator (Date Hash)\n> SK dim_produit: Database Lookup\n> 0 doublons détectés\n> Transformation: SUCCESS',
   },
   n6_3: {
     title: 'Chargement Dim & Faits',
-    description: "Écrit les tables de dimension puis la table de faits dans le Data Warehouse cible (MySQL/Postgres) en utilisant le pattern SCD Type 1 ou Upsert.",
+    description: "Écrit les tables de dimension puis la table de faits dans le Data Warehouse cible (MySQL) en utilisant le step Table Output de Pentaho.",
     outputs: ['Tables DIM créées', 'Table FACT insérée', 'Temps de chargement'],
-    techStack: 'PySpark write JDBC + MySQL',
+    techStack: 'Pentaho Table Output (JDBC)',
     logs: '> INSERT dim_produit: 20 lignes\n> INSERT dim_client: 15 lignes\n> INSERT dim_temps: 730 jours\n> INSERT fact_ventes: 200 lignes\n> Durée totale: 12.4s',
   },
   n6_4: {
@@ -192,10 +192,10 @@ const pipelineStepDetails = {
   },
   n7: {
     title: 'Agent Healer (Auto-Réparation)',
-    description: "En cas d'exception lors de l'exécution PySpark (JDBC timeout, type mismatch...), capture l'erreur, l'analyse avec Gemini et réécrit automatiquement le code corrigé.",
-    outputs: ['Code PySpark corrige', "Rapport d'erreur", 'Statut retry'],
-    techStack: 'Gemini Flash + Try/Heal/Retry Loop',
-    logs: '> EXCEPTION: JDBC timeout\n> Analyse erreur par IA...\n> Correction: connexion timeout=60s\n> Retry exécution...\n> SUCCESS au 2ème essai',
+    description: "En cas d'exception lors de l'exécution Pentaho (XML malformé, erreur JDBC, mapping manquant...), capture l'erreur, l'analyse avec l'IA et réécrit automatiquement le fichier .ktr corrigé.",
+    outputs: ['Fichier .ktr corrigé', "Rapport d'erreur", 'Statut retry'],
+    techStack: 'Gemini + Pentaho XML Repair',
+    logs: '> EXCEPTION: TableOutput error\n> Analyse erreur par IA...\n> Correction: Mapping de colonne id_pro corrigé\n> Retry exécution...\n> SUCCESS au 2ème essai',
   },
   n8: {
     title: 'Plateforme BI (Sortie Finale)',
@@ -335,15 +335,15 @@ function FlowArea({ sqlCode, etlCode }) {
 
         // ── ROW 2: ETL Droite → Gauche ──
         { id: 'n6_1', draggable: false, selectable: true, type: 'pipeline', position: { x: col[4], y: rowY2 },
-          data: { label: 'Extraction ETL',       desc: 'Lecture Source (PySpark)',       icon: Database,       colorClass: 'bg-cyan-500/20 text-cyan-400',       active: as === 'etl',                     status: as === 'etl' ? 'done' : null,            handles: ['top', 'left'] } },
+          data: { label: 'Extraction ETL',       desc: 'Lecture Source (Pentaho)',       icon: Database,       colorClass: 'bg-cyan-500/20 text-cyan-400',       active: !!etlCode,                     status: as === 'etl' ? 'done' : null,            handles: ['top', 'left'] } },
         { id: 'n6_2', draggable: false, selectable: true, type: 'pipeline', position: { x: col[3], y: rowY2 },
-          data: { label: 'Transformations',      desc: 'Nettoyage & Cast PySpark',       icon: Sparkles,       colorClass: 'bg-cyan-500/20 text-cyan-400',       active: as === 'etl',                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left', 'bottom'] } },
+          data: { label: 'Transformations',      desc: 'Mapping & Steps Pentaho',       icon: Sparkles,       colorClass: 'bg-cyan-500/20 text-cyan-400',       active: !!etlCode,                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left', 'bottom'] } },
         { id: 'n6_3', draggable: false, selectable: true, type: 'pipeline', position: { x: col[2], y: rowY2 },
-          data: { label: 'Chargement DWH',       desc: 'Dim & Faits → MySQL',            icon: Network,        colorClass: 'bg-cyan-500/20 text-cyan-400',       active: as === 'etl',                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left'] } },
+          data: { label: 'Chargement DWH',       desc: 'Dim & Faits → MySQL',            icon: Network,        colorClass: 'bg-cyan-500/20 text-cyan-400',       active: !!etlCode,                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left'] } },
         { id: 'n6_4', draggable: false, selectable: true, type: 'pipeline', position: { x: col[1], y: rowY2 },
-          data: { label: 'Serveur DWH',          desc: 'MySQL / Postgres Database',      icon: Database,       colorClass: 'bg-zinc-700 text-zinc-300',           active: as === 'etl',                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left'] } },
+          data: { label: 'Serveur DWH',          desc: 'MySQL / Postgres Database',      icon: Database,       colorClass: 'bg-indigo-500/20 text-indigo-400',   active: !!etlCode,                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left'] } },
         { id: 'n8',   draggable: false, selectable: true, type: 'pipeline', position: { x: col[0], y: rowY2 },
-          data: { label: 'Plateforme BI',        desc: 'Tableau / Power BI / Metabase',  icon: Server,         colorClass: 'bg-[#18181b] text-white',             active: !!etlCode,                        status: null,                                    handles: ['right'] } },
+          data: { label: 'Plateforme BI',        desc: 'Power BI / Metabase / PDF',      icon: Server,         colorClass: 'bg-emerald-500/20 text-emerald-400', active: !!etlCode,                        status: !!etlCode ? 'done' : null,               handles: ['right'] } },
 
         // ── Agent Healer (sous Transformation) ──
         { id: 'n7', draggable: false, selectable: true, type: 'pipeline', position: { x: col[3], y: rowY2 + 280 },
@@ -441,7 +441,6 @@ function FlowArea({ sqlCode, etlCode }) {
         proOptions={{ hideAttribution: true }}
       >
         <Background color="#1c1c25" gap={30} size={1.5} />
-        <Controls className="!bg-[#18181b] !border-[#27272a] !rounded-xl overflow-hidden" />
       </ReactFlow>
     </div>
   );

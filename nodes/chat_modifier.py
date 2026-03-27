@@ -25,20 +25,24 @@ def chat_modifier_node(state: AgentState) -> dict:
     llm = get_llm(temperature=0)
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """Tu es un expert en Data Warehousing.
-Voici le modèle OLAP actuel en JSON:
+        ("system", """Tu es un expert en Data Warehousing et Architecture de données.
+Voici le modèle OLAP actuel en JSON :
 {current_model}
 
-L'utilisateur demande une modification. Retourne le modèle complet mis à jour en JSON.
+L'utilisateur demande une modification qui peut inclure un rapport de l'AGENT CRITIQUE.
+Ton objectif est de mettre à jour le modèle JSON pour qu'il soit PARFAIT et conforme aux meilleures pratiques (Star Schema, Clés primaires BIGINT, Clés étrangères vers les dimensions).
 
-Format STRICT (même structure que le modèle actuel):
+SI UN 'RETOUR CRITIQUE' EST PRÉSENT DANS LA DEMANDE :
+1. Analyse chaque point soulevé par la critique.
+2. Corrige obligatoirement tous les problèmes mentionnés (types de colonnes, relations manquantes, erreurs de nommage).
+3. Ne laisse aucune erreur décelée par la critique dans ta réponse.
+
+Format de sortie : RÉPONDS UNIQUEMENT avec un objet JSON valide.
 {{
   "tables": [ ... ],
-  "reasoning": "Explication des modifications"
-}}
-
-RÉPONDS UNIQUEMENT avec le JSON. Pas de texte ni de balises markdown."""),
-        ("human", "Modification demandée: {user_request}")
+  "reasoning": "Détails des corrections apportées (sois précis)"
+}}"""),
+        ("human", "{user_request}")
     ])
 
     chain = prompt | llm

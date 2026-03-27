@@ -123,7 +123,7 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
             <LayoutGrid size={20} /> L'Objet "AgentState"
           </h3>
           <p className="text-zinc-300 mb-4">Toutes les informations circulent dans cette classe. Chaque Agent lit l'état et y insère ses propres résultats afin de le passer à l'Agent suivant.</p>
-          <CodeBlock language="python" code={`class AgentState(TypedDict):\n    connection_config: Dict[str, Any]\n    metadata: str              # Résultats de l'extraction source\n    sql_ddl: str               # Le schéma MCD en étoile\n    critic_review: str         # Commentaire sur la qualité du SQL\n    messages: List[Dict]       # Fenêtre de chat pour l'utilisateur\n    is_validated: bool         # Autorisation d'exécution\n    etl_code: str              # Script PySpark final généré\n    etl_error: str             # Pile d'erreur si la base de données crash\n    retry_count: int           # Nombre d'essais du "Healer"`} />
+          <CodeBlock language="python" code={`class AgentState(TypedDict):\n    connection_config: Dict[str, Any]\n    metadata: str              # Résultats de l'extraction source\n    sql_ddl: str               # Le schéma MCD en étoile\n    critic_review: str         # Commentaire sur la qualité du SQL\n    messages: List[Dict]       # Fenêtre de chat pour l'utilisateur\n    is_validated: bool         # Autorisation d'exécution\n    etl_code: str              # La transformation Pentaho (.ktr XML) finale générée\n    etl_error: str             # Pile d'erreur si l'exécution Kitchen CLI échoue\n    retry_count: int           # Nombre d'essais du "Healer" (réparation XML)`} />
 
           <h3 className="text-xl font-bold text-emerald-400 mt-10 mb-4 flex items-center gap-2">
             <Workflow size={20} /> Boucle Auto-Réparatrice (Try-Heal)
@@ -132,7 +132,7 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
             Le point fort de cette architecture est son tolérant de panne. Si l'exécuteur PySpark jette une exception (connexion rompue, doublons, contrainte de clé étrangère), un noeud conditionnel "Route_Execution" fait basculer le flux vers le Healer.
           </Callout>
           
-          <CodeBlock language="python" code={`# Logiciel de Routage Conditionnel\ndef route_etl_execution(state: AgentState) -> str:\n    error = state.get("etl_error", "")\n    retry = state.get("retry_count", 0)\n    if getattr(state, "is_validated", False) is False: return END\n    \n    if not error:\n        return END\n    elif retry < 3:\n        return "healer"  # <-- L'IA reprend le code pour corriger le bug\n    else:\n        return END`} />
+          <CodeBlock language="python" code={`# Logiciel de Routage Conditionnel\ndef route_etl_execution(state: AgentState) -> str:\n    error = state.get("etl_error", "")\n    retry = state.get("retry_count", 0)\n    if getattr(state, "is_validated", False) is False: return END\n    \n    if not error:\n        return END\n    elif retry < 3:\n        return "healer"  # <-- L'IA répare le XML .ktr pour corriger le bug\n    else:\n        return END`} />
         </div>
       )
     },
@@ -196,19 +196,19 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
     {
       id: 'agent_pyspark',
       category: 'Les Multi-Agents',
-      title: '4. Créateur PySpark',
+      title: '4. Créateur Pentaho',
       icon: <Code size={18} />,
       content: (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <h1 className="text-4xl font-black text-white mb-4">EtlGeneratorAgent & Pyspark</h1>
-          <p className="text-zinc-300 leading-relaxed mb-6">Il s'agit de la phase d'implémentation. Le système ne se contente pas de dessiner votre architecture: il **rédige intégralement un code Python (Framework PySpark)** prêt au déploiement pour extraire la masse de données, la traiter en mémoire distribuée, la caster et la transvaser dans la base cible.</p>
+          <h1 className="text-4xl font-black text-white mb-4">EtlGeneratorAgent & Pentaho</h1>
+          <p className="text-zinc-300 leading-relaxed mb-6">Il s'agit de la phase d'implémentation. Le système ne se contente pas de dessiner votre architecture : il **rédige intégralement un fichier XML de transformation Pentaho (.ktr)** prêt à être ouvert dans Spoon ou exécuté via Kitchen CLI pour charger le Data Warehouse.</p>
 
-          <h3 className="text-xl font-bold text-white mb-4">Comportement du Système :</h3>
+          <h3 className="text-xl font-bold text-white mb-4">Fonctionnalités .ktr générées :</h3>
           <ul className="list-disc pl-6 text-zinc-400 space-y-3">
-             <li>Import de <code>pyspark.sql.functions as F</code>.</li>
-             <li>Création des Clés Artificielles avec hachage (ex: <code>F.xxhash64("user_email")</code>).</li>
-             <li>Cast dynamique sécurisé: <code>.cast(DoubleType())</code> pour prévenir les erreurs de chaîne SQL.</li>
-             <li>Mode de persistance natif : <code>df.write.mode("append").format("jdbc").save()</code>.</li>
+             <li>Steps <code>CsvInput</code> / <code>TableInput</code> avec mapping de colonnes.</li>
+             <li>Steps <code>SelectValues</code> pour le renommage et le casting de types.</li>
+             <li>Steps <code>TableOutput</code> configurés pour MySQL avec truncate auto.</li>
+             <li>Coordonnées GUI incluses pour un rendu visuel parfait dans Pentaho Spoon.</li>
           </ul>
         </div>
       )
@@ -304,9 +304,10 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
           <CodeBlock language="bash" code={`Erreur du serveur MySQL : \n[42S01] Table 'dim_patient' already exists. Le script est interrompu à la ligne 14.`} />
 
           <p className="text-zinc-300 mb-6">
-            L'agent Healer génère alors une nouvelle version du code PySpark, en s'assurant :
-            1. D'utiliser <code>IF NOT EXISTS</code> ou de tronquer proprement avec <code>mode("overwrite")</code>.
-            2. De supprimer les dépendances circulaires au niveau base de données SQL.
+            L'agent Healer génère alors une nouvelle version du fichier .ktr, en s'assurant :
+            1. De corriger les balises XML malformées.
+            2. De vérifier les noms de colonnes dans les mappings <code>SelectValues</code>.
+            3. De s'assurer que les connexions JDBC sont actives.
           </p>
         </div>
       )

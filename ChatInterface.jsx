@@ -107,7 +107,7 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
           <Database size={14}/> DDL
         </button>
         <button onClick={() => setActiveTab('etl')} className={`px-3 py-1.5 min-w-[max-content] text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${activeTab === 'etl' ? 'bg-[#18181b] text-indigo-400 shadow-sm border border-[#27272a]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-[#18181b]/50'}`}>
-          <Code size={14}/> PySpark
+          <Code size={14}/> Pentaho
         </button>
       </div>
 
@@ -158,17 +158,21 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
                 <button 
                   type="button"
                   onClick={() => {
-                    setActiveTab('chat');
-                    // We directly send the message as if the user typed it:
-                    const fixPrompt = "Voici le retour de l'Agent Critique :\n" + criticReview + "\n\nPeux-tu appliquer ces remarques et corriger le script SQL ?";
+                    const fixPrompt = "Peux-tu appliquer ces remarques et corriger le script SQL ?\n\nRETOUR CRITIQUE :\n" + criticReview;
                     setInput(fixPrompt);
+                    onUpdateCritic(null); // Clear critique after taking action
+                    setActiveTab('chat');
+                    setMessages(prev => [...prev, { role: 'bot', content: "D'accord, je transfère ces critiques à mon module de correction. Je m'en occupe immédiatement !" }]);
                   }}
                   className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-2 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 rounded-lg font-bold text-xs transition-colors"
                 >
-                  <Bot size={14} /> Demander à l'IA de corriger ces erreurs
+                  <Bot size={14} /> Demander au Copilot IA de corriger
                 </button>
              </div>
-           ) : <div className="text-zinc-600">Aucun rapport du critique.</div>}
+           ) : <div className="text-zinc-600 flex flex-col items-center justify-center h-40 gap-3 border border-dashed border-zinc-800 rounded-xl">
+                 <Shield size={24} className="opacity-20" />
+                 <span>Aucune critique en attente.</span>
+               </div>}
         </div>
       )}
 
@@ -190,16 +194,18 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
 
       {activeTab === 'etl' && (
         <div className="flex-1 overflow-auto bg-[#09090b] border-t border-[#27272a] relative">
-           <button onClick={() => handleCopy(etlCode, 'etl')} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all z-10 flex items-center gap-2 text-xs font-bold border border-white/10 backdrop-blur-md">
-             {copied === 'etl' ? <><Check size={14} className="text-emerald-400" /> Copié</> : <><Copy size={14} /> Copier le code</>}
-           </button>
+           <div className="absolute top-4 right-4 flex gap-2 z-10">
+             <button onClick={() => handleCopy(etlCode, 'etl')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all flex items-center gap-2 text-xs font-bold border border-white/10 backdrop-blur-md">
+               {copied === 'etl' ? <><Check size={14} className="text-emerald-400" /> Copié</> : <><Copy size={14} /> Copier le code</>}
+             </button>
+           </div>
            <SyntaxHighlighter
-             language="python"
+             language="xml"
              style={vscDarkPlus}
              customStyle={{ margin: 0, padding: '3rem 1rem 1rem 1rem', background: 'transparent', fontSize: '13px' }}
              wrapLines={true}
            >
-             {etlCode || "# Aucun script généré"}
+             {etlCode || "<!-- Aucun fichier .ktr généré -->"}
            </SyntaxHighlighter>
         </div>
       )}
