@@ -24,7 +24,7 @@ class AgentState(TypedDict):
     # Rapport du Critique sur le DDL généré
     critic_review: str
 
-    # Code PySpark/SQL généré pour l'ETL
+    # Code Python/Pandas généré pour l'ETL
     etl_code: str
     
     # Capture de l'erreur d'exécution si l'ETL plante

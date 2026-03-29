@@ -1,6 +1,6 @@
 # 🏭 Agent Data Warehouse — Plateforme ETL Multi-Agents IA
 
-> **Plateforme intelligente d'automatisation ETL** propulsée par un pipeline multi-agents LangGraph. Elle analyse vos sources de données (CSV ou SQL), conçoit automatiquement un schéma Data Warehouse OLAP *Star Schema*, génère le script PySpark d'intégration, l'exécute dans MySQL et se **auto-répare** en cas d'erreur — le tout avec une interface React temps réel.
+> **Plateforme intelligente d'automatisation ETL** propulsée par un pipeline multi-agents LangGraph. Elle analyse vos sources de données (CSV ou SQL), conçoit automatiquement un schéma Data Warehouse OLAP *Star Schema*, génère le script ETL d'intégration, l'exécute dans MySQL et se **auto-répare** en cas d'erreur — le tout avec une interface React temps réel.
 
 ---
 
@@ -24,7 +24,7 @@ Source de Données (CSV / SQL)
                                                      │ Validé
                                             ┌────────▼────────┐
                                             │  ⚙️ ETL Generator│
-                                            │  Script PySpark  │
+                                            │  Script ETL      │
                                             └────────┬────────┘
                                                      │
                                             ┌────────▼────────┐     ┌────────────┐
@@ -190,7 +190,7 @@ L'API FastAPI est accessible sur `http://localhost:8000`.
 | `POST` | `/api/upload-csv` | Upload d'un fichier CSV source |
 | `GET`  | `/api/export` | Export JSON du rapport (DDL + ETL + critique) |
 | `GET`  | `/api/export-pdf` | Génération d'un rapport PDF |
-| `GET`  | `/api/sessions` | Liste des sessions passées (depuis SQLite) |
+| `GET`  | `/api/sessions` | Liste de la session courante (mémoire) |
 | `POST` | `/api/sessions/resume` | Reprendre une session précédente |
 | `POST` | `/api/sessions/new` | Démarrer une nouvelle session propre |
 
@@ -202,9 +202,9 @@ L'API FastAPI est accessible sur `http://localhost:8000`.
 - **💬 Chat conversationnel** : Modification du schéma OLAP ou du script ETL en langage naturel
 - **🔧 Auto-guérison** : En cas d'erreur ETL, l'agent Healer corrige le code automatiquement (max 3 tentatives)
 - **📡 Temps réel** : L'interface se met à jour via Server-Sent Events (SSE)
-- **💾 Persistance** : Les sessions sont sauvegardées dans SQLite et reprises à tout moment
+- **💾 État** : La session est maintenue en mémoire pendant l'exécution
 - **📊 Sources multiples** : Compatible CSV et bases de données SQL (via SQLAlchemy)
-- **📤 Export** : Rapport complet en PDF ou JSON (DDL SQL + Code PySpark + Critique IA)
+- **📤 Export** : Rapport complet en PDF ou JSON (DDL SQL + Code ETL + Critique IA)
 - **📧 Notifications** : Alertes email optionnelles en fin de pipeline (via SMTP)
 
 ---
@@ -219,7 +219,7 @@ L'API FastAPI est accessible sur `http://localhost:8000`.
 | **Frontend** | React 18 + Vite + Framer Motion |
 | **Visualisation Pipeline** | @xyflow/react |
 | **Base de données DW cible** | MySQL via SQLAlchemy + mysql-connector-python |
-| **Checkpointing Sessions** | SQLite (`langgraph.checkpoint.sqlite`) |
+| **Checkpointing Sessions** | Mémoire (`langgraph.checkpoint.memory`) |
 | **Données** | Pandas |
 
 ---

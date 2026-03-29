@@ -17,6 +17,7 @@ def chat_modifier_node(state: AgentState) -> dict:
     
     current_model = state.get("logical_model", {})
     messages = state.get("messages", [])
+    critic_review = state.get("critic_review", "Aucun retour critique pour le moment.")
     
     if not messages:
         return {}
@@ -29,10 +30,13 @@ def chat_modifier_node(state: AgentState) -> dict:
 Voici le modèle OLAP actuel en JSON :
 {current_model}
 
+Voici le dernier rapport de l'AGENT CRITIQUE :
+{critic_review}
+
 L'utilisateur demande une modification qui peut inclure un rapport de l'AGENT CRITIQUE.
 Ton objectif est de mettre à jour le modèle JSON pour qu'il soit PARFAIT et conforme aux meilleures pratiques (Star Schema, Clés primaires BIGINT, Clés étrangères vers les dimensions).
 
-SI UN 'RETOUR CRITIQUE' EST PRÉSENT DANS LA DEMANDE :
+SI UN 'RETOUR CRITIQUE' EST PRÉSENT DANS LA DEMANDE OU DANS LE RAPPORT CI-DESSUS :
 1. Analyse chaque point soulevé par la critique.
 2. Corrige obligatoirement tous les problèmes mentionnés (types de colonnes, relations manquantes, erreurs de nommage).
 3. Ne laisse aucune erreur décelée par la critique dans ta réponse.
@@ -50,6 +54,7 @@ Format de sortie : RÉPONDS UNIQUEMENT avec un objet JSON valide.
     print(f"Traitement de la demande: '{user_request}'...")
     response = call_with_retry(chain, {
         "current_model": json.dumps(current_model, ensure_ascii=False, indent=2),
+        "critic_review": critic_review,
         "user_request": user_request
     })
 

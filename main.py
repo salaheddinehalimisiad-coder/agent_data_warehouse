@@ -1,8 +1,7 @@
 # Fichier : main.py (Architecture complète)
 
 from langgraph.graph import StateGraph, START, END
-import sqlite3
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver
 from app_state import AgentState
 
 # Importation de tous nos nœuds métier
@@ -75,7 +74,6 @@ def create_agent_workflow():
     # L'agent correcteur réécrit le code et le renvoie à l'exécuteur pour une nouvelle tentative
     workflow.add_edge("healer", "etl_executor")
 
-    # Compilation avec persistance SQLite réelle sur disque (version stable)
-    conn = sqlite3.connect("state_checkpoint.db", check_same_thread=False)
-    memory = SqliteSaver(conn)
+    # Compilation avec persistance en mémoire (Volatile)
+    memory = MemorySaver()
     return workflow.compile(checkpointer=memory, interrupt_before=["human_review"])

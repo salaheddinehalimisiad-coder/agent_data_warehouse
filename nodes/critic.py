@@ -21,9 +21,8 @@ Faites un résumé concis et professionnel de vos critiques. S'il est valide à 
     
     chain = prompt | llm
     sql_ddl = state.get("sql_ddl", "")
-    
-    if not sql_ddl:
-        return {"critic_review": "Aucun code SQL à analyser."}
+    if not sql_ddl or "-- Erreur" in sql_ddl:
+        raise ValueError("Aucun script DDL valide n'a été fourni à l'Agent Critique. Le processus est suspendu.")
     
     response = call_with_retry(chain, {"sql_ddl": sql_ddl})
     

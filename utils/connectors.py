@@ -3,8 +3,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List
 import pandas as pd
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.exc import SQLAlchemyError
 
 # 1. Le contrat de base (L'interface que tous les connecteurs doivent respecter)
 class BaseConnector(ABC):
@@ -25,102 +23,56 @@ class BaseConnector(ABC):
         """
         pass
 
-# 2. ---> VOTRE CODE SE PLACE ICI <---
-class SQLConnector(BaseConnector):
-    def __init__(self, connection_string: str):
-        self.connection_string = connection_string
-        self.engine = None
-
-    def connect(self) -> bool:
-        try:
-            # Création du moteur SQLAlchemy sécurisé
-            self.engine = create_engine(self.connection_string)
-            # Tentative de connexion pour valider les identifiants
-            with self.engine.connect() as connection:
-                pass 
-            return True
-        except SQLAlchemyError as e:
-            # En environnement professionnel, on loggue l'erreur pour le monitoring
-            print(f"Échec de la connexion SQL : {e}")
-            return False
-
-    def extract_metadata(self) -> Dict[str, Any]:
-        """Extrait la structure de la base en mode lecture seule."""
-        if not self.engine:
-            raise ConnectionError("Veuillez appeler connect() avant d'extraire les métadonnées.")
-        
-        inspector = inspect(self.engine)
-        metadata = {}
-        
-        # Parcours logique de toutes les tables
-        for table_name in inspector.get_table_names():
-            columns = []
-            for col in inspector.get_columns(table_name):
-                columns.append({
-                    "name": col['name'],
-                    "type": str(col['type']),  # Ex: VARCHAR, INTEGER
-                    "primary_key": col.get('primary_key', False)
-                })
-            metadata[table_name] = {"columns": columns}
-            
-        return metadata
-
-# 3. L'adaptateur pour les fichiers CSV (Optionnel pour l'instant, mais recommandé pour l'architecture)
+# 2. L'adaptateur pour les fichiers CSV
 class CSVConnector(BaseConnector):
     def __init__(self, file_path: str, table_name: str = "csv_upload"):
         self.file_path = file_path
         self.table_name = table_name
+        self._successful_sep = ','
+        self._successful_enc = 'utf-8'
 
     def connect(self) -> bool:
+        from io import open
+        import os
+        if not os.path.exists(self.file_path):
+            print(f"Erreur : Le fichier n'existe pas physiquement à {self.file_path}")
+            return False
+
+        separators = [',', ';', '\t', '|']
+        encodings = ['utf-8', 'ISO-8859-1', 'cp1252', 'latin1']
+        
+        for enc in encodings:
+            for sep in separators:
+                try:
+                    df = pd.read_csv(self.file_path, sep=sep, encoding=enc, encoding_errors='replace', nrows=100, on_bad_lines='skip')
+                    if not df.empty and len(df.columns) > 1 or len(separators) == 1:
+                        self._successful_sep = sep
+                        self._successful_enc = enc
+                        return True
+                except Exception:
+                    continue
+                    
+        # Fallback de test ultime
         try:
-            pd.read_csv(self.file_path, nrows=1)
+            pd.read_csv(self.file_path, nrows=50, encoding_errors='replace', on_bad_lines='skip')
             return True
         except Exception as e:
-            print(f"Erreur de lecture CSV : {e}")
+            print(f"Erreur fatale de lecture CSV '{self.file_path}': {str(e)}")
             return False
 
     def extract_metadata(self) -> Dict[str, Any]:
-        df = pd.read_csv(self.file_path, nrows=100)
-        
+        try:
+            df = pd.read_csv(self.file_path, sep=self._successful_sep, encoding=self._successful_enc, encoding_errors='replace', nrows=200, on_bad_lines='skip')
+        except Exception as e:
+            print(f"Erreur lors de l'extraction des métadonnées avec {self._successful_enc}: {str(e)}")
+            df = pd.read_csv(self.file_path, encoding='utf-8', encoding_errors='replace', nrows=200, on_bad_lines='skip')
+            
         columns = []
         for col_name, dtype in df.dtypes.items():
             columns.append({
-                "name": col_name,
+                "name": str(col_name).strip(),
                 "type": str(dtype),
                 "primary_key": False
             })
             
         return {self.table_name: {"columns": columns}}
-
-
-# 4. L'adaptateur pour les fichiers Excel (.xlsx / .xls)
-class ExcelConnector(BaseConnector):
-    """Connecteur pour fichiers Excel — supporte .xlsx et .xls via openpyxl/xlrd."""
-
-    def __init__(self, file_path: str, sheet_name: str = 0):
-        self.file_path = file_path
-        self.sheet_name = sheet_name  # 0 = première feuille par défaut
-        self.table_name = "excel_upload"
-
-    def connect(self) -> bool:
-        try:
-            pd.read_excel(self.file_path, sheet_name=self.sheet_name, nrows=1)
-            return True
-        except Exception as e:
-            print(f"Erreur de lecture Excel : {e}")
-            return False
-
-    def extract_metadata(self) -> Dict[str, Any]:
-        df = pd.read_excel(self.file_path, sheet_name=self.sheet_name, nrows=100)
-
-        columns = []
-        for col_name, dtype in df.dtypes.items():
-            columns.append({
-                "name": str(col_name),
-                "type": str(dtype),
-                "primary_key": False
-            })
-
-        # Utiliser le nom de la feuille comme nom de table si possible
-        table_name = str(self.sheet_name) if isinstance(self.sheet_name, str) else "excel_upload"
-        return {table_name: {"columns": columns}}

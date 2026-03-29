@@ -129,7 +129,7 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
             <Workflow size={20} /> Boucle Auto-Réparatrice (Try-Heal)
           </h3>
           <Callout type="success" title="Feedback Loop Résiliente">
-            Le point fort de cette architecture est son tolérant de panne. Si l'exécuteur PySpark jette une exception (connexion rompue, doublons, contrainte de clé étrangère), un noeud conditionnel "Route_Execution" fait basculer le flux vers le Healer.
+            Le point fort de cette architecture est son tolérant de panne. Si l'exécuteur ETL jette une exception (connexion rompue, doublons, contrainte de clé étrangère), un noeud conditionnel "Route_Execution" fait basculer le flux vers le Healer.
           </Callout>
           
           <CodeBlock language="python" code={`# Logiciel de Routage Conditionnel\ndef route_etl_execution(state: AgentState) -> str:\n    error = state.get("etl_error", "")\n    retry = state.get("retry_count", 0)\n    if getattr(state, "is_validated", False) is False: return END\n    \n    if not error:\n        return END\n    elif retry < 3:\n        return "healer"  # <-- L'IA répare le XML .ktr pour corriger le bug\n    else:\n        return END`} />
@@ -194,7 +194,7 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
       )
     },
     {
-      id: 'agent_pyspark',
+      id: 'agent_etl',
       category: 'Les Multi-Agents',
       title: '4. Créateur Pentaho',
       icon: <Code size={18} />,
@@ -298,7 +298,7 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
           </Callout>
 
           <p className="text-zinc-300 mb-6">
-            Lorsque l'Agent Exécuteur essaie de déployer le schéma SQLite ou MySQL, la base de données lance une erreur d'intégrité ou d'existence. Le <strong>Healer</strong> reçoit cette erreur en brut :
+            Lorsque l'Agent Exécuteur essaie de déployer le schéma SQL ou MySQL, la base de données lance une erreur d'intégrité ou d'existence. Le <strong>Healer</strong> reçoit cette erreur en brut :
           </p>
 
           <CodeBlock language="bash" code={`Erreur du serveur MySQL : \n[42S01] Table 'dim_patient' already exists. Le script est interrompu à la ligne 14.`} />

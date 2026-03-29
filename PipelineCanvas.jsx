@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ReactFlow, Background, Controls, useNodesState, useEdgesState, MarkerType,
   Handle, Position, ReactFlowProvider, useReactFlow
@@ -6,548 +6,323 @@ import {
 import '@xyflow/react/dist/style.css';
 import {
   Database, Sparkles, Server, Search, MessageSquare, Wrench, Shield,
-  Network, CheckCircle2, Activity, X, Settings, Key, Link, GitBranch,
-  Hash, Info
+  Network, CheckCircle2, Activity, X, Settings, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─────────────────────────────────────────────
-//  NODE: GLOBAL PIPELINE STEP (fixed, un-draggable)
+//  NODE: TABLE (MCD)
+// ─────────────────────────────────────────────
+const TableNode = ({ data }) => {
+  return (
+    <div className={`px-4 py-3 rounded-2xl border flex flex-col min-w-[220px] shadow-2xl relative transition-all duration-500 hover:scale-105 ${
+      data.isFact ? 'bg-[#181820] border-indigo-500/50 shadow-[0_0_25px_rgba(99,102,241,0.25)]' : 'bg-[#141a18] border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+    }`}>
+      <Handle type="target" position={Position.Top} className="!opacity-0" id="t-top" />
+      <Handle type="source" position={Position.Bottom} className="!opacity-0" id="s-bottom" />
+      <Handle type="target" position={Position.Left} className="!opacity-0" id="t-left" />
+      <Handle type="source" position={Position.Right} className="!opacity-0" id="s-right" />
+      
+      <div className={`text-[11px] font-black tracking-widest uppercase mb-3 pb-2 border-b flex justify-between items-center ${
+        data.isFact ? 'text-indigo-400 border-indigo-500/30' : 'text-emerald-400 border-emerald-500/30'
+      }`}>
+        {data.label} <Database size={14} />
+      </div>
+      <div className="flex flex-col gap-1.5 overflow-hidden">
+        {data.cols.map((col, idx) => {
+          let colColor = "text-zinc-400";
+          if (col.toLowerCase().includes("primary") || col.toLowerCase().includes(" pk") || col.includes("_pk") || col.includes("_id") || col.includes("_sk")) colColor = "text-amber-400";
+          if (col.toLowerCase().includes("foreign") || col.toLowerCase().includes(" fk") || col.includes("_fk") || col.toLowerCase().includes("references")) colColor = "text-purple-400";
+          
+          let parts = col.split(/\s+/);
+          let name = parts[0];
+          let type = parts.slice(1).join(' ').substring(0, 15);
+          if (type.length === 15) type += '...';
+          
+          return (
+             <div key={idx} className={`text-[10px] font-mono flex justify-between ${colColor}`}>
+                <span className="font-semibold truncate mr-4">{name}</span>
+                <span className="opacity-60 truncate">{type}</span>
+             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
+//  NODE: GLOBAL PIPELINE STEP (bidirectional handles)
 // ─────────────────────────────────────────────
 const PipelineNode = ({ data, selected }) => {
   const Icon = data.icon;
+  const isProcessing = data.status === 'processing';
+  const isDone = data.status === 'done';
+
   return (
     <div
-      className={`px-5 py-4 shadow-2xl rounded-2xl border min-w-[230px] max-w-[230px] flex flex-col items-center text-center transition-all duration-300 cursor-pointer
+      className={`px-5 py-4 shadow-2xl rounded-2xl border min-w-[240px] max-w-[240px] flex flex-col items-center text-center transition-all duration-700 cursor-pointer
         ${selected
-          ? 'border-indigo-400 bg-[#1e1e24] shadow-[0_0_30px_rgba(99,102,241,0.5)] scale-105 z-10'
-          : data.active
-            ? 'border-indigo-500/40 bg-[#18181b] hover:border-indigo-400/80 hover:shadow-[0_0_20px_rgba(99,102,241,0.25)]'
-            : 'border-[#27272a] bg-[#18181b]/50 opacity-50'
+          ? 'border-indigo-400 bg-[#1e1e24] shadow-[0_0_40px_rgba(99,102,241,0.4)] scale-105 z-10'
+          : isProcessing
+            ? 'border-indigo-500/60 bg-[#121216] shadow-[0_0_30px_rgba(99,102,241,0.3)] ring-2 ring-indigo-500/30'
+            : isDone
+              ? 'border-emerald-500/50 bg-[#14201a] shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+              : data.active
+                ? 'border-zinc-700 bg-[#18181b] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] shadow-none'
+                : 'border-[#27272a] bg-[#18181b]/50 opacity-30 shadow-none'
         }`}
     >
-      {data.handles?.includes('top')    && <Handle type="target" position={Position.Top}    id="top"    className="!w-6 !h-1.5 !rounded-full !bg-zinc-700 !border-none" />}
-      {data.handles?.includes('bottom') && <Handle type="source" position={Position.Bottom} id="bottom" className="!w-6 !h-1.5 !rounded-full !bg-zinc-700 !border-none" />}
-      {data.handles?.includes('left')   && <Handle type="target" position={Position.Left}   id="left"   className="!w-1.5 !h-6 !rounded-full !bg-zinc-700 !border-none" />}
-      {data.handles?.includes('right')  && <Handle type="source" position={Position.Right}  id="right"  className="!w-1.5 !h-6 !rounded-full !bg-zinc-700 !border-none" />}
+      <Handle type="target" position={Position.Top}    id="t-top"    className="!opacity-0" />
+      <Handle type="source" position={Position.Top}    id="s-top"    className="!opacity-0" />
+      <Handle type="target" position={Position.Bottom} id="t-bottom" className="!opacity-0" />
+      <Handle type="source" position={Position.Bottom} id="s-bottom" className="!opacity-0" />
+      <Handle type="target" position={Position.Left}   id="t-left"   className="!opacity-0" />
+      <Handle type="source" position={Position.Left}   id="s-left"   className="!opacity-0" />
+      <Handle type="target" position={Position.Right}  id="t-right"  className="!opacity-0" />
+      <Handle type="source" position={Position.Right}  id="s-right"  className="!opacity-0" />
 
-      <div className={`p-3.5 rounded-2xl mb-3 relative ${data.colorClass}`}>
-        {Icon ? <Icon size={28} /> : null}
-        {data.status === 'processing' && (
-          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500" />
-          </span>
-        )}
+      <div className={`p-4 rounded-2xl mb-4 relative transition-all duration-700 
+        ${isDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : isProcessing ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : data.colorClass} 
+        ${isProcessing ? 'animate-pulse shadow-[0_0_25px_currentColor]' : ''}
+        ${isDone ? 'shadow-[0_0_15px_rgba(16,185,129,0.2)]' : ''}`}>
+        {Icon ? <Icon size={30} /> : null}
       </div>
 
-      <div className="text-sm font-black text-white tracking-wide leading-tight">{data.label}</div>
-      <div className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider mt-1.5">{data.desc}</div>
+      <div className={`text-[13px] font-black tracking-wider leading-tight transition-colors duration-700 
+        ${isProcessing ? 'text-indigo-400' : isDone ? 'text-emerald-400' : 'text-zinc-200'}`}>
+        {data.label.toUpperCase()}
+      </div>
+      <div className="text-[10px] text-zinc-500 font-medium uppercase tracking-[0.1em] mt-2 leading-relaxed">{data.desc}</div>
 
-      {data.status === 'done' && (
-        <div className="mt-3 text-[9px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold flex items-center gap-1">
+      {isDone && (
+        <div className="mt-4 text-[9px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-4 py-1.5 rounded-full font-black tracking-[0.15em] flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
           <CheckCircle2 size={10} /> TERMINÉ
         </div>
       )}
-      {data.status === 'processing' && (
-        <div className="mt-3 text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full font-bold flex items-center gap-1 animate-pulse">
-          <Activity size={10} /> EN COURS
+      {isProcessing && (
+        <div className="mt-4 text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-4 py-1.5 rounded-full font-black tracking-[0.15em] flex items-center gap-1.5 animate-pulse">
+          <Loader2 size={10} className="animate-spin" /> EN COURS...
         </div>
       )}
     </div>
   );
 };
 
-// ─────────────────────────────────────────────
-//  NODE: MCD TABLE  (draggable, 4 handles)
-// ─────────────────────────────────────────────
-const McdNode = ({ data, selected }) => (
-  <div
-    className={`bg-[#18181b] border-2 shadow-2xl rounded-xl overflow-hidden transition-all duration-200 min-w-[190px] cursor-pointer
-      ${data.isFact
-        ? 'border-amber-500 shadow-amber-500/20 scale-110 z-20'
-        : selected
-          ? 'border-indigo-400 shadow-indigo-500/30 z-10'
-          : 'border-[#3a3a4a] hover:border-indigo-500/70'
-      }`}
-  >
-    {/* 4 handles for flexible routing */}
-    <Handle type="target"  position={Position.Top}    id="top"    className="!w-3 !h-3 !rounded-full !bg-indigo-500 !border-2 !border-[#18181b]" />
-    <Handle type="source"  position={Position.Bottom} id="bottom" className="!w-3 !h-3 !rounded-full !bg-indigo-500 !border-2 !border-[#18181b]" />
-    <Handle type="target"  position={Position.Right}  id="right"  className="!w-3 !h-3 !rounded-full !bg-indigo-500 !border-2 !border-[#18181b]" />
-    <Handle type="source"  position={Position.Left}   id="left"   className="!w-3 !h-3 !rounded-full !bg-indigo-500 !border-2 !border-[#18181b]" />
+const nodeTypes = { pipeline: PipelineNode, table: TableNode };
 
-    {/* Header */}
-    <div className={`px-4 py-2.5 text-xs font-black tracking-widest uppercase flex items-center gap-2
-      ${data.isFact
-        ? 'bg-gradient-to-r from-amber-600 to-orange-500 text-white border-b border-amber-700'
-        : 'bg-gradient-to-r from-[#1e1e2e] to-[#18181b] text-indigo-300 border-b border-[#27272a]'
-      }`}
-    >
-      {data.isFact
-        ? <Activity size={12} className="shrink-0" />
-        : <Database size={12} className="shrink-0" />
-      }
-      {data.label}
-    </div>
-
-    {/* Columns */}
-    <div className="px-3 py-2 space-y-1 bg-[#0d0d14]">
-      {data.columns.map((col, i) => {
-        const isPK  = col.name?.toLowerCase().startsWith('id_') || col.name?.toLowerCase().endsWith('_id') || i === 0;
-        const isFK  = col.name?.toLowerCase().endsWith('_id') && i !== 0;
-        return (
-          <div key={i} className="flex items-center justify-between gap-3 py-0.5 border-b border-zinc-800/60 last:border-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              {isPK && !isFK && <Key size={9} className="text-amber-400 shrink-0" />}
-              {isFK && <Link size={9} className="text-indigo-400 shrink-0" />}
-              {!isPK && !isFK && <span className="w-2" />}
-              <span className="text-[10px] font-mono text-zinc-300 truncate">{col.name}</span>
-            </div>
-            <span className={`text-[9px] font-mono font-bold shrink-0
-              ${col.type?.includes('INT') ? 'text-cyan-500'
-                : col.type?.includes('VARCHAR') || col.type?.includes('TEXT') ? 'text-emerald-500'
-                : col.type?.includes('DATE') || col.type?.includes('TIME') ? 'text-purple-400'
-                : col.type?.includes('DECIMAL') || col.type?.includes('FLOAT') ? 'text-amber-400'
-                : 'text-zinc-500'
-              }`}
-            >
-              {col.type || '?'}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-);
-
-const nodeTypes = { pipeline: PipelineNode, mcd: McdNode };
-
-// ─────────────────────────────────────────────
-//  STEP DETAILS PANEL  (appears on node click)
-// ─────────────────────────────────────────────
-const pipelineStepDetails = {
-  n1: {
-    title: 'Source Connectée',
-    description: "L'Agent Explorateur se connecte à la source CSV/SQL/NoSQL et en extrait automatiquement les métadonnées : colonnes, types, cardinalités, valeurs nulles.",
-    outputs: ['Schéma brut (colonnes + types)', 'Profil statistique', 'Distribution des valeurs'],
-    techStack: 'Pandas / SQLAlchemy / PyMongo',
-    logs: '> Détection du format : CSV (UTF-8)\n> 39 colonnes détectées\n> Clé primaire probable: id_transaction\n> Aucune valeur NULL critique\n> Prêt.',
-  },
-  n2: {
-    title: 'Agent Explorateur IA',
-    description: "Utilise Gemini 1.5 Flash pour analyser les données, identifier les entités métier (produit, client, lieu, temps) et classifier les colonnes en dimensions et mesures.",
-    outputs: ['Liste des entités virtuelles', 'Mappages dimension/mesure', 'Propositons de tables'],
-    techStack: 'Google Gemini 1.5 Flash + LangGraph',
-    logs: '> Entité identifiée: Date (annee, mois, jour_semaine)\n> Entité identifiée: Produit (marque, categorie)\n> Entité identifiée: Client (segment, region)\n> 5 tables de dimension proposées\n> Prêt.',
-  },
-  n3: {
-    title: 'Agent Modélisateur (MCD)',
-    description: "Génère automatiquement un schéma en étoile (Star Schema) ou en flocon (Snowflake) en SQL DDL, avec des clés de substitution (SK), des relations FK bien définies.",
-    outputs: ['Fichier DDL (CREATE TABLE)', 'Schéma en étoile MCD', 'Index et contraintes FK'],
-    techStack: 'Google Gemini + Jinja2 Templates',
-    logs: '> Table fact_ventes générée (13 colonnes)\n> dim_produit générée (8 colonnes)\n> dim_client générée (9 colonnes)\n> dim_temps générée (7 colonnes)\n> Clés étrangères définies\n> DDL SQL écrit.',
-  },
-  n4: {
-    title: 'Agent Critique IA',
-    description: "Audit la qualité du schéma DDL : détecte les FKs manquantes, les types incohérents, les colonnes redondantes et propose des correctifs avant la validation humaine.",
-    outputs: ['Rapport qualité JSON', 'Liste des anomalies', 'DDL corrigé'],
-    techStack: 'Gemini Flash (reasoning mode)',
-    logs: '> ✅ Intégrité référentielle : OK\n> ⚠️ code_postal: recommande VARCHAR au lieu de INT\n> ✅ Clés substituts : présentes\n> ✅ Topologie en étoile : validée\n> Score qualité : 94/100',
-  },
-  n5: {
-    title: 'Validation Humaine',
-    description: "Affiche le schéma SQL à l'ingénieur data pour révision. Ce dernier peut demander des modifications via le chatbot IA ou valider pour déclencher le pipeline PySpark.",
-    outputs: ['DDL validé', 'Boucle critique évituelle', 'Déclenchement ETL'],
-    techStack: 'Interface React + WebSocket',
-    logs: '> Attente validation humaine...\n> Modifications reçues: "Changer VARCHAR(50) en VARCHAR(255) pour email"\n> Modèle re-généré\n> Validation finale: ✅ Approuvé',
-  },
-  n6_1: {
-    title: 'Extraction ETL',
-    description: "L'Agent ETL lit la source originale (CSV ou Excel) via Pentaho et crée un flux de données avec les validations de schéma et le casting automatique des types.",
-    outputs: ['Flux de données Pentaho', 'Rapport types castés', 'Comptage de lignes'],
-    techStack: 'Pentaho Data Integration (Kettle)',
-    logs: '> Transformation initialisée\n> Lecture: ventes.csv → 200 lignes\n> Types castés: Date, Number, String\n> Flux validé.',
-  },
-  n6_2: {
-    title: 'Transformations Pentaho',
-    description: "Applique le pipeline de transformation complet dans Pentaho : nettoyage, enrichissement, déduplication, jointures et dérivation des clés de substitution (SK) via des steps dédiés.",
-    outputs: ['Transformations XML (.ktr)', 'Colonnes SK ajoutées', 'Rapport déduplication'],
-    techStack: 'Pentaho Steps (Select Values, Calculator, etc.)',
-    logs: '> Nettoyage virgules superflues\n> SK dim_temps: Calculator (Date Hash)\n> SK dim_produit: Database Lookup\n> 0 doublons détectés\n> Transformation: SUCCESS',
-  },
-  n6_3: {
-    title: 'Chargement Dim & Faits',
-    description: "Écrit les tables de dimension puis la table de faits dans le Data Warehouse cible (MySQL) en utilisant le step Table Output de Pentaho.",
-    outputs: ['Tables DIM créées', 'Table FACT insérée', 'Temps de chargement'],
-    techStack: 'Pentaho Table Output (JDBC)',
-    logs: '> INSERT dim_produit: 20 lignes\n> INSERT dim_client: 15 lignes\n> INSERT dim_temps: 730 jours\n> INSERT fact_ventes: 200 lignes\n> Durée totale: 12.4s',
-  },
-  n6_4: {
-    title: 'Serveur Data Warehouse',
-    description: "La base de données relationnelle cible (MySQL, PostgreSQL ou Redshift) stocke le schéma en étoile et expose les données à tout outil BI.",
-    outputs: ['Base DWH peuplée', 'Endpoint de connexion', 'Prêt pour Tableau / PowerBI'],
-    techStack: 'MySQL 8.x / PostgreSQL 15',
-    logs: '> Connexion DWH: jdbc:mysql://localhost/data_warehouse\n> fact_ventes: 200 rows OK\n> Indexes fact créés\n> Data Warehouse PRÊT.',
-  },
-  n7: {
-    title: 'Agent Healer (Auto-Réparation)',
-    description: "En cas d'exception lors de l'exécution Pentaho (XML malformé, erreur JDBC, mapping manquant...), capture l'erreur, l'analyse avec l'IA et réécrit automatiquement le fichier .ktr corrigé.",
-    outputs: ['Fichier .ktr corrigé', "Rapport d'erreur", 'Statut retry'],
-    techStack: 'Gemini + Pentaho XML Repair',
-    logs: '> EXCEPTION: TableOutput error\n> Analyse erreur par IA...\n> Correction: Mapping de colonne id_pro corrigé\n> Retry exécution...\n> SUCCESS au 2ème essai',
-  },
-  n8: {
-    title: 'Plateforme BI (Sortie Finale)',
-    description: "Le Data Warehouse est prêt pour Tableau, Power BI, Metabase ou Grafana pour des dashboards analytiques en temps réel.",
-    outputs: ['Endpoint JDBC/ODBC', 'Données consolidées', 'ROI mesurable'],
-    techStack: 'Tableau / Power BI / Metabase',
-    logs: '> Connecteur Tableau: jdbc:mysql://...\n> 200 transactions disponibles\n> Temps moyen de requête: < 50ms\n> Pipeline: COMPLET OK',
-  },
-};
-
-function StepDetailsPanel({ node, onClose }) {
-  if (!node) return null;
-  const details = pipelineStepDetails[node.id];
-  if (!details) return null;
-
-  return (
-    <motion.div
-      key={node.id}
-      initial={{ opacity: 0, x: -40 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -40 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="absolute left-6 top-24 bottom-6 w-[380px] flex flex-col bg-[#18181b]/98 backdrop-blur-2xl border border-[#333338] rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.7)] z-30 overflow-hidden"
-    >
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-[#27272a] flex items-start justify-between bg-[#141416] shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-            <Settings size={18} className="text-indigo-400" />
-          </div>
-          <div>
-            <h3 className="text-sm font-black text-white">{details.title}</h3>
-            <span className="text-[10px] font-mono text-zinc-500">ÉTAPE PIPELINE · {node.id}</span>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-500 hover:text-white shrink-0"
-        >
-          <X size={16} />
-        </button>
-      </div>
-
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 custom-scrollbar">
-
-        {/* Description */}
-        <div>
-          <h4 className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 mb-2 flex items-center gap-1.5">
-            <Info size={10} /> Description
-          </h4>
-          <p className="text-sm text-zinc-300 leading-relaxed bg-[#0d0d14] px-4 py-3 rounded-xl border border-[#27272a]">
-            {details.description}
-          </p>
-        </div>
-
-        {/* Outputs */}
-        <div>
-          <h4 className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 mb-2 flex items-center gap-1.5">
-            <GitBranch size={10} /> Sorties (Outputs)
-          </h4>
-          <div className="space-y-1.5">
-            {details.outputs.map((o, i) => (
-              <div key={i} className="flex items-center gap-2.5 text-xs text-zinc-300 bg-[#0d0d14] px-3 py-2 rounded-lg border border-[#27272a]">
-                <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                {o}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tech Stack */}
-        <div>
-          <h4 className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 mb-2 flex items-center gap-1.5">
-            <Hash size={10} /> Stack Technique
-          </h4>
-          <span className="text-xs font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1.5 rounded-lg inline-block">
-            {details.techStack}
-          </span>
-        </div>
-
-        {/* Logs Terminal */}
-        <div>
-          <h4 className="text-[9px] font-black uppercase tracking-[0.15em] text-zinc-500 mb-2 flex items-center gap-1.5">
-            <Activity size={10} /> Logs / Output
-          </h4>
-          <pre className="text-[10px] font-mono text-emerald-400 bg-[#050508] px-4 py-3 rounded-xl border border-[#1a1a2a] leading-relaxed overflow-x-auto whitespace-pre-wrap">
-            {details.logs}
-          </pre>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────
-//  MAIN FLOW COMPONENT
-// ─────────────────────────────────────────────
 function FlowArea({ sqlCode, etlCode }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [viewMode, setViewMode] = useState('pipeline');
-  const [selectedNode, setSelectedNode] = useState(null);
+  const [pipelineState, setPipelineState] = useState(null);
+  const [bottomProgress, setBottomProgress] = useState(0);
   const { fitView } = useReactFlow();
-
-  const onNodeClick = useCallback((_, node) => {
-    if (viewMode === 'pipeline') setSelectedNode(prev => prev?.id === node.id ? null : node);
-  }, [viewMode]);
-
-  const onPaneClick = useCallback(() => setSelectedNode(null), []);
+  const hasFittedView = useRef(false);
 
   useEffect(() => {
-    setSelectedNode(null);
+      hasFittedView.current = false;
+  }, [viewMode]);
 
-    // ════════════════════════════════
-    //  1. PIPELINE HORIZONTAL en S
-    // ════════════════════════════════
-    if (viewMode === 'pipeline') {
-      const as = sqlCode ? (etlCode ? 'etl' : 'human') : 'source';
+  useEffect(() => {
+    const sse = new EventSource('http://localhost:8000/api/pipeline-stream');
+    sse.onmessage = (e) => { try { setPipelineState(JSON.parse(e.data)); } catch(err) {} };
+    return () => sse.close();
+  }, []);
 
+  // Animation logic for bottom row
+  useEffect(() => {
+     let isComplete = false;
+     if (pipelineState) {
+         const logs = pipelineState.logs || [];
+         const logText = logs.map(l=>l.msg).join(' ');
+         const stageStatus = (sid) => pipelineState.stages?.find(x => x.id === sid)?.status || 'idle';
+         isComplete = logText.includes('opérationnel') || logText.includes('terminé') || stageStatus('etl_exec') === 'done';
+     }
+     
+     if (isComplete && bottomProgress < 5) {
+         const timer = setTimeout(() => {
+             setBottomProgress(p => p + 1);
+         }, 800);
+         return () => clearTimeout(timer);
+     }
+     if (!isComplete && bottomProgress > 0) {
+         setBottomProgress(0);
+     }
+  }, [pipelineState, bottomProgress]);
+
+  const getS = (id) => {
+    const logs = pipelineState?.logs || [];
+    const logText = logs.map(l => l.msg).join(' ');
+    
+    const stageStatus = (sid) => pipelineState?.stages?.find(x => x.id === sid)?.status || 'idle';
+    
+    // 1. TOP ROW: Static if sqlCode exists
+    if (sqlCode) {
+       if (['explorer', 'modeler'].includes(id)) return 'done';
+       
+       const cStatus = stageStatus('critic');
+       if (id === 'critic') {
+           if (etlCode || cStatus === 'success') return 'done';
+           return cStatus;
+       }
+       
+       const hStatus = stageStatus('human');
+       if (id === 'human') {
+           if (etlCode || hStatus === 'success') return 'done';
+           return sqlCode ? 'processing' : 'idle';
+       }
+    }
+
+    // 2. BOTTOM ROW: Strict Fallback on Logs with Sequential Animation
+    if (etlCode) {
+       // If bottom sequence is active, use progress to animate
+       if (bottomProgress > 0) {
+           if (id === 'etl_gen') return 'done';
+           if (id === 'etl_exec') return bottomProgress >= 1 ? 'done' : 'processing';
+           if (id === 'dwh_load') return bottomProgress >= 2 ? 'done' : (bottomProgress === 1 ? 'processing' : 'idle');
+           if (id === 'dwh_serve') return bottomProgress >= 3 ? 'done' : (bottomProgress === 2 ? 'processing' : 'idle');
+           if (id === 'bi_output') return bottomProgress >= 4 ? 'done' : (bottomProgress === 3 ? 'processing' : 'idle');
+       }
+
+       // Otherwise evaluate live
+       if (id === 'etl_gen') return stageStatus('etl_gen');
+       if (id === 'etl_exec') return stageStatus('etl_exec');
+       if (id === 'dwh_load') return logText.includes('DWH') ? 'processing' : 'idle';
+       if (id === 'dwh_serve') return logText.includes('Serveur') ? 'processing' : 'idle';
+       return 'idle';
+    }
+    return 'idle';
+  };
+
+  useEffect(() => {
+    if (viewMode === 'mcd') {
+      if (!sqlCode) {
+         setNodes([{ id: 'empty', position: { x: 400, y: 300 }, data: { label: 'Aucun Modèle Généré', cols: [] }, type: 'table' }]);
+         setEdges([]);
+         return;
+      }
+      
+      const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)\s*\(([\s\S]*?)\);/gi;
+      const mcdNodes = [];
+      const mcdEdges = [];
+      const dims = [];
+      let fact = null;
+
+      let match;
+      while ((match = tableRegex.exec(sqlCode)) !== null) {
+          const tableName = match[1].replace(/`/g, '');
+          const content = match[2];
+          const lines = content.split('\n')
+            .map(c => c.trim().replace(/,$/, ''))
+            .filter(c => c && !c.toUpperCase().startsWith('FOREIGN') && !c.toUpperCase().startsWith('PRIMARY') && !c.toUpperCase().startsWith('KEY') && !c.toUpperCase().startsWith('CONSTRAINT'));
+          
+          const isFact = tableName.toLowerCase().includes('fact') || tableName.toLowerCase().includes('fait');
+          if (isFact) fact = { id: tableName, cols: lines, isFact };
+          else dims.push({ id: tableName, cols: lines, isFact });
+      }
+
+      if (fact) {
+          mcdNodes.push({
+              id: fact.id, type: 'table', position: { x: 500, y: 350 }, data: { label: fact.id, cols: fact.cols, isFact: true }
+          });
+          
+          const radius = 350;
+          const totalDims = dims.length;
+          
+          dims.forEach((d, i) => {
+              const angle = (i / totalDims) * 2 * Math.PI;
+              const x = 500 + radius * Math.cos(angle);
+              const y = 350 + radius * Math.sin(angle);
+              mcdNodes.push({
+                  id: d.id, type: 'table', position: { x, y }, data: { label: d.id, cols: d.cols, isFact: false }
+              });
+              
+              mcdEdges.push({
+                  id: `e-${fact.id}-${d.id}`, source: fact.id, target: d.id,
+                  type: 'straight', animated: true,
+                  style: { stroke: '#6366f1', strokeWidth: 2, strokeDasharray: '4 4' },
+              });
+          });
+      } else if (dims.length > 0) {
+          dims.forEach((d, i) => {
+              mcdNodes.push({id: d.id, type: 'table', position: { x: 100 + i*280, y: 150 }, data: { label: d.id, cols: d.cols, isFact: false }});
+          });
+      }
+
+      setNodes(mcdNodes);
+      setEdges(mcdEdges);
+      setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
+    }
+    else if (viewMode === 'pipeline') {
+      const col = [100, 420, 740, 1060, 1380];
       const rowY1 = 80;
-      const rowY2 = 400;
-      const col = [80, 380, 680, 980, 1280];
+      const rowY2 = 420;
+
+      const s = {
+        exp: getS('explorer'), mod: getS('modeler'), crt: getS('critic'), 
+        hum: getS('human'), egn: getS('etl_gen'), exe: getS('etl_exec'), 
+        dwh: getS('dwh_load'), srv: getS('dwh_serve'), bi: getS('bi_output')
+      };
 
       const pNodes = [
-        // ── ROW 1: Source → Agents → Humain ──
-        { id: 'n1',   draggable: false, selectable: true, type: 'pipeline', position: { x: col[0], y: rowY1 },
-          data: { label: 'Source Connectée',     desc: 'Extraction Métadonnées',       icon: Database,       colorClass: 'bg-emerald-500/20 text-emerald-400', active: true,                             status: 'done',                 handles: ['right'] } },
-        { id: 'n2',   draggable: false, selectable: true, type: 'pipeline', position: { x: col[1], y: rowY1 },
-          data: { label: 'Agent Explorateur',    desc: 'Analyse des entités',           icon: Search,         colorClass: 'bg-blue-500/20 text-blue-400',       active: true,                             status: as !== 'source' ? 'done' : 'processing', handles: ['left', 'right'] } },
-        { id: 'n3',   draggable: false, selectable: true, type: 'pipeline', position: { x: col[2], y: rowY1 },
-          data: { label: 'Modélisateur MCD',     desc: 'Génération Schéma Étoile',      icon: Sparkles,       colorClass: 'bg-indigo-500/20 text-indigo-400',   active: as !== 'source',                  status: as !== 'source' ? 'done' : null,         handles: ['left', 'right'] } },
-        { id: 'n4',   draggable: false, selectable: true, type: 'pipeline', position: { x: col[3], y: rowY1 },
-          data: { label: 'Agent Critique',       desc: 'Audit Qualité DDL',             icon: Shield,         colorClass: 'bg-rose-500/20 text-rose-400',       active: as !== 'source',                  status: as !== 'source' ? 'done' : null,         handles: ['left', 'right'] } },
-        { id: 'n5',   draggable: false, selectable: true, type: 'pipeline', position: { x: col[4], y: rowY1 },
-          data: { label: 'Validation Humaine',   desc: 'Ajustements & Approbation',     icon: MessageSquare,  colorClass: 'bg-purple-500/20 text-purple-400',   active: as === 'human' || as === 'etl',    status: as === 'etl' ? 'done' : (as === 'human' ? 'processing' : null), handles: ['left', 'bottom'] } },
+        { id: 'n1', type: 'pipeline', position: { x: col[0], y: rowY1 }, data: { label: 'Source Connectée', desc: 'Extraction Métadonnées', icon: Database, colorClass: 'bg-emerald-500/10 text-emerald-400', active: true, status: 'done' } },
+        { id: 'n2', type: 'pipeline', position: { x: col[1], y: rowY1 }, data: { label: 'Agent Explorateur', desc: 'Analyse des entités', icon: Search, colorClass: 'bg-blue-500/10 text-blue-400', active: true, status: 'done' } },
+        { id: 'n3', type: 'pipeline', position: { x: col[2], y: rowY1 }, data: { label: 'Modélisateur MCD', desc: 'Génération Schéma Étoile', icon: Sparkles, colorClass: 'bg-indigo-500/10 text-indigo-400', active: true, status: 'done' } },
+        { id: 'n4', type: 'pipeline', position: { x: col[3], y: rowY1 }, data: { label: 'Agent Critique', desc: 'Audit Qualité DDL', icon: Shield, colorClass: 'bg-rose-500/10 text-rose-400', active: true, status: s.crt } },
+        { id: 'n5', type: 'pipeline', position: { x: col[4], y: rowY1 }, data: { label: 'Validation Humaine', desc: 'Ajustements & Approbation', icon: MessageSquare, colorClass: 'bg-purple-500/10 text-purple-400', active: true, status: s.hum } },
 
-        // ── ROW 2: ETL Droite → Gauche ──
-        { id: 'n6_1', draggable: false, selectable: true, type: 'pipeline', position: { x: col[4], y: rowY2 },
-          data: { label: 'Extraction ETL',       desc: 'Lecture Source (Pentaho)',       icon: Database,       colorClass: 'bg-cyan-500/20 text-cyan-400',       active: !!etlCode,                     status: as === 'etl' ? 'done' : null,            handles: ['top', 'left'] } },
-        { id: 'n6_2', draggable: false, selectable: true, type: 'pipeline', position: { x: col[3], y: rowY2 },
-          data: { label: 'Transformations',      desc: 'Mapping & Steps Pentaho',       icon: Sparkles,       colorClass: 'bg-cyan-500/20 text-cyan-400',       active: !!etlCode,                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left', 'bottom'] } },
-        { id: 'n6_3', draggable: false, selectable: true, type: 'pipeline', position: { x: col[2], y: rowY2 },
-          data: { label: 'Chargement DWH',       desc: 'Dim & Faits → MySQL',            icon: Network,        colorClass: 'bg-cyan-500/20 text-cyan-400',       active: !!etlCode,                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left'] } },
-        { id: 'n6_4', draggable: false, selectable: true, type: 'pipeline', position: { x: col[1], y: rowY2 },
-          data: { label: 'Serveur DWH',          desc: 'MySQL / Postgres Database',      icon: Database,       colorClass: 'bg-indigo-500/20 text-indigo-400',   active: !!etlCode,                     status: as === 'etl' ? 'processing' : null,      handles: ['right', 'left'] } },
-        { id: 'n8',   draggable: false, selectable: true, type: 'pipeline', position: { x: col[0], y: rowY2 },
-          data: { label: 'Plateforme BI',        desc: 'Power BI / Metabase / PDF',      icon: Server,         colorClass: 'bg-emerald-500/20 text-emerald-400', active: !!etlCode,                        status: !!etlCode ? 'done' : null,               handles: ['right'] } },
-
-        // ── Agent Healer (sous Transformation) ──
-        { id: 'n7', draggable: false, selectable: true, type: 'pipeline', position: { x: col[3], y: rowY2 + 280 },
-          data: { label: 'Agent Healer',         desc: 'Auto-Réparation Try/Retry',      icon: Wrench,         colorClass: 'bg-yellow-500/20 text-yellow-400',   active: as === 'etl',                     status: null,                                    handles: ['top'] } },
+        { id: 'n6_1', type: 'pipeline', position: { x: col[4], y: rowY2 }, data: { label: 'Extraction ETL', desc: 'Lecture Source (Pentaho)', icon: Database, colorClass: 'bg-cyan-500/10 text-cyan-400', active: s.hum==='done', status: s.egn } },
+        { id: 'n6_2', type: 'pipeline', position: { x: col[3], y: rowY2 }, data: { label: 'Transformations', desc: 'Mapping & Steps Pentaho', icon: Sparkles, colorClass: 'bg-cyan-300/10 text-cyan-400', active: s.egn==='done', status: s.exe } },
+        { id: 'n6_3', type: 'pipeline', position: { x: col[2], y: rowY2 }, data: { label: 'Chargement DWH', desc: 'Dim & Faits → MySQL', icon: Network, colorClass: 'bg-cyan-300/10 text-cyan-400', active: s.exe==='done'||s.exe==='processing', status: s.dwh } },
+        { id: 'n6_4', type: 'pipeline', position: { x: col[1], y: rowY2 }, data: { label: 'Serveur DWH', desc: 'MySQL / Postgres Database', icon: Database, colorClass: 'bg-indigo-500/10 text-indigo-400', active: s.dwh==='done', status: s.srv } },
+        { id: 'n8',   type: 'pipeline', position: { x: col[0], y: rowY2 }, data: { label: 'Plateforme BI', desc: 'Power BI / Metabase / PDF', icon: Server, colorClass: 'bg-emerald-500/10 text-emerald-400', active: s.srv==='done', status: s.bi } },
       ];
 
-      const eS  = { stroke: '#3f3f47', strokeWidth: 2.5 };
-      const eA  = { stroke: '#6366f1', strokeWidth: 3 };
-      const eET = { stroke: '#22d3ee', strokeWidth: 3 };
-      const eW  = { stroke: '#eab308', strokeWidth: 2, strokeDasharray: '5 5' };
+      setNodes(pNodes.map(n => ({ ...n, draggable: false })));
+
+      const getEdgeStyle = (sourceSt, targetSt) => {
+        if (targetSt === 'processing') return { stroke: '#3b82f6', strokeWidth: 6, filter: 'drop-shadow(0 0 15px #3b82f6)' };
+        if (sourceSt === 'done') return { stroke: '#3b82f6', strokeWidth: 4, filter: 'drop-shadow(0 0 10px #3b82f6)' };
+        return { stroke: '#27272a', strokeWidth: 2.5 };
+      };
 
       const pEdges = [
-        { id: 'e1-2',  source:'n1',   target:'n2',   sourceHandle:'right',  targetHandle:'left',  animated: as==='source', style:as==='source'?eA:eS },
-        { id: 'e2-3',  source:'n2',   target:'n3',   sourceHandle:'right',  targetHandle:'left',  animated: as==='source', style:as==='source'?eA:eS },
-        { id: 'e3-4',  source:'n3',   target:'n4',   sourceHandle:'right',  targetHandle:'left',  animated: as!=='source', style:as!=='source'?eA:eS },
-        { id: 'e4-5',  source:'n4',   target:'n5',   sourceHandle:'right',  targetHandle:'left',  animated: as!=='source', style:as!=='source'?eA:eS },
-        { id: 'e5-61', source:'n5',   target:'n6_1', sourceHandle:'bottom', targetHandle:'top',   animated: as==='etl',    style:as==='etl'?eET:eS, type:'smoothstep', label:'Validé ✓', labelStyle:{fill:'#22d3ee',fontWeight:700,fontSize:10} },
-        { id: 'e61-62',source:'n6_1', target:'n6_2', sourceHandle:'left',   targetHandle:'right', animated: as==='etl',    style:as==='etl'?eET:eS },
-        { id: 'e62-63',source:'n6_2', target:'n6_3', sourceHandle:'left',   targetHandle:'right', animated: as==='etl',    style:as==='etl'?eET:eS },
-        { id: 'e63-64',source:'n6_3', target:'n6_4', sourceHandle:'left',   targetHandle:'right', animated: as==='etl',    style:as==='etl'?eET:eS },
-        { id: 'e64-8', source:'n6_4', target:'n8',   sourceHandle:'left',   targetHandle:'right', animated: !!etlCode,     style:!!etlCode?eET:eS },
-        { id: 'e62-7', source:'n6_2', target:'n7',   sourceHandle:'bottom', targetHandle:'top',   animated: false,         style:eW, type:'smoothstep', label:'Si Exception', labelStyle:{fill:'#eab308',fontWeight:700,fontSize:10} },
+        { id: 'e1-2',  source:'n1', target:'n2', sourceHandle:'s-right', targetHandle:'t-left', animated: true, style: getEdgeStyle('done', 'done') },
+        { id: 'e2-3',  source:'n2', target:'n3', sourceHandle:'s-right', targetHandle:'t-left', animated: true, style: getEdgeStyle('done', 'done') },
+        { id: 'e3-4',  source:'n3', target:'n4', sourceHandle:'s-right', targetHandle:'t-left', animated: s.crt==='processing', style: getEdgeStyle('done', s.crt) },
+        { id: 'e4-5',  source:'n4', target:'n5', sourceHandle:'s-right', targetHandle:'t-left', animated: s.hum==='processing', style: getEdgeStyle(s.crt, s.hum) },
+        { id: 'e5-61', source:'n5', target:'n6_1', sourceHandle:'s-bottom', targetHandle:'t-top', animated: s.egn==='processing', style: getEdgeStyle(s.hum, s.egn), type: 'smoothstep' },
+        { id: 'e61-62',source:'n6_1', target:'n6_2', sourceHandle:'s-left', targetHandle:'t-right', animated: s.exe==='processing', style: getEdgeStyle(s.egn, s.exe) },
+        { id: 'e62-63',source:'n6_2', target:'n6_3', sourceHandle:'s-left', targetHandle:'t-right', animated: s.dwh==='processing', style: getEdgeStyle(s.exe, s.dwh) },
+        { id: 'e63-64',source:'n6_3', target:'n6_4', sourceHandle:'s-left', targetHandle:'t-right', animated: s.srv==='processing', style: getEdgeStyle(s.dwh, s.srv) },
+        { id: 'e64-8', source:'n6_4', target:'n8',   sourceHandle:'s-left', targetHandle:'t-right', animated: s.bi==='processing', style: getEdgeStyle(s.srv, s.bi) },
       ];
 
-      setNodes(pNodes);
-      setEdges(pEdges.map(e => ({
-        ...e,
-        markerEnd: { type: MarkerType.ArrowClosed, color: e.style?.stroke || '#3f3f47', width: 18, height: 18 }
-      })));
-    }
-
-    // ════════════════════════════════
-    //  2. MODÈLE CONCEPTUEL (MCD)
-    // ════════════════════════════════
-    else if (viewMode === 'mcd') {
-      if (!sqlCode) {
-        setNodes([{
-          id: 'empty', draggable: false,
-          position: { x: 300, y: 300 },
-          data: { label: 'Aucun modèle généré — Connectez une source d\'abord.' },
-          style: { padding: 30, background: '#18181b', color: '#6b7280', border: '2px dashed #3f3f47', borderRadius: 12, fontSize: 14 }
-        }]);
-        setEdges([]);
-      } else {
-        buildMcd(sqlCode, setNodes, setEdges);
+      setEdges(pEdges.map(e => ({ ...e, markerEnd: { type: MarkerType.ArrowClosed, color: e.style.stroke, width: 24, height: 24 } })));
+      
+      if (!hasFittedView.current) {
+         setTimeout(() => {
+            fitView({ padding: 0.15, maxZoom: 0.8, duration: 800 });
+            hasFittedView.current = true;
+         }, 100);
       }
     }
-
-    setTimeout(() => fitView({ padding: 0.18, duration: 700 }), 120);
-  }, [viewMode, sqlCode, etlCode, setNodes, setEdges, fitView]);
+  }, [viewMode, sqlCode, etlCode, pipelineState, bottomProgress, onNodesChange, onEdgesChange, fitView]);
 
   return (
-    <div className="w-full h-full relative">
-      {/* TABS */}
-      <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 bg-[#18181b]/98 backdrop-blur-xl p-1.5 rounded-2xl border border-[#27272a] shadow-2xl">
-        {[
-          { id: 'pipeline', label: 'Architecture Globale', color: 'indigo' },
-          { id: 'mcd',      label: 'Modèle Conceptuel (MCD)', color: 'amber' },
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setViewMode(tab.id)}
-            className={`px-6 py-2.5 rounded-xl text-sm font-black tracking-wide transition-all duration-200
-              ${viewMode === tab.id
-                ? tab.color === 'indigo'
-                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/50 shadow-lg'
-                  : 'bg-amber-600/20 text-amber-400 border border-amber-500/50 shadow-lg'
-                : 'text-zinc-500 hover:text-white border border-transparent'
-              }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Step Details Panel */}
-      <AnimatePresence>
-        {selectedNode && viewMode === 'pipeline' && (
-          <StepDetailsPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
-        )}
-      </AnimatePresence>
-
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
-        nodesDraggable={viewMode === 'mcd'}
-        nodesConnectable={false}
-        elementsSelectable={true}
-        minZoom={0.05}
-        maxZoom={3}
-        className="bg-[#09090b]"
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background color="#1c1c25" gap={30} size={1.5} />
-      </ReactFlow>
+    <div className="w-full h-full relative bg-[#09090b]">
+       <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 bg-[#121214]/98 backdrop-blur-xl p-1.5 rounded-2xl border border-zinc-800 shadow-2xl">
+          <button onClick={() => setViewMode('pipeline')} className={`px-6 py-2.5 rounded-xl text-[11px] font-black tracking-widest uppercase transition-all ${viewMode === 'pipeline' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-lg' : 'text-zinc-500 hover:text-white'}`}>Process Architecture</button>
+          <button onClick={() => setViewMode('mcd')} className="px-5 py-2.5 rounded-xl text-[11px] font-black tracking-widest uppercase text-zinc-500 hover:text-white transition-all">Star Schema (MCD)</button>
+       </div>
+       <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} proOptions={{hideAttribution:true}} minZoom={0.05} nodesDraggable={false}>
+          <Background color="#1c1c25" gap={30} size={1} />
+       </ReactFlow>
     </div>
   );
 }
 
-// ────────────────────────────────────────────────────────────────
-//  MCD BUILDER  — Parse SQL DDL → Star Schema visual layout
-// ────────────────────────────────────────────────────────────────
-function buildMcd(sqlCode, setNodes, setEdges) {
-  const tableReg = /CREATE TABLE(?:\s+IF NOT EXISTS)?\s+`?(\w+)`?\s*\(([\s\S]*?)\);/gi;
-  const fkReg    = /FOREIGN KEY\s*\(`?(\w+)`?\)\s*REFERENCES\s*`?(\w+)`?/gi;
-
-  const tables = [];
-  let m;
-  while ((m = tableReg.exec(sqlCode)) !== null) {
-    const name  = m[1];
-    const body  = m[2];
-
-    const cols  = body.split(/,\s*\n/)
-      .map(l => l.trim())
-      .filter(l => l && !l.toUpperCase().startsWith('PRIMARY KEY') && !l.toUpperCase().startsWith('FOREIGN KEY') && !l.startsWith('--'))
-      .map(l => {
-        const parts = l.replace(/`/g, '').split(/\s+/);
-        return { name: parts[0], type: parts[1] || '?' };
-      })
-      .filter(c => c.name && c.name !== ')');
-
-    const fks = [];
-    let fk;
-    const bodyFkReg = /FOREIGN KEY\s*\(`?(\w+)`?\)\s*REFERENCES\s*`?(\w+)`?/gi;
-    while ((fk = bodyFkReg.exec(body)) !== null) {
-      fks.push({ col: fk[1], refTable: fk[2] });
-    }
-
-    const isFact = name.toLowerCase().includes('fact');
-    tables.push({ name, cols, isFact, fks });
-  }
-
-  const factTbl = tables.find(t => t.isFact);
-  const dimTbls = tables.filter(t => !t.isFact);
-
-  const CX = 700, CY = 420;
-  const R = 420; // Cercle parfait pour un espacement égal
-
-  const mcdNodes = [];
-
-  // Fact at center
-  if (factTbl) {
-    mcdNodes.push({
-      id: `tbl-${factTbl.name}`, type: 'mcd', draggable: true,
-      position: { x: CX - 95, y: CY - 120 },
-      data: { label: factTbl.name, columns: factTbl.cols, isFact: true }
-    });
-  }
-
-  // Dims in a star circularly distributed
-  dimTbls.forEach((dim, i) => {
-    const angle = (i / dimTbls.length) * 2 * Math.PI - Math.PI / 6;
-    mcdNodes.push({
-      id: `tbl-${dim.name}`, type: 'mcd', draggable: true,
-      position: { x: CX + R * Math.cos(angle) - 95, y: CY + R * Math.sin(angle) - 60 },
-      data: { label: dim.name, columns: dim.cols, isFact: false }
-    });
-  });
-
-  // Edges from FK relationships (mauve dotted lines)
-  const mcdEdges = [];
-  tables.forEach(t => {
-    t.fks.forEach((fk, fi) => {
-      // Decide best source / target handles based on relative position
-      const srcNode = mcdNodes.find(n => n.id === `tbl-${t.name}`);
-      const tgtNode = mcdNodes.find(n => n.id === `tbl-${fk.refTable}`);
-      if (!srcNode || !tgtNode) return;
-
-      const dx = tgtNode.position.x - srcNode.position.x;
-      const dy = tgtNode.position.y - srcNode.position.y;
-      const srcH = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'bottom' : 'top');
-      const tgtH = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'left' : 'right') : (dy > 0 ? 'top' : 'bottom');
-
-      mcdEdges.push({
-        id: `fk-${t.name}-${fk.refTable}-${fi}`,
-        source: `tbl-${t.name}`,
-        target: `tbl-${fk.refTable}`,
-        sourceHandle: srcH,
-        targetHandle: tgtH,
-        type: 'default',
-        animated: true,
-        label: fk.col,
-        labelStyle: { fill: '#a78bfa', fontWeight: 700, fontSize: 10 },
-        labelBgStyle: { fill: '#18181b', fillOpacity: 0.9 },
-        style: { stroke: '#a78bfa', strokeWidth: 2.5, strokeDasharray: '5 5' },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#a78bfa', width: 16, height: 16 }
-      });
-    });
-  });
-
-  setNodes(mcdNodes);
-  setEdges(mcdEdges);
-}
-
-// ─────────────────────────────────────────────
-//  PROVIDER WRAPPER
-// ─────────────────────────────────────────────
-export default function PipelineCanvasWithProvider(props) {
-  return (
-    <ReactFlowProvider>
-      <FlowArea {...props} />
-    </ReactFlowProvider>
-  );
+export default function PipelineCanvas(props) {
+  return <ReactFlowProvider><FlowArea {...props} /></ReactFlowProvider>;
 }

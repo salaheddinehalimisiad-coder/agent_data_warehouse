@@ -71,7 +71,7 @@ export default function App() {
       const resp = await fetch('http://localhost:8000/api/validate', { method: 'POST' });
       const data = await resp.json();
       if (data.status === 'success' || data.status === 'background') {
-        setMessages(prev => [...prev, { role: 'bot', content: "✅ Modèle validé par l'humain ! La transformation Pentaho est en cours de création..." }]);
+        setMessages(prev => [...prev, { role: 'bot', content: "✅ Modèle validé ! La transformation Pentaho est en cours de création..." }]);
       } else {
         alert("Erreur de validation : " + data.message);
       }
@@ -152,7 +152,7 @@ export default function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Modele_Conceptuel_Donnees.pdf';
+      a.download = 'Modele_Conceptuel.pdf';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -295,8 +295,8 @@ export default function App() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 200, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="fixed inset-x-0 bottom-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] z-50 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
-                  style={{ height: terminalHeight, left: 64 }} 
+                  className="absolute inset-x-0 bottom-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] z-50 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
+                  style={{ height: terminalHeight }} 
                 >
                    {/* Resize Handle */}
                    <div 

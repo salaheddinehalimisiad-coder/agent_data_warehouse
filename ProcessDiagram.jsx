@@ -134,7 +134,7 @@ const stepsData = [
   },
   {
     id: 5,
-    title: "Automatisation ETL (PySpark)",
+    title: "Automatisation ETL (Python/Pandas)",
     subtitle: "ÉTAPE E : Gavage de la data",
     icon: <PlayCircle size={28} className="text-emerald-400" />,
     color: "from-emerald-600 to-teal-500",
@@ -144,7 +144,7 @@ const stepsData = [
     content: (
       <div className="space-y-4">
         <p className="text-zinc-300 leading-relaxed text-sm">
-          L'entrepôt est vide. Il faut y injecter les données. L'IA génère en autonomie un complexe **script ETL PySpark / SQL**. Il va orchestrer l'Extraction depuis les systèmes hétérogènes initiaux, la Transformation (Type Casting, Trimming, Surrogation par Hashing) et le Chargement distribué massif en base.
+          L'entrepôt est vide. Il faut y injecter les données. L'IA génère en autonomie un complexe **script ETL Python / SQL**. Il va orchestrer l'Extraction depuis les systèmes hétérogènes initiaux, la Transformation (Type Casting, Trimming, Surrogation par Hashing) et le Chargement distribué massif en base.
         </p>
         <div className="bg-[#09090b] rounded-xl border border-emerald-500/20 p-4 font-mono text-[10px] text-zinc-400 shadow-inner relative overflow-hidden">
           <motion.div 
@@ -153,12 +153,11 @@ const stepsData = [
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             className="absolute left-0 w-full h-[50px] bg-gradient-to-b from-transparent via-emerald-500/10 to-transparent pointer-events-none"
           ></motion.div>
-          <div className="text-emerald-400 mb-2"># Multi-Exécution Agents générant PySpark</div>
-          <div><span className="text-pink-500">df_ventes</span> = spark.read.csv("source.csv")</div>
-          <div className="mt-1"><span className="text-blue-400">df_transformed</span> = df_ventes.withColumn(</div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-amber-300">"sk_date"</span>, F.xxhash64("date_sale")</div>
-          <div>)</div>
-          <div className="mt-1">df_transformed.write.mode(<span className="text-amber-300">"append"</span>).format(<span className="text-amber-300">"jdbc"</span>)...</div>
+          <div className="text-emerald-400 mb-2"># Multi-Exécution Agents générant le code ETL</div>
+          <div><span className="text-pink-500">df_ventes</span> = pd.read_csv("source.csv")</div>
+          <div className="mt-1"><span className="text-blue-400">df_transformed</span> = df_ventes.copy()</div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;df_transformed[<span className="text-amber-300">"sk_date"</span>] = df_transformed[<span className="text-amber-300">"date"</span>].apply(hash)</div>
+          <div className="mt-1">df_transformed.to_sql(<span className="text-amber-300">"fact_ventes"</span>, engine, if_exists=<span className="text-amber-300">"append"</span>)...</div>
         </div>
       </div>
     )
@@ -313,7 +312,7 @@ export default function ProcessDiagram() {
             <div className="flex flex-col items-center gap-2"><div className="w-12 h-12 rounded-full border border-indigo-500/30 flex items-center justify-center bg-indigo-500/10 text-indigo-400"><Cpu size={24}/></div><span className="text-[10px] uppercase font-bold text-zinc-400 mt-2">LLM Engine</span><span className="text-xs font-mono text-zinc-500">Gemini / Zhipu</span></div>
             <div className="flex flex-col items-center gap-2"><div className="w-12 h-12 rounded-full border border-purple-500/30 flex items-center justify-center bg-purple-500/10 text-purple-400"><Network size={24}/></div><span className="text-[10px] uppercase font-bold text-zinc-400 mt-2">State Machine</span><span className="text-xs font-mono text-zinc-500">LangGraph (Graph)</span></div>
             <div className="flex flex-col items-center gap-2"><div className="w-12 h-12 rounded-full border border-emerald-500/30 flex items-center justify-center bg-emerald-500/10 text-emerald-400"><Activity size={24}/></div><span className="text-[10px] uppercase font-bold text-zinc-400 mt-2">Structure Back</span><span className="text-xs font-mono text-zinc-500">FastAPI</span></div>
-            <div className="flex flex-col items-center gap-2"><div className="w-12 h-12 rounded-full border border-amber-500/30 flex items-center justify-center bg-amber-500/10 text-amber-400"><Database size={24}/></div><span className="text-[10px] uppercase font-bold text-zinc-400 mt-2">Data Process</span><span className="text-xs font-mono text-zinc-500">PySpark / SQLAlchemy</span></div>
+            <div className="flex flex-col items-center gap-2"><div className="w-12 h-12 rounded-full border border-amber-500/30 flex items-center justify-center bg-amber-500/10 text-amber-400"><Database size={24}/></div><span className="text-[10px] uppercase font-bold text-zinc-400 mt-2">Data Process</span><span className="text-xs font-mono text-zinc-500">Python / SQLAlchemy</span></div>
           </div>
         </motion.div>
 

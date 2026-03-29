@@ -24,7 +24,6 @@ app = FastAPI(
     version="2.0"
 )
 
-import sqlite3
 import datetime
 
 app.add_middleware(
@@ -108,15 +107,12 @@ from typing import Optional
 
 class ConnectionRequest(BaseModel):
     source_type: str
-    connection_string: Optional[str] = None
     file_path: Optional[str]         = None
     dw_host:     str  = "127.0.0.1"
     dw_port:     int  = 3306
     dw_user:     str  = "root"
     dw_password: str  = ""
     dw_database: str  = "data_warehouse"
-    # Notifications
-    notify_email: Optional[str] = None
 
 class ChatRequest(BaseModel):
     message: str
@@ -247,7 +243,6 @@ async def start_process(req: ConnectionRequest):
 
     initial_state = {
         "connection_config":    {"type": req.source_type,
-                                 "connection_string": req.connection_string,
                                  "file_path": req.file_path},
         "dw_connection_config": {"host": req.dw_host, "port": req.dw_port,
                                  "user": req.dw_user, "password": req.dw_password,
@@ -304,7 +299,7 @@ async def chat_with_agent(req: ChatRequest):
         current_state = state_snapshot.values if state_snapshot else {}
 
         if req.context == "etl":
-            # Modification spécifique du script PySpark
+            # Modification spécifique du script ETL
             from langchain_core.prompts import ChatPromptTemplate
                         
             current_etl_code = current_state.get("etl_code", "")
@@ -315,25 +310,24 @@ async def chat_with_agent(req: ChatRequest):
             from nodes.llm_factory import get_llm, call_with_retry
             llm = get_llm(temperature=0)
             prompt = ChatPromptTemplate.from_messages([
-                ("system", """Tu es un expert PySpark.
+                ("system", """Tu es un expert en intégration de données.
 Voici le script ETL actuel:
 
 {current_etl_code}
 
-L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code PySpark complet et modifié, sans aucune explication markdown."""),
+L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code complet et modifié, sans aucune explication markdown."""),
                 ("human", "{user_request}")
             ])
             chain = prompt | llm
             
-            _log(f"Agent ETL (Chat) : modification du script PySpark demandée...")
+            _log(f"Agent ETL (Chat) : modification du script ETL demandée...")
             _broadcast()
             
             response = call_with_retry(chain, {"current_etl_code": current_etl_code, "user_request": req.message})
             
-            # Gestion robuste du contenu (parfois une liste dans les versions récentes de LangChain/Gemini)
+            # Gestion robuste du contenu
             raw_content = response.content
             if isinstance(raw_content, list):
-                # Extraire le texte de chaque partie si c'est une liste
                 text_parts = []
                 for part in raw_content:
                     if isinstance(part, dict) and "text" in part:
@@ -345,12 +339,12 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code P
                 full_text = str(raw_content)
 
             # Nettoyage propre du code Markdown
-            clean_code = full_text.replace("```python", "").replace("```pyspark", "").replace("```", "").strip()
+            clean_code = full_text.replace("```python", "").replace("```python", "").replace("```", "").strip()
             
             # Mettre à jour l'état LangGraph avec le nouveau script
             agent_app.update_state(config, {"etl_code": clean_code})
             
-            _log(f"Script PySpark mis à jour avec succès via le chat.")
+            _log(f"Script ETL mis à jour avec succès via le chat.")
             _broadcast()
             return {"status": "waiting_for_review", "etl_code": clean_code}
         
@@ -387,7 +381,7 @@ def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
             node = list(event.keys())[0] if event else None
             if node == "etl_generator":
                 _set_stage("human", "success", "Validation reçue")
-                _set_stage("etl_gen",  "success", "Script PySpark généré")
+                _set_stage("etl_gen",  "success", "Script ETL généré")
                 pipeline_state["etl_code_used"] = agent_app.get_state(config).values.get("etl_code", "")
                 _set_stage("etl_exec", "running")
                 _log("Exécution ETL → MySQL…")
@@ -428,7 +422,7 @@ def re_execute_etl_pipeline(config: dict):
     from nodes.etl_executor import etl_executor_node
     try:
         _set_stage("etl_exec", "running", "Réexécution demandée par l'utilisateur…")
-        _log("Lancement manuel de l'exécuteur ETL (PySpark)…")
+        _log("Lancement manuel de l'exécuteur ETL…")
         _broadcast()
         
         current_state = agent_app.get_state(config).values
@@ -473,35 +467,18 @@ async def execute_etl_custom(background_tasks: BackgroundTasks):
     pipeline_state["status"] = "running"
     _broadcast()
     background_tasks.add_task(re_execute_etl_pipeline, config)
-    return {"status": "background", "message": "Réexécution du pipeline PySpark lancée en arrière-plan !"}
+    return {"status": "background", "message": "Réexécution du pipeline lancée en arrière-plan !"}
 
 @app.get("/api/sessions")
 def get_history_sessions():
-    try:
-        import os
-        if not os.path.exists("state_checkpoint.db"):
-            return {"sessions": []}
-            
-        with sqlite3.connect("state_checkpoint.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT thread_id, max(checkpoint_id) FROM checkpoints GROUP BY thread_id")
-            rows = cursor.fetchall()
-            
-            sessions = []
-            for r in rows:
-                tid = r[0]
-                sessions.append({
-                    "id": tid,
-                    "name": f"Pipeline {tid}",
-                    "updated_at": datetime.datetime.now().isoformat()
-                })
-                
-            sessions.reverse()
-            return {"sessions": sessions}
-            
-    except Exception as e:
-        print("Erreur sessions", e)
-        return {"sessions": []}
+    """Retourne la session courante uniquement (persistance mémoire)."""
+    global current_session_id
+    sessions = [{
+        "id": current_session_id,
+        "name": f"Session Active ({current_session_id})",
+        "updated_at": datetime.datetime.now().isoformat()
+    }]
+    return {"sessions": sessions}
 
 class ResumeRequest(BaseModel):
     session_id: str

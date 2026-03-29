@@ -67,8 +67,7 @@ def modeler_node(state: AgentState) -> dict:
     
     metadata = state.get("source_metadata", {})
     if not metadata:
-        print("Erreur : Aucune métadonnée trouvée.")
-        return {"sql_ddl": "-- Erreur : Pas de métadonnées"}
+        raise ValueError("Aucune métadonnée trouvée par l'agent. Assurez-vous d'avoir téléchargé un fichier source.")
 
     llm = get_llm(temperature=0)
 
@@ -77,24 +76,27 @@ def modeler_node(state: AgentState) -> dict:
         ("system", """Tu es un expert en Data Warehousing. 
 Analyse les métadonnées et conçois un schéma OLAP en étoile (Star Schema).
 
-RÉPONDS UNIQUEMENT avec un objet JSON valide respectant EXACTEMENT cette structure:
+RÉPONDS UNIQUEMENT avec un objet JSON valide.
+ATTENTION : Le JSON ci-dessous est UNIQUEMENT un EXEMPLE pour te montrer la structure attendue. Tu DOIS obligatoirement inventer et adapter les noms des tables (ex: fact_..., dim_...) et les colonnes en fonction des VRAIES métadonnées que je vais te fournir.
+
+Exemple de structure attendue :
 {{
   "tables": [
     {{
-      "name": "fact_ventes",
+      "name": "fact_exemple",
       "type": "FAIT",
       "columns": [
-        {{"name": "id_vente_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
-        {{"name": "dim_produit_sk", "type": "BIGINT", "is_primary_key": false, "is_foreign_key": true, "references": "dim_produit"}},
-        {{"name": "montant_total_ttc", "type": "DECIMAL(12,2)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
+        {{"name": "id_fait_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
+        {{"name": "dim_entite_sk", "type": "BIGINT", "is_primary_key": false, "is_foreign_key": true, "references": "dim_entite"}},
+        {{"name": "mesure_valeur", "type": "DECIMAL(12,2)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
       ]
     }},
     {{
-      "name": "dim_produit",
+      "name": "dim_entite",
       "type": "DIMENSION",
       "columns": [
-        {{"name": "produit_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
-        {{"name": "nom_produit", "type": "VARCHAR(255)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
+        {{"name": "entite_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
+        {{"name": "attribut_nom", "type": "VARCHAR(255)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
       ]
     }}
   ],

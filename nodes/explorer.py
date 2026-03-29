@@ -5,51 +5,37 @@ from typing import Dict, Any
 from app_state import AgentState
 import time
 # Importation de notre couche de connectivité (Common Connectivity Layer)
-from utils.connectors import SQLConnector, CSVConnector
+from utils.connectors import CSVConnector
 
 def explorer_node(state: AgentState) -> dict:
     """
     Nœud LangGraph représentant l'Agent Explorateur.
-    Il utilise le connecteur approprié pour extraire les métadonnées.
+    Il utilise le connecteur CSV pour extraire les métadonnées.
     """
     print("--- 🔍 AGENT EXPLORATEUR : Démarrage de l'extraction ---")
     
-    # Dans la pratique, les informations saisies par l'utilisateur dans la Modale (Étape A) 
-    # doivent être passées dans l'état global. 
-    # On récupère ces configurations de connexion :
+    # Récupération de la configuration de connexion :
     config = state.get("connection_config", {})
-    source_type = config.get("type", "sql") # Par défaut 'sql', mais peut être 'csv'
+    source_type = config.get("type", "csv")
     
-    connector = None
+    if source_type != "csv":
+        # On force le CSV comme demandé par l'utilisateur
+        source_type = "csv"
     
-    # 1. Instanciation du bon adaptateur (Application du principe Ouvert/Fermé)
-    if source_type == "sql":
-        # Exemple de chaîne de connexion SQLAlchemy saisie via le frontend
-        connection_string = config.get("connection_string", "sqlite:///:memory:")
-        connector = SQLConnector(connection_string=connection_string)
-        
-    elif source_type == "csv":
-        file_path = config.get("file_path", "ventes.csv")
-        connector = CSVConnector(file_path=file_path)
+    file_path = config.get("file_path", "ventes.csv")
+    import os
+    table_name = os.path.splitext(os.path.basename(file_path))[0]
+    connector = CSVConnector(file_path=file_path, table_name=table_name)
 
-    elif source_type in ("excel", "xlsx", "xls"):
-        from utils.connectors import ExcelConnector
-        file_path = config.get("file_path", "")
-        sheet_name = config.get("sheet_name", 0)
-        connector = ExcelConnector(file_path=file_path, sheet_name=sheet_name)
-        
-    else:
-        raise ValueError(f"Type de source non supporté : {source_type}")
-
-    # 2. Exécution de la tâche : Connexion et Extraction
+    # Exécution de la tâche : Connexion et Extraction
     metadata = {}
     if connector.connect():
         print(f"Connexion réussie à la source : {source_type}.")
-        # L'agent extrait le dictionnaire standardisé
         metadata = connector.extract_metadata()
+        if not metadata:
+            raise ValueError(f"Le fichier '{file_path}' semble vide ou n'a pas pu être lu correctement.")
         print(f"Métadonnées extraites avec succès ({len(metadata)} entités trouvées).")
     else:
-        print("Erreur : Impossible d'établir la connexion avec la source.")
-        # En environnement de production, on pourrait ajouter une clé 'error' au state ici
+        raise ValueError(f"Impossible d'établir la connexion avec la source '{file_path}'. Assurez-vous que le fichier a bien été uploadé.")
         
     return {"source_metadata": metadata}
