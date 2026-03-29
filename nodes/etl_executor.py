@@ -25,12 +25,14 @@ KITCHEN_PATHS = [
 ]
 
 
-def _save_ktr(ktr_xml: str) -> str:
-    """Sauvegarde le fichier .ktr sur disque et retourne son chemin absolu."""
+def _save_ktr(ktr_xml: str, session_id: str = "default") -> str:
+    """Sauvegarde le fichier .ktr sur disque avec un nom unique pour la session."""
     os.makedirs(KTR_OUTPUT_DIR, exist_ok=True)
-    with open(KTR_OUTPUT_FILE, "w", encoding="utf-8") as f:
+    filename = f"transformation_{session_id}.ktr"
+    target_path = os.path.join(KTR_OUTPUT_DIR, filename)
+    with open(target_path, "w", encoding="utf-8") as f:
         f.write(ktr_xml)
-    abs_path = os.path.abspath(KTR_OUTPUT_FILE)
+    abs_path = os.path.abspath(target_path)
     print(f"   💾 Fichier .ktr sauvegardé : {abs_path}")
     return abs_path
 
@@ -135,16 +137,39 @@ def _pandas_fallback_load(engine, state: AgentState) -> tuple[bool, str]:
 
         print(f"   📋 Source : {len(df)} lignes × {len(df.columns)} colonnes")
 
+        # Basic cleanup of column names in DF just in case
+        df.columns = df.columns.str.strip()
+
         logical_model = state.get("logical_model", {})
         tables = logical_model.get("tables", [])
         rows_total = 0
+        
         for table in tables:
             tbl_name = table.get("name", "")
             if not tbl_name:
                 continue
-            df.to_sql(tbl_name, engine, if_exists='replace', index=False, chunksize=2000, method='multi')
-            rows_total += len(df)
-            print(f"   ✅ {tbl_name} : {len(df)} lignes")
+                
+            # Mapping columns
+            col_mapping = {}
+            for col in table.get("columns", []):
+                sc = col.get("source_column", "").strip()
+                name = col.get("name", "")
+                if sc and sc != "N/A" and sc in df.columns:
+                    col_mapping[sc] = name
+            
+            if not col_mapping:
+                print(f"   ⚠️ Warning: Aucun mapping de colonne pour {tbl_name}. Table ignorée dans le fallback.")
+                continue
+                
+            # Filter and rename dataframe
+            mapped_df = df[list(col_mapping.keys())].rename(columns=col_mapping)
+            
+            try:
+                mapped_df.to_sql(tbl_name, engine, if_exists='append', index=False, chunksize=2000, method='multi')
+                rows_total += len(mapped_df)
+                print(f"   ✅ {tbl_name} : {len(mapped_df)} lignes")
+            except Exception as e:
+                print(f"   ⚠️ Erreur insertion Pandas pour {tbl_name}: {e}")
 
         return True, f"Fallback Pandas → MySQL : {rows_total} lignes chargées."
     except Exception:
@@ -171,7 +196,8 @@ def etl_executor_node(state: AgentState) -> dict:
         return {"etl_error": "Configuration MySQL cible manquante."}
 
     # ── Étape 1 : Sauvegarder le .ktr ────────────────────────────────────────
-    ktr_path = _save_ktr(ktr_xml)
+    sid = str(state.get("user_id", "guest"))
+    ktr_path = _save_ktr(ktr_xml, session_id=sid)
 
     # ── Étape 2 : Connexion MySQL ─────────────────────────────────────────────
     try:

@@ -77,7 +77,19 @@ Format de sortie : RÉPONDS UNIQUEMENT avec un objet JSON valide.
                 col_def += " PRIMARY KEY"
             cols_sql.append(col_def)
             if col.is_foreign_key and col.references:
-                fks.append(f"    FOREIGN KEY ({col.name}) REFERENCES {col.references}({col.references.replace('dim_','') + '_sk'})")
+                target_pk = ""
+                for target_t in updated_model.tables:
+                    if target_t.name == col.references:
+                        for target_col in target_t.columns:
+                            if target_col.is_primary_key:
+                                target_pk = target_col.name
+                                break
+                        break
+                
+                if not target_pk:
+                    target_pk = "id_sk" # fallback
+                    
+                fks.append(f"    FOREIGN KEY ({col.name}) REFERENCES {col.references}({target_pk})")
         
         all_cols = cols_sql + fks
         sql_statements.append(f"CREATE TABLE IF NOT EXISTS {table.name} (\n" + ",\n".join(all_cols) + "\n);")

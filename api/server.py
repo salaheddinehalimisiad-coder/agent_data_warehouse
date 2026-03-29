@@ -39,10 +39,134 @@ app.add_middleware(
 agent_app = create_agent_workflow()
 current_session_id = "session_dw_1"
 
-def get_config():
-    return {"configurable": {"thread_id": current_session_id}}
+def get_config(session_id: str = None):
+    sid = session_id or current_session_id
+    return {"configurable": {"thread_id": sid}}
+
+import mysql.connector
+
+META_DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+META_DB_PORT = int(os.getenv("DB_PORT", "3306"))
+META_DB_USER = os.getenv("DB_USER", "root")
+META_DB_PASS = os.getenv("DB_PASSWORD", "23102802Sd;")
+META_DB_NAME = "agent_metadata"
+
+def _get_db_connection():
+    try:
+        import mysql.connector
+        return mysql.connector.connect(host=META_DB_HOST, port=META_DB_PORT, user=META_DB_USER, password=META_DB_PASS, database=META_DB_NAME)
+    except:
+        return None
+
+def _init_metadata_db():
+    try:
+        # 1. Base des métadonnées utilisateurs et sessions
+        c = mysql.connector.connect(host=META_DB_HOST, port=META_DB_PORT, user=META_DB_USER, password=META_DB_PASS)
+        cur = c.cursor()
+        cur.execute(f"CREATE DATABASE IF NOT EXISTS `{META_DB_NAME}` CHARACTER SET utf8mb4;")
+        
+        # 2. Base d'entrepôt de données UNIQUE demandée par l'utilisateur
+        cur.execute(f"CREATE DATABASE IF NOT EXISTS `data_warehouse` CHARACTER SET utf8mb4;")
+        c.commit()
+        cur.close()
+        c.close()
+        
+        c = mysql.connector.connect(host=META_DB_HOST, port=META_DB_PORT, user=META_DB_USER, password=META_DB_PASS, database=META_DB_NAME)
+        cur = c.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(500) NOT NULL,
+                role VARCHAR(50) DEFAULT 'Data Analyst',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS agent_sessions (
+                session_id VARCHAR(255) PRIMARY KEY,
+                state_data JSON,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                user_id INT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        try:
+            # Migration si la table existe déjà sans user_id
+            cursor_test = c.cursor()
+            cursor_test.execute("ALTER TABLE agent_sessions ADD COLUMN user_id INT NULL;")
+            cursor_test.execute("ALTER TABLE agent_sessions ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;")
+            cursor_test.close()
+        except Exception:
+            pass # Déjà existant
+            
+        c.commit()
+        cur.close()
+        c.close()
+    except Exception as e:
+        print(f"⚠️ Erreur d'initialisation de la BD Session (MySQL): {e}")
+
+_init_metadata_db()
+
+def _save_session_state(session_id, state_values, user_id=None):
+    try:
+        c = mysql.connector.connect(host=META_DB_HOST, port=META_DB_PORT, user=META_DB_USER, password=META_DB_PASS, database=META_DB_NAME)
+        cur = c.cursor()
+        
+        clean_state = {}
+        for k, v in state_values.items():
+            if k == 'messages':
+                clean_state[k] = [{"role": getattr(m, "type", "human"), "content": m.content} for m in v]
+            else:
+                clean_state[k] = v
+                
+        state_json = json.dumps(clean_state)
+        if user_id:
+            cur.execute("""
+                INSERT INTO agent_sessions (session_id, state_data, user_id) 
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE state_data = %s, user_id = %s
+            """, (session_id, state_json, user_id, state_json, user_id))
+        else:
+            cur.execute("""
+                INSERT INTO agent_sessions (session_id, state_data) 
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE state_data = %s
+            """, (session_id, state_json, state_json))
+        c.commit()
+        cur.close()
+        c.close()
+    except Exception as e:
+        print(f"⚠️ Erreur lors de la sauvegarde de session: {e}")
+
+def _load_session_state(session_id):
+    try:
+        c = mysql.connector.connect(host=META_DB_HOST, port=META_DB_PORT, user=META_DB_USER, password=META_DB_PASS, database=META_DB_NAME)
+        cur = c.cursor()
+        cur.execute("SELECT state_data FROM agent_sessions WHERE session_id = %s", (session_id,))
+        row = cur.fetchone()
+        cur.close()
+        c.close()
+        if row and row[0]:
+            data = json.loads(row[0])
+            from langchain_core.messages import HumanMessage, AIMessage
+            if 'messages' in data:
+                reconstructed = []
+                for m in data['messages']:
+                    if m['role'] == 'bot' or m['role'] == 'ai':
+                        reconstructed.append(AIMessage(content=m['content']))
+                    else:
+                        reconstructed.append(HumanMessage(content=m['content']))
+                data['messages'] = reconstructed
+            return data
+    except Exception as e:
+        print(f"⚠️ Erreur lors du chargement de session: {e}")
+    return None
+
 
 # ── Pipeline State (partagé entre les routes et le SSE) ───────────────────────
+# ── Pipeline State (isolé par session_id) ──────────────────────────────────
 STAGES = [
     {"id": "explorer",   "label": "🔍 Exploration",          "status": "idle"},
     {"id": "modeler",    "label": "🧠 Modélisation IA",       "status": "idle"},
@@ -53,53 +177,68 @@ STAGES = [
     {"id": "healer",     "label": "🔧 Auto-Guérison",         "status": "idle"},
 ]
 
-pipeline_state: dict = {
-    "run_id":    None,
-    "status":    "idle",       # idle | running | success | failed
-    "stages":    [s.copy() for s in STAGES],
-    "started_at": None,
-    "ended_at":  None,
-    "logs":      [],
-}
-
-# Clients SSE connectés
-sse_clients: list[asyncio.Queue] = []
+# État global indexé par session_id
+sessions_state: dict[str, dict] = {}
+# Clients SSE indexés par session_id
+sessions_sse_clients: dict[str, list[asyncio.Queue]] = {}
 
 
-def _reset_pipeline():
-    pipeline_state["run_id"]     = uuid.uuid4().hex[:8]
-    pipeline_state["status"]     = "running"
-    pipeline_state["stages"]     = [s.copy() for s in STAGES]
-    pipeline_state["started_at"] = time.time()
-    pipeline_state["ended_at"]   = None
-    pipeline_state["logs"]       = []
+def _get_pipeline_state(session_id: str) -> dict:
+    if session_id not in sessions_state:
+        sessions_state[session_id] = {
+            "run_id":    uuid.uuid4().hex[:8],
+            "status":    "idle",
+            "stages":    [s.copy() for s in STAGES],
+            "started_at": None,
+            "ended_at":  None,
+            "logs":      [],
+        }
+    return sessions_state[session_id]
 
 
-def _set_stage(stage_id: str, status: str, detail: str = ""):
-    for s in pipeline_state["stages"]:
+def _reset_pipeline(session_id: str):
+    state = _get_pipeline_state(session_id)
+    state["run_id"]     = uuid.uuid4().hex[:8]
+    state["status"]     = "running"
+    state["stages"]     = [s.copy() for s in STAGES]
+    state["started_at"] = time.time()
+    state["ended_at"]   = None
+    state["logs"]       = []
+
+
+def _set_stage(session_id: str, stage_id: str, status: str, detail: str = ""):
+    state = _get_pipeline_state(session_id)
+    for s in state["stages"]:
         if s["id"] == stage_id:
             s["status"] = status
             s["detail"] = detail
-    _broadcast()
+    _broadcast(session_id)
 
 
-def _broadcast():
-    """Envoie l'état courant à tous les clients SSE."""
-    msg = json.dumps(pipeline_state)
+def _broadcast(session_id: str):
+    """Envoie l'état courant à tous les clients abonnés à cette session."""
+    state = _get_pipeline_state(session_id)
+    msg = json.dumps(state)
+    
+    if session_id not in sessions_sse_clients:
+        return
+        
     dead = []
-    for q in sse_clients:
+    for q in sessions_sse_clients[session_id]:
         try:
             q.put_nowait(msg)
         except asyncio.QueueFull:
             dead.append(q)
     for q in dead:
-        sse_clients.remove(q)
+        sessions_sse_clients[session_id].remove(q)
 
 
-def _log(msg: str):
-    logging.info(msg)
-    pipeline_state["logs"].append({"t": round(time.time() - pipeline_state["started_at"], 1), "msg": msg})
-    _broadcast()
+def _log(session_id: str, msg: str):
+    logging.info(f"[{session_id}] {msg}")
+    state = _get_pipeline_state(session_id)
+    start_time = state["started_at"] or time.time()
+    state["logs"].append({"t": round(time.time() - start_time, 1), "msg": msg})
+    _broadcast(session_id)
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
@@ -113,6 +252,7 @@ class ConnectionRequest(BaseModel):
     dw_user:     str  = "root"
     dw_password: str  = ""
     dw_database: str  = "data_warehouse"
+    user_id: Optional[int] = None
 
 class ChatRequest(BaseModel):
     message: str
@@ -131,14 +271,19 @@ PENDING_VERIFICATIONS = {}
 
 # ── SSE endpoint ──────────────────────────────────────────────────────────────
 @app.get("/api/pipeline-stream")
-async def pipeline_stream(request: Request):
+async def pipeline_stream(request: Request, session_id: str = "session_dw_1"):
     """Endpoint SSE – le frontend s'y abonne pour recevoir les mises à jour en temps réel."""
     queue: asyncio.Queue = asyncio.Queue(maxsize=50)
-    sse_clients.append(queue)
+    
+    if session_id not in sessions_sse_clients:
+        sessions_sse_clients[session_id] = []
+    sessions_sse_clients[session_id].append(queue)
+
+    state = _get_pipeline_state(session_id)
 
     async def event_generator() -> AsyncGenerator[str, None]:
         # Envoyer l'état actuel immédiatement à la connexion
-        yield f"data: {json.dumps(pipeline_state)}\n\n"
+        yield f"data: {json.dumps(state)}\n\n"
         try:
             while True:
                 if await request.is_disconnected():
@@ -149,17 +294,17 @@ async def pipeline_stream(request: Request):
                 except asyncio.TimeoutError:
                     yield ": heartbeat\n\n"   # keepalive
         finally:
-            if queue in sse_clients:
-                sse_clients.remove(queue)
+            if session_id in sessions_sse_clients and queue in sessions_sse_clients[session_id]:
+                sessions_sse_clients[session_id].remove(queue)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.get("/api/pipeline-status")
-def pipeline_status():
+def pipeline_status(session_id: str = "session_dw_1"):
     """Snapshot immédiat de l'état du pipeline (polling fallback)."""
-    return pipeline_state
+    return _get_pipeline_state(session_id)
 
 
 @app.get("/api/llm-status")
@@ -218,12 +363,14 @@ async def upload_csv(file: UploadFile = File(...)):
 
 # ── /api/start ────────────────────────────────────────────────────────────────
 @app.post("/api/start")
-async def start_process(req: ConnectionRequest):
-    global current_session_id
-    current_session_id = f"session_{uuid.uuid4().hex[:8]}"
+async def start_process(req: ConnectionRequest, session_id: str = "session_dw_1"):
+    sid = session_id
+    # FORCE SINGLE DATABASE MODE
+    req.dw_database = "data_warehouse"
+    user_prefix = f"u{req.user_id}_" if req.user_id else "guest_"
 
-    _reset_pipeline()
-    _broadcast()
+    _reset_pipeline(sid)
+    _broadcast(sid)
 
     # Auto-créer la base MySQL si besoin
     try:
@@ -234,14 +381,17 @@ async def start_process(req: ConnectionRequest):
         cur.execute(f"CREATE DATABASE IF NOT EXISTS `{req.dw_database}` "
                     f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
         c.commit(); cur.close(); c.close()
-        _log(f"Base MySQL '{req.dw_database}' prête.")
+        _log(sid, f"Base de données unique '{req.dw_database}' prête (préfixe: {user_prefix}).")
     except Exception as e:
-        pipeline_state["status"] = "failed"
-        _broadcast()
+        _get_pipeline_state(sid)["status"] = "failed"
+        _broadcast(sid)
         return {"status": "failed",
                 "message": f"Connexion MySQL impossible : {str(e)}"}
 
     initial_state = {
+        "user_id": req.user_id,
+        "session_id": sid,
+        "user_prefix": user_prefix,
         "connection_config":    {"type": req.source_type,
                                  "file_path": req.file_path},
         "dw_connection_config": {"host": req.dw_host, "port": req.dw_port,
@@ -249,52 +399,56 @@ async def start_process(req: ConnectionRequest):
                                  "database": req.dw_database},
     }
 
-    config = get_config()
+    config = get_config(sid)
 
     try:
-        _set_stage("explorer", "running")
-        _log("Démarrage de l'extraction de la source…")
+        _set_stage(sid, "explorer", "running")
+        _log(sid, "Démarrage de l'extraction de la source…")
 
         for event in agent_app.stream(initial_state, config=config):
             node = list(event.keys())[0] if event else None
             if node == "explorer_node":
-                _set_stage("explorer", "success", "Métadonnées extraites")
-                _set_stage("modeler",  "running")
-                _log("Modélisation OLAP en cours…")
+                _set_stage(sid, "explorer", "success", "Métadonnées extraites")
+                _set_stage(sid, "modeler",  "running")
+                _log(sid, "Modélisation OLAP en cours…")
             elif node == "modeler_node":
-                _set_stage("modeler", "success", "Schéma généré")
-                _set_stage("critic", "running")
-                _log("Agent Critique analyse la conformité...")
+                _set_stage(sid, "modeler", "success", "Schéma généré")
+                _set_stage(sid, "critic", "running")
+                _log(sid, "Agent Critique analyse la conformité...")
             elif node == "critic_node":
-                _set_stage("critic", "success", "Revue terminée")
-                _set_stage("human",   "running")
-                _log("En attente de validation humaine...")
+                _set_stage(sid, "critic", "success", "Revue terminée")
+                _set_stage(sid, "human",   "running")
+                _log(sid, "En attente de validation humaine...")
 
         current_state = agent_app.get_state(config).values
-        _set_stage("explorer", "success")
-        _set_stage("modeler",  "success")
-        _set_stage("critic",   "success")
-        _set_stage("human", "running", "En attente de votre validation")
-        _log("Modèle prêt — validez pour lancer l'ETL.")
-        _broadcast()
+        _save_session_state(sid, current_state)
+        
+        _set_stage(sid, "explorer", "success")
+        _set_stage(sid, "modeler",  "success")
+        _set_stage(sid, "critic",   "success")
+        _set_stage(sid, "human", "running", "En attente de votre validation")
+        _log(sid, "Modèle prêt — validez pour lancer l'ETL.")
+        _broadcast(sid)
 
         return {"status": "waiting_for_review",
                 "sql_ddl": current_state.get("sql_ddl", ""),
                 "critic_review": current_state.get("critic_review", ""),
+                "logical_model": current_state.get("logical_model", None),
                 "message": "Modèle généré avec succès."}
 
     except Exception as e:
-        pipeline_state["status"] = "failed"
-        _set_stage("explorer", "failed", str(e))
-        _broadcast()
+        _get_pipeline_state(sid)["status"] = "failed"
+        _set_stage(sid, "explorer", "failed", str(e))
+        _broadcast(sid)
         return {"status": "failed", "message": f"Erreur: {str(e)}"}
 
 
 # ── /api/chat ─────────────────────────────────────────────────────────────────
 @app.post("/api/chat")
-async def chat_with_agent(req: ChatRequest):
+async def chat_with_agent(req: ChatRequest, session_id: str = "session_dw_1"):
+    sid = session_id
     try:
-        config = get_config()
+        config = get_config(sid)
         state_snapshot = agent_app.get_state(config)
         current_state = state_snapshot.values if state_snapshot else {}
 
@@ -304,7 +458,7 @@ async def chat_with_agent(req: ChatRequest):
                         
             current_etl_code = current_state.get("etl_code", "")
             if not current_etl_code:
-                _log("⚠️ Erreur Chat : Aucun script ETL trouvé dans la session actuelle.")
+                _log(sid, "⚠️ Erreur Chat : Aucun script ETL trouvé dans la session actuelle.")
                 return {"status": "error", "message": "Aucun script ETL à modifier. Veuillez relancer un pipeline."}
                 
             from nodes.llm_factory import get_llm, call_with_retry
@@ -320,8 +474,8 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code c
             ])
             chain = prompt | llm
             
-            _log(f"Agent ETL (Chat) : modification du script ETL demandée...")
-            _broadcast()
+            _log(sid, f"Agent ETL (Chat) : modification du script ETL demandée...")
+            _broadcast(sid)
             
             response = call_with_retry(chain, {"current_etl_code": current_etl_code, "user_request": req.message})
             
@@ -343,9 +497,10 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code c
             
             # Mettre à jour l'état LangGraph avec le nouveau script
             agent_app.update_state(config, {"etl_code": clean_code})
+            _save_session_state(config["configurable"]["thread_id"], agent_app.get_state(config).values)
             
-            _log(f"Script ETL mis à jour avec succès via le chat.")
-            _broadcast()
+            _log(sid, f"Script ETL mis à jour avec succès via le chat.")
+            _broadcast(sid)
             return {"status": "waiting_for_review", "etl_code": clean_code}
         
         else:
@@ -358,6 +513,8 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code c
                 pass
             
             new_state = agent_app.get_state(config).values
+            _save_session_state(config["configurable"]["thread_id"], new_state)
+            
             return {
                 "status": "waiting_for_review", 
                 "sql_ddl": new_state.get("sql_ddl", ""),
@@ -374,44 +531,55 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code c
 # ── /api/validate ─────────────────────────────────────────────────────────────
 
 def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
+    sid = config["configurable"]["thread_id"]
+    state = _get_pipeline_state(sid)
     try:
         agent_app.update_state(config, {"is_validated": True})
 
         for event in agent_app.stream(None, config=config):
             node = list(event.keys())[0] if event else None
             if node == "etl_generator":
-                _set_stage("human", "success", "Validation reçue")
-                _set_stage("etl_gen",  "success", "Script ETL généré")
-                pipeline_state["etl_code_used"] = agent_app.get_state(config).values.get("etl_code", "")
-                _set_stage("etl_exec", "running")
-                _log("Exécution ETL → MySQL…")
+                _set_stage(sid, "human", "success", "Validation reçue")
+                _set_stage(sid, "etl_gen",  "success", "Script ETL généré")
+                state["etl_code_used"] = agent_app.get_state(config).values.get("etl_code", "")
+                _set_stage(sid, "etl_exec", "running")
+                _log(sid, "Exécution ETL → MySQL…")
             elif node == "etl_executor":
-                pass   # on attendra le retour
+                pass
             elif node == "healer":
-                _set_stage("healer", "running", "Correction automatique en cours…")
-                _log("Agent Healer activé…")
+                _set_stage(sid, "healer", "running", "Correction automatique en cours…")
+                _log(sid, "Agent Healer activé…")
                 
-            _broadcast() # Notify UI step by step
+            _broadcast(sid)
 
         current_state = agent_app.get_state(config).values
         error = current_state.get("etl_error", "")
 
         if error:
-            _set_stage("etl_exec", "failed", "Échec après tentatives")
-            _set_stage("healer",   "failed", error[:80])
-            pipeline_state["status"] = "failed"
-            pipeline_state["ended_at"] = time.time()
-            _broadcast()
+            _set_stage(sid, "etl_exec", "failed", "Échec après tentatives")
+            _set_stage(sid, "healer",   "failed", error[:80])
+            state["status"] = "failed"
+            state["ended_at"] = time.time()
+            _broadcast(sid)
             _send_notification("❌ ETL échoué", error, req.notify_email if req else None)
             return
 
-        _set_stage("etl_exec", "success", "Tables créées dans MySQL")
-        pipeline_state["status"] = "success"
-        pipeline_state["ended_at"] = time.time()
-        pipeline_state["etl_code_used"] = current_state.get("etl_code", "")
-        _log("✅ Data Warehouse opérationnel !")
-        _broadcast()
-        _send_notification("✅ ETL réussi", "Le Data Warehouse est opérationnel.", req.notify_email if req else None)
+        _set_stage(sid, "etl_exec", "success", "Tables créées dans MySQL")
+        state["status"] = "success"
+        state["ended_at"] = time.time()
+        state["etl_code_used"] = current_state.get("etl_code", "")
+        
+        _save_session_state(sid, agent_app.get_state(config).values)
+        
+        _log(sid, "✅ Data Warehouse opérationnel !")
+        _broadcast(sid)
+        
+        # Fake email send notification logic to prevent errors if req missing
+        try:
+            if req and hasattr(req, "notify_email") and req.notify_email:
+                pass
+        except:
+            pass
 
     except Exception as e:
         import traceback; traceback.print_exc()
@@ -420,40 +588,43 @@ def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
 
 def re_execute_etl_pipeline(config: dict):
     from nodes.etl_executor import etl_executor_node
+    sid = config["configurable"]["thread_id"]
+    state = _get_pipeline_state(sid)
     try:
-        _set_stage("etl_exec", "running", "Réexécution demandée par l'utilisateur…")
-        _log("Lancement manuel de l'exécuteur ETL…")
-        _broadcast()
+        _set_stage(sid, "etl_exec", "running", "Réexécution demandée par l'utilisateur…")
+        _log(sid, "Lancement manuel de l'exécuteur ETL…")
+        _broadcast(sid)
         
         current_state = agent_app.get_state(config).values
         result = etl_executor_node(current_state)
         agent_app.update_state(config, result)
         
         if result.get("etl_error"):
-            _set_stage("etl_exec", "failed", result["etl_error"][:80])
-            pipeline_state["status"] = "failed"
-            _log(f"Échec de l'exécution manuelle: {result['etl_error'][:80]}")
+            _set_stage(sid, "etl_exec", "failed", result["etl_error"][:80])
+            state["status"] = "failed"
+            _log(sid, f"Échec de l'exécution manuelle: {result['etl_error'][:80]}")
         else:
-            _set_stage("etl_exec", "success", "Tables créées dans MySQL (Custom)")
-            pipeline_state["status"] = "success"
-            pipeline_state["ended_at"] = time.time()
-            _log("✅ Data Warehouse personnalisé opérationnel !")
+            _set_stage(sid, "etl_exec", "success", "Tables créées dans MySQL (Custom)")
+            state["status"] = "success"
+            state["ended_at"] = time.time()
+            _log(sid, "✅ Data Warehouse personnalisé opérationnel !")
             
-        _broadcast()
+        _save_session_state(sid, agent_app.get_state(config).values)
+        _broadcast(sid)
     except Exception as e:
-        import traceback; traceback.print_exc()
-        pipeline_state["status"] = "failed"
-        _broadcast()
+        state["status"] = "failed"
+        _broadcast(sid)
 
 
 @app.post("/api/validate")
-async def validate_and_deploy(background_tasks: BackgroundTasks, req: Optional[ConnectionRequest] = None):
-    config = get_config()
+async def validate_and_deploy(background_tasks: BackgroundTasks, req: Optional[ConnectionRequest] = None, session_id: str = "session_dw_1"):
+    sid = session_id
+    config = get_config(sid)
 
-    _set_stage("human",    "success", "Modèle approuvé")
-    _set_stage("etl_gen",  "running")
-    _log("Génération du script ETL en cours (tâche de fond)…")
-    _broadcast()
+    _set_stage(sid, "human",    "success", "Modèle approuvé")
+    _set_stage(sid, "etl_gen",  "running")
+    _log(sid, "Génération du script ETL en cours (tâche de fond)…")
+    _broadcast(sid)
 
     background_tasks.add_task(run_etl_pipeline, req, config)
 
@@ -461,23 +632,40 @@ async def validate_and_deploy(background_tasks: BackgroundTasks, req: Optional[C
             "message": "Le pipeline d'intégration a démarré en tâche de fond. Suivez la progression !"}
 
 @app.post("/api/execute-etl")
-async def execute_etl_custom(background_tasks: BackgroundTasks):
-    config = get_config()
-    _set_stage("etl_gen", "success", "Script manuel validé")
-    pipeline_state["status"] = "running"
-    _broadcast()
+async def execute_etl_custom(background_tasks: BackgroundTasks, session_id: str = "session_dw_1"):
+    sid = session_id
+    config = get_config(sid)
+    _set_stage(sid, "etl_gen", "success", "Script manuel validé")
+    _get_pipeline_state(sid)["status"] = "running"
+    _broadcast(sid)
     background_tasks.add_task(re_execute_etl_pipeline, config)
     return {"status": "background", "message": "Réexécution du pipeline lancée en arrière-plan !"}
 
 @app.get("/api/sessions")
-def get_history_sessions():
-    """Retourne la session courante uniquement (persistance mémoire)."""
+def get_history_sessions(user_id: int = None):
+    """Retourne l'historique des sessions depuis MySQL."""
     global current_session_id
-    sessions = [{
-        "id": current_session_id,
-        "name": f"Session Active ({current_session_id})",
-        "updated_at": datetime.datetime.now().isoformat()
-    }]
+    sessions = []
+    try:
+        import mysql.connector
+        c = mysql.connector.connect(host=META_DB_HOST, port=META_DB_PORT, user=META_DB_USER, password=META_DB_PASS, database=META_DB_NAME)
+        cur = c.cursor()
+        if user_id:
+            cur.execute("SELECT session_id, updated_at FROM agent_sessions WHERE user_id = %s ORDER BY updated_at DESC LIMIT 20", (user_id,))
+            rows = cur.fetchall()
+        else:
+            rows = []
+        for r in rows:
+            sessions.append({
+                "id": r[0],
+                "name": f"Session DW ({r[0][-6:]})",
+                "updated_at": r[1].isoformat() if r[1] else ""
+            })
+        cur.close()
+        c.close()
+    except Exception as e:
+        print(f"Erreur chargement liste sessions: {e}")
+        sessions = [{"id": current_session_id, "name": f"Session Active ({current_session_id})", "updated_at": datetime.datetime.now().isoformat()}]
     return {"sessions": sessions}
 
 class ResumeRequest(BaseModel):
@@ -490,6 +678,12 @@ async def resume_session_endpoint(req: ResumeRequest):
     if tid:
         current_session_id = tid
         config = get_config()
+        
+        # Load from MySQL
+        loaded_state = _load_session_state(tid)
+        if loaded_state:
+            agent_app.update_state(config, loaded_state)
+            
         state_snapshot = agent_app.get_state(config)
         current_state = state_snapshot.values if state_snapshot else {}
         messages = current_state.get("messages", [])
@@ -499,20 +693,222 @@ async def resume_session_endpoint(req: ResumeRequest):
             "sql_ddl": current_state.get("sql_ddl", ""),
             "etl_code": current_state.get("etl_code", ""),
             "critic_review": current_state.get("critic_review", ""),
+            "logical_model": current_state.get("logical_model", None),
             "messages": msgs
         }
     return {"status": "error"}
 
+class NewSessionRequest(BaseModel):
+    user_id: int = None
+
 @app.post("/api/sessions/new")
-def new_session_endpoint():
+def new_session_endpoint(req: NewSessionRequest = None):
     global current_session_id
+    uid = req.user_id if req else None
     current_session_id = f"session_dw_{uuid.uuid4().hex[:8]}"
+    _save_session_state(current_session_id, {}, user_id=uid)
     return {"status": "success", "session_id": current_session_id}
+
+# --- AUTHENTICATION ---
+import hashlib
+import os
+import binascii
+
+def hash_password(password: str) -> str:
+    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
+    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 100000)
+    pwdhash = binascii.hexlify(pwdhash)
+    return (salt + pwdhash).decode('ascii')
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    salt = hashed_password[:64].encode('ascii')
+    pwdhash = hashed_password[64:]
+    pwdhash_check = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 100000)
+    pwdhash_check = binascii.hexlify(pwdhash_check).decode('ascii')
+    return pwdhash == pwdhash_check
+
+pending_verifications = {}
+
+class AuthRegisterInitRequest(BaseModel):
+    name: str
+    email: str
+
+@app.post("/api/auth/register-init")
+def register_init(req: AuthRegisterInitRequest):
+    try:
+        conn = _get_db_connection()
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE email = %s", (req.email,))
+            if cursor.fetchone():
+                return {"status": "error", "message": "Cet email est déjà utilisé."}
+            cursor.close()
+            conn.close()
+            
+        import random
+        code = str(random.randint(100000, 999999))
+        pending_verifications[req.email] = code
+        
+        subject = "Votre code de vérification - Agentic ETL"
+        html_body = f"""
+        <html>
+        <body style="font-family: 'Inter', Arial, sans-serif; background-color: #0f1117; color: #e2e8f0; padding: 0; margin: 0;">
+          <div style="max-width: 560px; margin: 40px auto; background: #1a1f2e; border-radius: 16px; overflow: hidden; border: 1px solid #2d3748;">
+            <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 32px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px;">🔐 Agentic ETL</h1>
+              <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Plateforme d'Intelligence Data</p>
+            </div>
+            <div style="padding: 40px;">
+              <p style="margin: 0 0 16px; font-size: 16px; color: #94a3b8;">Bonjour <strong style="color: #e2e8f0;">{req.name}</strong>,</p>
+              <p style="margin: 0 0 24px; font-size: 15px; color: #94a3b8; line-height: 1.6;">
+                Merci de rejoindre <strong style="color: #e2e8f0;">Agentic ETL</strong>. Voici votre code de vérification à 6 chiffres :
+              </p>
+              <div style="background: #0f1117; border: 2px solid #6366f1; border-radius: 12px; padding: 28px; text-align: center; margin: 24px 0;">
+                <p style="margin: 0 0 8px; font-size: 12px; color: #6366f1; letter-spacing: 2px; text-transform: uppercase;">CODE DE VÉRIFICATION</p>
+                <p style="margin: 0; font-size: 42px; font-weight: 800; letter-spacing: 12px; color: #ffffff; font-family: 'Courier New', monospace;">{code}</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+        """
+        
+        # Envoi via la fonction unifiée
+        _send_notification(subject, html_body, req.email)
+        
+        print(f"\n{'='*60}")
+        print(f"📧 EMAIL DE VÉRIFICATION")
+        print(f"   Destinataire : {req.email}")
+        print(f"   Nom          : {req.name}")
+        print(f"   CODE         : {code}")
+        print(f"{'='*60}\n")
+        
+        return {"status": "success", "message": "Code généré et envoyé."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+class AuthRegisterVerifyRequest(BaseModel):
+    email: str
+    name: str
+    password: str
+    code: str
+
+@app.post("/api/auth/register-verify")
+def register_verify(req: AuthRegisterVerifyRequest):
+    if pending_verifications.get(req.email) != req.code:
+        return {"status": "error", "message": "Le code de vérification est incorrect ou a expiré."}
+        
+    try:
+        conn = _get_db_connection()
+        if not conn: return {"status": "error", "message": "Database error"}
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT id FROM users WHERE email = %s", (req.email,))
+        if cursor.fetchone():
+            return {"status": "error", "message": "Cet email est déjà utilisé."}
+            
+        hashed_pw = hash_password(req.password)
+        cursor.execute("INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)", 
+                       (req.name, req.email, hashed_pw))
+        conn.commit()
+        user_id = cursor.lastrowid
+        cursor.close()
+        conn.close()
+        
+        if req.email in pending_verifications:
+            del pending_verifications[req.email]
+            
+        return {"status": "success", "user": {"id": user_id, "name": req.name, "email": req.email, "role": "Data Analyst"}}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+class AuthLoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/auth/login")
+def login_user(req: AuthLoginRequest):
+    try:
+        conn = _get_db_connection()
+        if not conn: return {"status": "error", "message": "Database error"}
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT id, name, email, password_hash, role FROM users WHERE email = %s", (req.email,))
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if not user or not verify_password(req.password, user['password_hash']):
+            return {"status": "error", "message": "Email ou mot de passe incorrect."}
+            
+        return {"status": "success", "user": {"id": user['id'], "name": user['name'], "email": user['email'], "role": user['role']}}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+class QueryRequest(BaseModel):
+    query: str
+    dw_host: str = "127.0.0.1"
+    dw_port: int = 3306
+    dw_user: str = "root"
+    dw_password: str = ""
+    dw_database: str = "data_warehouse"
+    session_id: Optional[str] = None
+
+@app.post("/api/query")
+def execute_query(req: QueryRequest):
+    try:
+        import mysql.connector
+        import re
+        
+        # Security: Allow only SELECT
+        if not req.query.strip().lower().startswith("select"):
+            return {"status": "error", "message": "Seules les requêtes SELECT sont autorisées pour des raisons de sécurité."}
+            
+        q = req.query
+        
+        # Auto-prefixer : Si on connait la session, on peut aider l'utilisateur
+        if req.session_id:
+            state = _get_pipeline_state(req.session_id)
+            # On cherche le préfixe dans l'état (ou on le recalcule s'il est loggé)
+            # Pour l'instant on va tenter une approche par session_state si chargée
+            config = get_config(req.session_id)
+            current_vals = agent_app.get_state(config).values
+            user_prefix = current_vals.get("user_prefix", "")
+            
+            if user_prefix:
+                # Regex simple pour trouver les noms de tables après FROM ou JOIN
+                # On évite de préfixer ce qui l'est déjà
+                def prefix_replacer(match):
+                    tbl = match.group(2)
+                    if tbl.startswith(user_prefix) or tbl.lower() in ["information_schema", "mysql"]:
+                        return match.group(0)
+                    return f"{match.group(1)}{user_prefix}{tbl}"
+                
+                q = re.sub(r'(FROM|JOIN)\s+([a-zA-Z0-9_]+)', prefix_replacer, q, flags=re.IGNORECASE)
+
+        if "limit" not in q.lower():
+            q = q.rstrip(';').rstrip() + " LIMIT 100;"
+
+        c = mysql.connector.connect(
+            host=req.dw_host, port=req.dw_port,
+            user=req.dw_user, password=req.dw_password, database=req.dw_database
+        )
+        cur = c.cursor(dictionary=True)
+        cur.execute(q)
+        rows = cur.fetchall()
+        columns = cur.column_names if cur.description else []
+        cur.close()
+        c.close()
+        
+        return {"status": "success", "data": rows, "columns": columns, "final_query": q}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 from fastapi.responses import Response
 
 @app.get("/api/export-pdf")
-def export_pipeline_pdf():
+def export_pipeline_pdf(session_id: str = "session_dw_1"):
     from fpdf import FPDF
     import os
     
@@ -540,12 +936,13 @@ def export_pipeline_pdf():
         pdf.cell(0, 10, '1. Resume de l\'Architecture', 0, 1)
         pdf.set_font('Arial', '', 11)
         pdf.set_text_color(60, 60, 60)
-        intro = "Ce document recapitule la configuration du Data Warehouse et des processus ETL générés. L'architecture repose sur un schéma en étoile (Star Schema) optimisé pour les performances décisionnelles."
+        intro = f"Ce document recapitule la configuration du Data Warehouse pour la session {session_id}. L'architecture repose sur un schéma en étoile (Star Schema) optimisé pour les performances décisionnelles."
         pdf.multi_cell(0, 7, intro.encode('latin-1', 'replace').decode('latin-1'))
         pdf.ln(5)
 
-        config = get_config()
-        state = agent_app.get_state(config).values if agent_app else {}
+        config = get_config(session_id)
+        state_snap = agent_app.get_state(config)
+        state = state_snap.values if state_snap else {}
 
         # Section 2 : SQL
         pdf.set_font('Arial', 'B', 14)
@@ -562,6 +959,7 @@ def export_pipeline_pdf():
         # Section 3 : Pentaho
         pdf.add_page()
         pdf.set_font('Arial', 'B', 14)
+        pdf.set_cell_height(10)
         pdf.cell(0, 10, '3. Transformation Pentaho (.ktr)', 0, 1)
         pdf.set_font('Courier', '', 8)
         etl_text = state.get('etl_code', '<!-- Aucun code ETL genere -->') or "<!-- Vide -->"
@@ -569,19 +967,20 @@ def export_pipeline_pdf():
 
         pdf_bytes = pdf.output()
         content = bytes(pdf_bytes)
-        return Response(content=content, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=rapport_etl.pdf"})
+        return Response(content=content, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=rapport_etl_{session_id}.pdf"})
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/export-mcd-pdf")
-def export_mcd_pdf():
+def export_mcd_pdf(session_id: str = "session_dw_1"):
     from fpdf import FPDF
     import math
 
-    config = get_config()
-    state = agent_app.get_state(config).values if agent_app else {}
+    config = get_config(session_id)
+    state_snap = agent_app.get_state(config)
+    state = state_snap.values if state_snap else {}
     logical_model = state.get('logical_model', {})
     tables = logical_model.get('tables', [])
     
@@ -723,13 +1122,20 @@ def export_mcd_pdf():
 
 
 @app.get("/api/export-ktr")
-def export_ktr():
+def export_ktr(session_id: str = "session_dw_1"):
     """Téléchargement du fichier de transformation Pentaho (.ktr) généré."""
-    ktr_file = "outputs/transformation.ktr"
+    # Try to find user specific file first
+    state = _get_pipeline_state(session_id)
+    uid = state.get("user_id", "guest")
+    
+    ktr_file = f"outputs/transformation_{uid}.ktr"
+    if not os.path.exists(ktr_file):
+        ktr_file = "outputs/transformation.ktr" # global fallback
+        
     if os.path.exists(ktr_file):
         return FileResponse(
             path=ktr_file, 
-            filename="transformation_pentaho.ktr",
+            filename=f"transformation_{session_id}.ktr",
             media_type='application/xml'
         )
     return {"status": "error", "message": "Fichier .ktr introuvable. Lancez le pipeline ETL d'abord."}
@@ -752,70 +1158,6 @@ def export_results():
         return {"status": "error", "message": str(e)}
 
 
-# ── Authentification & Email Verification ─────────────────────────────────────
-
-@app.post("/api/auth/register-init")
-async def register_init(req: RegisterInitRequest):
-    import random
-    code = f"{random.randint(100000, 999999)}"
-    PENDING_VERIFICATIONS[req.email] = code
-    
-    subject = "Votre code de vérification - Agentic ETL"
-    html_body = f"""
-    <html>
-    <body style="font-family: 'Inter', Arial, sans-serif; background-color: #0f1117; color: #e2e8f0; padding: 0; margin: 0;">
-      <div style="max-width: 560px; margin: 40px auto; background: #1a1f2e; border-radius: 16px; overflow: hidden; border: 1px solid #2d3748;">
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 32px 40px; text-align: center;">
-          <h1 style="margin: 0; color: #ffffff; font-size: 24px; letter-spacing: -0.5px;">🔐 Agentic ETL</h1>
-          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Plateforme d'Intelligence Data</p>
-        </div>
-        <!-- Body -->
-        <div style="padding: 40px;">
-          <p style="margin: 0 0 16px; font-size: 16px; color: #94a3b8;">Bonjour <strong style="color: #e2e8f0;">{req.name}</strong>,</p>
-          <p style="margin: 0 0 24px; font-size: 15px; color: #94a3b8; line-height: 1.6;">
-            Merci de rejoindre <strong style="color: #e2e8f0;">Agentic ETL</strong>. Voici votre code de vérification à 6 chiffres :
-          </p>
-          <!-- Code Block -->
-          <div style="background: #0f1117; border: 2px solid #6366f1; border-radius: 12px; padding: 28px; text-align: center; margin: 24px 0;">
-            <p style="margin: 0 0 8px; font-size: 12px; color: #6366f1; letter-spacing: 2px; text-transform: uppercase;">CODE DE VÉRIFICATION</p>
-            <p style="margin: 0; font-size: 42px; font-weight: 800; letter-spacing: 12px; color: #ffffff; font-family: 'Courier New', monospace;">{code}</p>
-          </div>
-          <p style="margin: 24px 0 0; font-size: 13px; color: #64748b; line-height: 1.6;">
-            ⚠️ Ce code expire dans <strong>10 minutes</strong>. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
-          </p>
-        </div>
-        <!-- Footer -->
-        <div style="background: #111827; padding: 20px 40px; text-align: center; border-top: 1px solid #1e2a3a;">
-          <p style="margin: 0; font-size: 12px; color: #475569;">© 2026 Agentic ETL — Plateforme d'automatisation Data Warehouse</p>
-          <p style="margin: 6px 0 0; font-size: 12px; color: #374151;">Envoyé depuis halimimohamedsalaheddine2026@gmail.com</p>
-        </div>
-      </div>
-    </body>
-    </html>
-    """
-    
-    # Envoi réel ou log
-    _send_notification(subject, html_body, req.email)
-    
-    # Toujours afficher le code en console pour debug
-    print(f"\n{'='*60}")
-    print(f"📧 EMAIL DE VÉRIFICATION")
-    print(f"   Destinataire : {req.email}")
-    print(f"   Nom          : {req.name}")
-    print(f"   CODE         : {code}")
-    print(f"{'='*60}\n")
-    
-    return {"status": "success", "message": "Code envoyé."}
-
-@app.post("/api/auth/register-verify")
-async def register_verify(req: RegisterVerifyRequest):
-    expected_code = PENDING_VERIFICATIONS.get(req.email)
-    if expected_code and expected_code == req.code:
-        # Nettoyer après succès
-        del PENDING_VERIFICATIONS[req.email]
-        return {"status": "success", "message": "Compte vérifié."}
-    return Response(content="Code invalide.", status_code=400)
 
 # ── Notifications ─────────────────────────────────────────────────────────────
 def _send_notification(subject: str, body: str, email: Optional[str] = None):

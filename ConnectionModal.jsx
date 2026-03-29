@@ -1,16 +1,19 @@
 import React, { useState, useRef } from 'react';
 import { X, FileText, Server, ChevronDown, ChevronUp, Loader2, Upload, Search, AlertCircle } from 'lucide-react';
 
-export default function ConnectionModal({ onClose, onStartSuccess }) {
+export default function ConnectionModal({ user, onClose, onStartSuccess, activeSessionId }) {
   // --- Source config ---
   const [sourceType] = useState('csv');
   const [filePath, setFilePath] = useState('ventes.csv');
 
+  // Load from last config
+  const lastConfig = JSON.parse(localStorage.getItem('last_db_config') || '{}');
+
   // --- Target DW MySQL config ---
-  const [dwHost, setDwHost]         = useState('127.0.0.1');
-  const [dwPort, setDwPort]         = useState('3306');
-  const [dwUser, setDwUser]         = useState('root');
-  const [dwPassword, setDwPassword] = useState('23102802Sd;');
+  const [dwHost, setDwHost]         = useState(lastConfig.host || '127.0.0.1');
+  const [dwPort, setDwPort]         = useState(lastConfig.port || '3306');
+  const [dwUser, setDwUser]         = useState(lastConfig.user || 'root');
+  const [dwPassword, setDwPassword] = useState(lastConfig.password || '');
   const [dwDatabase, setDwDatabase] = useState('data_warehouse');
   const [showDwConfig, setShowDwConfig] = useState(true);
 
@@ -61,7 +64,11 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
     setErrorMsg(null);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/start', {
+      const url = activeSessionId 
+        ? `http://127.0.0.1:8000/api/start?session_id=${activeSessionId}` 
+        : 'http://127.0.0.1:8000/api/start';
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +78,8 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
           dw_port:     parseInt(dwPort) || 3306,
           dw_user:     dwUser,
           dw_password: dwPassword,
-          dw_database: dwDatabase,
+          dw_database: "data_warehouse",
+          user_id: user ? user.id : null,
         }),
       });
 
@@ -89,7 +97,14 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
       }
 
       if (data.status === 'waiting_for_review') {
-        onStartSuccess(data.sql_ddl, data.critic_review);
+        localStorage.setItem('last_db_config', JSON.stringify({
+          host: dwHost,
+          port: dwPort,
+          user: dwUser,
+          password: dwPassword,
+          database: "data_warehouse"
+        }));
+        onStartSuccess(data.sql_ddl, data.critic_review, data.logical_model);
         onClose();
       } else {
         setErrorMsg(formatErrorMsg(data.message || JSON.stringify(data)));
@@ -113,7 +128,7 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
         <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800">
           <div>
             <h2 className="text-lg font-bold text-white">Connexion de Source</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Agent Data Warehouse — Configuration CSV</p>
+            <p className="text-xs text-slate-400 mt-0.5">AUTOETL AI — Configuration CSV</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-800">
             <X size={18} />
@@ -133,8 +148,9 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
             </div>
           )}
 
-          {/* === Section 1 : Source de données === */}
-          <div className="space-y-3">
+          <form onSubmit={handleConnect} className="space-y-6">
+            {/* === Section 1 : Source de données === */}
+            <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-blue-500/20">1</div>
               <p className="text-sm font-semibold text-slate-200">Source de données</p>
@@ -224,15 +240,19 @@ export default function ConnectionModal({ onClose, onStartSuccess }) {
                   </div>
                 </div>
                 <div>
-                  <label className={labelClass}>Base de données cible</label>
-                  <input type="text" value={dwDatabase} onChange={(e) => setDwDatabase(e.target.value)} placeholder="data_warehouse" className={inputClass} />
+                  <label className={labelClass}>Base de données cible (Unique / Préfixée)</label>
+                  <div className="w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-indigo-400 opacity-80 cursor-not-allowed">
+                    data_warehouse (préfixe: {user ? `u${user.id}_` : 'guest_'})
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Vos tables seront isolées par le préfixe technique '{user ? `u${user.id}_` : 'guest_'}' dans la base partagée.
+                  </p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Submit */}
-          <form onSubmit={handleConnect}>
+            {/* Submit */}
             <button
               type="submit"
               disabled={isConnecting}

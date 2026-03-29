@@ -2,16 +2,24 @@ import React from 'react';
 import { User, Mail, ShieldCheck, History, Calendar, Clock, Database, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function ProfilePage({ user, onLogout }) {
+export default function ProfilePage({ user, onLogout, onResumeSession }) {
+  const [history, setHistory] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!user) return;
+    fetch(`http://localhost:8000/api/sessions?user_id=${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+        setHistory(data.sessions || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [user]);
+
   if (!user) return null;
 
-  const mockHistory = [
-    { id: '1', date: '2023-10-15T14:30:00Z', duration: '45s', status: 'success', data: 'ventes.csv (Source)' },
-    { id: '2', date: '2023-11-02T09:15:00Z', duration: '1m 20s', status: 'success', data: 'CRM_Extract.csv' },
-    { id: '3', date: '2024-01-20T16:45:00Z', duration: '2m 10s', status: 'success', data: 'ventes.csv (Full Run)' },
-  ];
-
-  const historyToRender = user.history && user.history.length > 0 ? user.history : mockHistory;
+  const joinDate = user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : 'Récent';
 
   return (
     <div className="flex-1 h-screen bg-[#09090b] overflow-y-auto w-full custom-scrollbar selection:bg-indigo-500/30">
@@ -45,7 +53,7 @@ export default function ProfilePage({ user, onLogout }) {
                 </div>
                 <div className="flex items-center gap-3 text-zinc-400">
                   <Calendar size={16} />
-                  <span className="text-sm">Membre depuis: Octobre 2023</span>
+                  <span className="text-sm">Membre depuis: {joinDate}</span>
                 </div>
               </div>
 
@@ -65,44 +73,53 @@ export default function ProfilePage({ user, onLogout }) {
             </h3>
             
             <div className="space-y-4">
-              {historyToRender.map((hist, i) => {
-                const date = new Date(hist.date);
-                return (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    key={hist.id} 
-                    className="bg-[#141416] border border-zinc-800 rounded-xl p-5 hover:border-indigo-500/50 hover:bg-[#18181b] transition-all group cursor-pointer shadow-lg"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                          <CheckCircle2 size={16} />
+              {loading ? (
+                <div className="text-zinc-500 animate-pulse text-sm">Chargement de votre historique...</div>
+              ) : history.length === 0 ? (
+                <div className="text-zinc-600 border border-dashed border-zinc-800 p-8 rounded-xl text-center">
+                   Aucun pipeline exécuté pour le moment.
+                </div>
+              ) : (
+                history.map((hist, i) => {
+                  const date = new Date(hist.updated_at);
+                  return (
+                    <motion.div 
+                      key={hist.id}
+                      onClick={() => onResumeSession(hist.id)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="bg-[#141416] border border-zinc-800 rounded-xl p-5 hover:border-indigo-500/50 hover:bg-[#18181b] transition-all group cursor-pointer shadow-lg"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                            <CheckCircle2 size={16} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-indigo-300">Run {hist.name}</h4>
+                            <span className="text-xs text-zinc-500 font-mono flex items-center gap-1 mt-0.5">
+                              <Clock size={10} /> {date.toLocaleDateString()} à {date.toLocaleTimeString()}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-indigo-300">Run #{hist.id}</h4>
-                          <span className="text-xs text-zinc-500 font-mono flex items-center gap-1 mt-0.5">
-                            <Clock size={10} /> {date.toLocaleDateString()} à {date.toLocaleTimeString()}
-                          </span>
+                        <div className="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md border border-zinc-700">
+                          {hist.id.substring(0,8)}
                         </div>
                       </div>
-                      <div className="text-xs font-mono bg-zinc-800 text-zinc-300 px-2 py-1 rounded-md border border-zinc-700">
-                        {hist.duration}
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 text-sm text-zinc-300 bg-[#09090b] p-3 rounded-lg border border-zinc-800/50">
-                      <Database size={14} className="text-zinc-500" />
-                      <span>Source: <strong className="text-indigo-400 ml-1">{hist.data}</strong></span>
-                      <div className="flex-1"></div>
-                      <span className="text-xs text-zinc-500 group-hover:text-indigo-400 transition-colors flex items-center">
-                        Voir logs <ChevronRight size={12} className="ml-1" />
-                      </span>
-                    </div>
-                  </motion.div>
-                );
-              })}
+                      <div className="flex items-center gap-2 text-sm text-zinc-300 bg-[#09090b] p-3 rounded-lg border border-zinc-800/50">
+                        <Database size={14} className="text-zinc-500" />
+                        <span>Identifiant de session: <strong className="text-indigo-400 ml-1">{hist.id}</strong></span>
+                        <div className="flex-1"></div>
+                        <span className="text-xs text-zinc-500 group-hover:text-indigo-400 transition-colors flex items-center">
+                          Ouvrir ce pipeline <ChevronRight size={12} className="ml-1" />
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

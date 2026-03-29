@@ -6,7 +6,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import {
   Database, Sparkles, Server, Search, MessageSquare, Wrench, Shield,
-  Network, CheckCircle2, Activity, X, Settings, Loader2
+  Network, CheckCircle2, Activity, X, Settings, Loader2, AlertTriangle, RefreshCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -58,6 +58,7 @@ const PipelineNode = ({ data, selected }) => {
   const Icon = data.icon;
   const isProcessing = data.status === 'processing';
   const isDone = data.status === 'done';
+  const isFailed = data.status === 'failed';
 
   return (
     <div
@@ -68,9 +69,11 @@ const PipelineNode = ({ data, selected }) => {
             ? 'border-indigo-500/60 bg-[#121216] shadow-[0_0_30px_rgba(99,102,241,0.3)] ring-2 ring-indigo-500/30'
             : isDone
               ? 'border-emerald-500/50 bg-[#14201a] shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-              : data.active
-                ? 'border-zinc-700 bg-[#18181b] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] shadow-none'
-                : 'border-[#27272a] bg-[#18181b]/50 opacity-30 shadow-none'
+              : isFailed
+                ? 'border-rose-500/60 bg-[#251010] shadow-[0_0_30px_rgba(244,63,94,0.3)] ring-2 ring-rose-500/30'
+                : data.active
+                  ? 'border-zinc-700 bg-[#18181b] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] shadow-none'
+                  : 'border-[#27272a] bg-[#18181b]/50 opacity-30 shadow-none'
         }`}
     >
       <Handle type="target" position={Position.Top}    id="t-top"    className="!opacity-0" />
@@ -83,14 +86,14 @@ const PipelineNode = ({ data, selected }) => {
       <Handle type="source" position={Position.Right}  id="s-right"  className="!opacity-0" />
 
       <div className={`p-4 rounded-2xl mb-4 relative transition-all duration-700 
-        ${isDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : isProcessing ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : data.colorClass} 
+        ${isDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : isProcessing ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : isFailed ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : data.colorClass} 
         ${isProcessing ? 'animate-pulse shadow-[0_0_25px_currentColor]' : ''}
         ${isDone ? 'shadow-[0_0_15px_rgba(16,185,129,0.2)]' : ''}`}>
         {Icon ? <Icon size={30} /> : null}
       </div>
 
       <div className={`text-[13px] font-black tracking-wider leading-tight transition-colors duration-700 
-        ${isProcessing ? 'text-indigo-400' : isDone ? 'text-emerald-400' : 'text-zinc-200'}`}>
+        ${isProcessing ? 'text-indigo-400' : isDone ? 'text-emerald-400' : isFailed ? 'text-rose-400' : 'text-zinc-200'}`}>
         {data.label.toUpperCase()}
       </div>
       <div className="text-[10px] text-zinc-500 font-medium uppercase tracking-[0.1em] mt-2 leading-relaxed">{data.desc}</div>
@@ -105,17 +108,21 @@ const PipelineNode = ({ data, selected }) => {
           <Loader2 size={10} className="animate-spin" /> EN COURS...
         </div>
       )}
+      {isFailed && (
+        <div className="mt-4 text-[9px] bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-1.5 rounded-full font-black tracking-[0.15em] flex items-center gap-1.5">
+          <AlertTriangle size={10} /> ÉCHEC
+        </div>
+      )}
     </div>
   );
 };
 
 const nodeTypes = { pipeline: PipelineNode, table: TableNode };
 
-function FlowArea({ sqlCode, etlCode }) {
+function FlowArea({ sqlCode, etlCode, pipelineState }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [viewMode, setViewMode] = useState('pipeline');
-  const [pipelineState, setPipelineState] = useState(null);
   const [bottomProgress, setBottomProgress] = useState(0);
   const { fitView } = useReactFlow();
   const hasFittedView = useRef(false);
@@ -123,12 +130,6 @@ function FlowArea({ sqlCode, etlCode }) {
   useEffect(() => {
       hasFittedView.current = false;
   }, [viewMode]);
-
-  useEffect(() => {
-    const sse = new EventSource('http://localhost:8000/api/pipeline-stream');
-    sse.onmessage = (e) => { try { setPipelineState(JSON.parse(e.data)); } catch(err) {} };
-    return () => sse.close();
-  }, []);
 
   // Animation logic for bottom row
   useEffect(() => {
@@ -163,13 +164,13 @@ function FlowArea({ sqlCode, etlCode }) {
        
        const cStatus = stageStatus('critic');
        if (id === 'critic') {
-           if (etlCode || cStatus === 'success') return 'done';
+           if (etlCode || cStatus === 'success' || cStatus === 'done') return 'done';
            return cStatus;
        }
        
        const hStatus = stageStatus('human');
        if (id === 'human') {
-           if (etlCode || hStatus === 'success') return 'done';
+           if (etlCode || hStatus === 'success' || hStatus === 'done') return 'done';
            return sqlCode ? 'processing' : 'idle';
        }
     }
@@ -187,11 +188,22 @@ function FlowArea({ sqlCode, etlCode }) {
 
        // Otherwise evaluate live
        if (id === 'etl_gen') return stageStatus('etl_gen');
-       if (id === 'etl_exec') return stageStatus('etl_exec');
+       if (id === 'etl_exec') {
+           const s = stageStatus('etl_exec');
+           if (s === 'failed') return 'failed';
+           return s;
+       }
        if (id === 'dwh_load') return logText.includes('DWH') ? 'processing' : 'idle';
        if (id === 'dwh_serve') return logText.includes('Serveur') ? 'processing' : 'idle';
        return 'idle';
     }
+    
+    // Evaluate if something failed high-level
+    if (pipelineState?.status === 'failed') {
+        const failedStage = pipelineState.stages?.find(s => s.status === 'failed');
+        if (failedStage && failedStage.id === id) return 'failed';
+    }
+
     return 'idle';
   };
 
@@ -282,7 +294,8 @@ function FlowArea({ sqlCode, etlCode }) {
       setNodes(pNodes.map(n => ({ ...n, draggable: false })));
 
       const getEdgeStyle = (sourceSt, targetSt) => {
-        if (targetSt === 'processing') return { stroke: '#3b82f6', strokeWidth: 6, filter: 'drop-shadow(0 0 15px #3b82f6)' };
+        if (targetSt === 'failed') return { stroke: '#f43f5e', strokeWidth: 4, filter: 'drop-shadow(0 0 10px #f43f5e)' };
+        if (targetSt === 'processing') return { stroke: '#3b82f6', strokeWidth: 6, strokeDasharray: '10 5', animationDuration: '3s', filter: 'drop-shadow(0 0 15px #3b82f6)' };
         if (sourceSt === 'done') return { stroke: '#3b82f6', strokeWidth: 4, filter: 'drop-shadow(0 0 10px #3b82f6)' };
         return { stroke: '#27272a', strokeWidth: 2.5 };
       };
@@ -302,20 +315,53 @@ function FlowArea({ sqlCode, etlCode }) {
       setEdges(pEdges.map(e => ({ ...e, markerEnd: { type: MarkerType.ArrowClosed, color: e.style.stroke, width: 24, height: 24 } })));
       
       if (!hasFittedView.current) {
+         hasFittedView.current = true;
          setTimeout(() => {
             fitView({ padding: 0.15, maxZoom: 0.8, duration: 800 });
-            hasFittedView.current = true;
          }, 100);
       }
     }
   }, [viewMode, sqlCode, etlCode, pipelineState, bottomProgress, onNodesChange, onEdgesChange, fitView]);
 
+  const isFailed = pipelineState?.status === 'failed';
+
   return (
     <div className="w-full h-full relative bg-[#09090b]">
        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 bg-[#121214]/98 backdrop-blur-xl p-1.5 rounded-2xl border border-zinc-800 shadow-2xl">
           <button onClick={() => setViewMode('pipeline')} className={`px-6 py-2.5 rounded-xl text-[11px] font-black tracking-widest uppercase transition-all ${viewMode === 'pipeline' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-lg' : 'text-zinc-500 hover:text-white'}`}>Process Architecture</button>
-          <button onClick={() => setViewMode('mcd')} className="px-5 py-2.5 rounded-xl text-[11px] font-black tracking-widest uppercase text-zinc-500 hover:text-white transition-all">Star Schema (MCD)</button>
+          <button onClick={() => setViewMode('mcd')} className={`px-5 py-2.5 rounded-xl text-[11px] font-black tracking-widest uppercase transition-all ${viewMode === 'mcd' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-lg' : 'text-zinc-500 hover:text-white'}`}>Star Schema (MCD)</button>
        </div>
+
+       <AnimatePresence>
+         {isFailed && (
+           <motion.div 
+             initial={{ opacity: 0, y: -20 }}
+             animate={{ opacity: 1, y: 0 }}
+             exit={{ opacity: 0, y: -20 }}
+             className="absolute top-24 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-6"
+           >
+             <div className="bg-rose-500/10 backdrop-blur-md border border-rose-500/30 p-4 rounded-xl flex items-start gap-4 shadow-[0_10px_40px_rgba(244,63,94,0.15)]">
+               <div className="p-3 bg-rose-500/20 rounded-lg text-rose-400">
+                 <AlertTriangle size={24} />
+               </div>
+               <div className="flex-1">
+                 <h3 className="text-sm font-bold text-rose-300 uppercase tracking-widest mb-1">Erreur Critique de l'Agentique</h3>
+                 <p className="text-xs text-rose-200/70 leading-relaxed mb-4">
+                   {pipelineState?.error || "Le pipeline a rencontré une défaillance inattendue. L'agent ne peut pas poursuivre la génération du flux Pentaho."}
+                 </p>
+                 <button 
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 rounded-lg text-rose-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95"
+                 >
+                   <RefreshCcw size={12} /> Redémarrer le système
+                 </button>
+               </div>
+               <button className="text-zinc-500 hover:text-white"><X size={16} /></button>
+             </div>
+           </motion.div>
+         )}
+       </AnimatePresence>
+
        <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} proOptions={{hideAttribution:true}} minZoom={0.05} nodesDraggable={false}>
           <Background color="#1c1c25" gap={30} size={1} />
        </ReactFlow>

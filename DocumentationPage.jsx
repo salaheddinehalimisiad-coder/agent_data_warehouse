@@ -63,7 +63,7 @@ export default function DocumentationPage({ initialTab = 'intro' }) {
       icon: <Book size={18} />,
       content: (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <h1 className="text-5xl font-black tracking-tight text-white mb-6">Agent Data Warehouse</h1>
+          <h1 className="text-5xl font-black tracking-tight text-white mb-6">AUTOETL AI</h1>
           <p className="text-xl text-zinc-400 mb-8 leading-relaxed">
             Bienvenue dans la documentation officielle de la première plateforme d'intégration de données (ETL) 100% pilotée par l'Intelligence Artificielle. Un système multi-agents capable de lire, comprendre, modéliser et charger vos données de manière conceptuelle.
           </p>

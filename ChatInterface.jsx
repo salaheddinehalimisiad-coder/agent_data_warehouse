@@ -46,7 +46,7 @@ const FormattedMessage = ({ content }) => {
   );
 };
 
-export default function ChatInterface({ messages, setMessages, onUpdateSql, onUpdateEtl, onUpdateCritic, sqlCode, etlCode, criticReview }) {
+export default function ChatInterface({ messages, setMessages, onUpdateSql, onUpdateEtl, onUpdateCritic, sqlCode, etlCode, criticReview, activeSessionId }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('chat'); // chat, critic, sql, etl
@@ -75,10 +75,10 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
     setActiveTab('chat');
 
     try {
-      const resp = await fetch('http://localhost:8000/api/chat', {
+      const resp = await fetch(`http://localhost:8000/api/chat?session_id=${activeSessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, context: 'sql' })
+        body: JSON.stringify({ message: userMsg, context: activeTab === 'etl' ? 'etl' : 'sql' })
       });
       const data = await resp.json();
       setMessages(prev => [...prev, { role: 'bot', content: data.reply || "Modèle mis à jour." }]);

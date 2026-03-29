@@ -15,14 +15,17 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Simulation d'envoi de mail (Backend call)
       const res = await fetch('http://localhost:8000/api/auth/register-init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email, name: formData.name })
       });
-      if (res.ok) setStep(2);
-      else alert("Erreur lors de l'envoi du code.");
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        setStep(2);
+      } else {
+        alert(data.message || "Erreur lors de l'enregistrement de l'email.");
+      }
     } catch (err) {
       alert("Erreur de connexion au serveur d'authentification.");
     } finally {
@@ -37,31 +40,50 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
       const res = await fetch('http://localhost:8000/api/auth/register-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, code: verificationCode })
+        body: JSON.stringify({ 
+           email: formData.email, 
+           name: formData.name, 
+           password: formData.password, 
+           code: verificationCode 
+        })
       });
-      if (res.ok) {
-        const newUser = { name: formData.name, email: formData.email, role: 'Data Analyst', history: [] };
-        onLogin(newUser);
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        onLogin(data.user);
       } else {
-        alert("Code de vérification incorrect.");
+        alert(data.message || "Code de vérification incorrect.");
       }
     } catch (err) {
-      alert("Erreur de validation.");
+      alert("Erreur de validation du code.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLogin) {
-      // Mock login: always successful if email matches localstorage or just mock
-      const storedUser = JSON.parse(localStorage.getItem('user_profile'));
-      const mockUser = storedUser || { name: 'Utilisateur', email: formData.email, role: 'Data Engineer', history: [] };
-      onLogin(mockUser);
+      setIsLoading(true);
+      try {
+        const res = await fetch('http://localhost:8000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, password: formData.password })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+          onLogin(data.user);
+        } else {
+          alert(data.message || "Erreur de connexion.");
+        }
+      } catch (err) {
+        alert("Erreur de connexion au serveur.");
+      } finally {
+        setIsLoading(false);
+      }
     } else {
-      if (step === 1) handleRegisterInit(e);
-      else handleRegisterVerify(e);
+      if (step === 1) await handleRegisterInit(e);
+      else await handleRegisterVerify(e);
     }
   };
 
@@ -91,7 +113,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
               {isLogin ? 'Bienvenue !' : 'Créer un compte'}
             </h2>
             <p className="text-sm text-center text-zinc-400 mb-8">
-              {isLogin ? 'Connectez-vous pour accéder à votre espace ETL' : 'Rejoignez la plateforme Agentic ETL'}
+              {isLogin ? 'Connectez-vous pour accéder à votre espace ETL' : 'Rejoignez la plateforme AUTOETL AI'}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">

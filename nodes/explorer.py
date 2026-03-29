@@ -22,7 +22,7 @@ def explorer_node(state: AgentState) -> dict:
         # On force le CSV comme demandé par l'utilisateur
         source_type = "csv"
     
-    file_path = config.get("file_path", "ventes.csv")
+    file_path = config.get("file_path") or "ventes.csv"
     import os
     table_name = os.path.splitext(os.path.basename(file_path))[0]
     connector = CSVConnector(file_path=file_path, table_name=table_name)

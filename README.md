@@ -11,7 +11,7 @@ Source de Données (CSV / SQL)
         │
         ▼
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│  🔍 Explorer  │────▶│  🧠 Modeler   │────▶│  🛡️ Critic    │
+│  🔍 Explorer  │────▶│  🧠 Modeler   │────▶│  🛡️ Critic  │
 │  Extraction   │     │  OLAP Design  │     │  QA / Review  │
 │  Métadonnées  │     │  Star Schema  │     │  DDL SQL      │
 └───────────────┘     └───────────────┘     └───────┬───────┘

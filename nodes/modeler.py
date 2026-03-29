@@ -16,10 +16,13 @@ class ColumnSchema(BaseModel):
     is_primary_key: bool = Field(default=False)
     is_foreign_key: bool = Field(default=False)
     references: Optional[str] = Field(default=None)
+    description: str = Field(default="", description="Documentation métier de la colonne")
+    source_column: str = Field(default="", description="Nom de la colonne source d'origine pour le Lineage")
 
 class TableSchema(BaseModel):
     name: str
     type: str  # 'FAIT' ou 'DIMENSION'
+    description: str = Field(default="", description="Description métier de la table")
     columns: List[ColumnSchema]
 
 class DimensionalModelOutput(BaseModel):
@@ -51,11 +54,18 @@ def _parse_model_from_text(text: str) -> DimensionalModelOutput:
                 type=c.get("type", "VARCHAR(255)"),
                 is_primary_key=c.get("is_primary_key", False),
                 is_foreign_key=c.get("is_foreign_key", False),
-                references=c.get("references")
+                references=c.get("references"),
+                description=c.get("description", ""),
+                source_column=c.get("source_column", "")
             )
             for c in t.get("columns", [])
         ]
-        tables.append(TableSchema(name=t["name"], type=t.get("type", "DIMENSION"), columns=cols))
+        tables.append(TableSchema(
+            name=t.get("name", "unknown_table"), 
+            type=t.get("type", "DIMENSION"), 
+            description=t.get("description", ""),
+            columns=cols
+        ))
     
     return DimensionalModelOutput(tables=tables, reasoning=raw.get("reasoning", ""))
 
@@ -71,46 +81,49 @@ def modeler_node(state: AgentState) -> dict:
 
     llm = get_llm(temperature=0)
 
+    user_prefix = state.get("user_prefix", "")
+
+    example_json = """
+{
+  "tables": [
+    {
+      "name": "u1_fact_exemple",
+      "type": "FAIT",
+      "description": "Table des faits centralisant les événements de vente.",
+      "columns": [
+        {"name": "id_fait_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null, "description": "Clé technique", "source_column": "N/A"},
+        {"name": "dim_entite_sk", "type": "BIGINT", "is_primary_key": false, "is_foreign_key": true, "references": "u1_dim_entite", "description": "Lien FK", "source_column": "ID"}
+      ]
+    }
+  ]
+}
+"""
+
     # Prompt qui force une sortie JSON structurée — compatible Ollama et Gemini
     prompt = ChatPromptTemplate.from_messages([
         ("system", """Tu es un expert en Data Warehousing. 
 Analyse les métadonnées et conçois un schéma OLAP en étoile (Star Schema).
 
+IMPORTANT : Pour des raisons de multi-tenancy, tous les noms de tables DOIVENT commencer par le préfixe suivant : {user_prefix}
+Exemple : Si le préfixe est 'u1_', alors 'fact_ventes' devient 'u1_fact_ventes'.
+
 RÉPONDS UNIQUEMENT avec un objet JSON valide.
-ATTENTION : Le JSON ci-dessous est UNIQUEMENT un EXEMPLE pour te montrer la structure attendue. Tu DOIS obligatoirement inventer et adapter les noms des tables (ex: fact_..., dim_...) et les colonnes en fonction des VRAIES métadonnées que je vais te fournir.
+ATTENTION : Tous les noms de tables doivent être préfixés exactement par '{user_prefix}'.
 
-Exemple de structure attendue :
-{{
-  "tables": [
-    {{
-      "name": "fact_exemple",
-      "type": "FAIT",
-      "columns": [
-        {{"name": "id_fait_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
-        {{"name": "dim_entite_sk", "type": "BIGINT", "is_primary_key": false, "is_foreign_key": true, "references": "dim_entite"}},
-        {{"name": "mesure_valeur", "type": "DECIMAL(12,2)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
-      ]
-    }},
-    {{
-      "name": "dim_entite",
-      "type": "DIMENSION",
-      "columns": [
-        {{"name": "entite_sk", "type": "BIGINT", "is_primary_key": true, "is_foreign_key": false, "references": null}},
-        {{"name": "attribut_nom", "type": "VARCHAR(255)", "is_primary_key": false, "is_foreign_key": false, "references": null}}
-      ]
-    }}
-  ],
-  "reasoning": "Explication courte du schéma choisi"
-}}
-
-Ne mets rien d'autre que le JSON. Pas de texte avant, pas de balises markdown."""),
+Exemple de structure attendue (avec un préfixe fictif 'u1_') :
+{example_json}
+"""),
         ("human", "Voici les métadonnées: {metadata}\n\nGénère le modèle OLAP complet en JSON.")
     ])
 
     chain = prompt | llm
 
     print("Envoi des métadonnées au LLM pour modélisation...")
-    response = call_with_retry(chain, {"metadata": str(metadata)})
+    response = call_with_retry(chain, {
+        "metadata": str(metadata), 
+        "user_prefix": user_prefix,
+        "example_json": example_json
+    })
     raw_text = extract_text(response)
 
     # Nettoyage des balises markdown si présentes
@@ -120,22 +133,13 @@ Ne mets rien d'autre que le JSON. Pas de texte avant, pas de balises markdown.""
         logical_model = _parse_model_from_text(raw_text)
     except Exception as e:
         print(f"⚠️ Erreur parsing JSON: {e}. Tentative de réparation par l'Agent IA...")
-        try:
-            repair_prompt = ChatPromptTemplate.from_messages([
-                ("system", "Tu es un expert JSON. Le texte suivant contient un JSON invalide. Corrige les erreurs de syntaxe (par exemple, guillemets non échappés ou caractères illégaux) et renvoie le JSON strictement valide. Ne modifie pas la structure de base. RÉPONDS UNIQUEMENT AVEC LE JSON VALIDE."),
-                ("human", "{invalid_json}")
-            ])
-            repair_resp = call_with_retry(repair_prompt | llm, {"invalid_json": raw_text})
-            repaired_text = extract_text(repair_resp).replace("```json", "").replace("```", "").strip()
-            logical_model = _parse_model_from_text(repaired_text)
-            print("✅ Le JSON a été réparé avec succès par l'Agent IA !")
-        except Exception as e2:
-            print(f"⚠️ Échec de la réparation JSON: {e2}")
-            return {"sql_ddl": f"-- Erreur parsing modèle: {e} | Échec réparation: {e2}\n\n/* JSON original:\n{raw_text[:800]}...\n*/"}
-
-    print(f"✅ Modèle généré: {len(logical_model.tables)} tables.")
-    print(f"Raisonnement: {logical_model.reasoning}")
-
+        repair_prompt = ChatPromptTemplate.from_messages([
+            ("system", "Tu es un expert JSON. Corrige ce JSON et renvoie uniquement le résultat valide."),
+            ("human", "{invalid_json}")
+        ])
+        repair_resp = call_with_retry(repair_prompt | llm, {"invalid_json": raw_text})
+        repaired_text = extract_text(repair_resp).replace("```json", "").replace("```", "").strip()
+        logical_model = _parse_model_from_text(repaired_text)
     # Génération DDL SQL
     sql_statements = []
     for table in logical_model.tables:
@@ -147,7 +151,24 @@ Ne mets rien d'autre que le JSON. Pas de texte avant, pas de balises markdown.""
                 col_def += " PRIMARY KEY"
             cols_sql.append(col_def)
             if col.is_foreign_key and col.references:
-                fks.append(f"    FOREIGN KEY ({col.name}) REFERENCES {col.references}({col.references.replace('dim_', '') + '_sk'})")
+                # On s'assure que la référence inclut aussi le préfixe si ce n'est pas déjà le cas
+                ref_name = col.references
+                if user_prefix and not ref_name.startswith(user_prefix):
+                    ref_name = user_prefix + ref_name
+                
+                target_pk = ""
+                for t in logical_model.tables:
+                    if t.name == ref_name:
+                        for target_col in t.columns:
+                            if target_col.is_primary_key:
+                                target_pk = target_col.name
+                                break
+                        break
+
+                if not target_pk:
+                    target_pk = "id_sk" # fallback
+                
+                fks.append(f"    FOREIGN KEY ({col.name}) REFERENCES {ref_name}({target_pk})")
         
         all_cols = cols_sql + fks
         create_table_sql = f"CREATE TABLE IF NOT EXISTS {table.name} (\n" + ",\n".join(all_cols) + "\n);"

@@ -68,11 +68,27 @@ class CSVConnector(BaseConnector):
             df = pd.read_csv(self.file_path, encoding='utf-8', encoding_errors='replace', nrows=200, on_bad_lines='skip')
             
         columns = []
+        total_rows = len(df)
+        
         for col_name, dtype in df.dtypes.items():
+            col_data = df[col_name]
+            null_count = int(col_data.isnull().sum())
+            null_rate = (null_count / total_rows) * 100 if total_rows > 0 else 0
+            unique_count = int(col_data.nunique())
+            
+            # Prendre un échantillon (jusqu'à 3 valeurs non-nulles)
+            sample_values = col_data.dropna().head(3).tolist()
+            sample_values = [str(v) for v in sample_values]
+            
             columns.append({
                 "name": str(col_name).strip(),
                 "type": str(dtype),
-                "primary_key": False
+                "primary_key": False,
+                "profiling": {
+                    "null_rate_percent": round(null_rate, 2),
+                    "unique_values_count": unique_count,
+                    "sample": sample_values
+                }
             })
             
         return {self.table_name: {"columns": columns}}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Network, Settings, PanelRightClose, PanelRightOpen, Database, History, LayoutGrid, Bot, Terminal, X, Loader2, Download, FileText, BookOpen } from 'lucide-react';
+import { Network, Settings, PanelRightClose, PanelRightOpen, Database, History, LayoutGrid, Bot, Terminal, X, Loader2, Download, FileText, BookOpen, Search, Book } from 'lucide-react';
 import ConnectionModal from './ConnectionModal';
 import ChatInterface from './ChatInterface';
 import PipelineCanvas from './PipelineCanvas';
@@ -9,6 +9,8 @@ import DocumentationPage from './DocumentationPage';
 import AuthModal from './AuthModal';
 import ProfilePage from './ProfilePage';
 import ProcessDiagram from './ProcessDiagram';
+import DataExplorer from './DataExplorer';
+import DataCatalog from './DataCatalog';
 
 const SidebarIcon = ({ icon: Icon, active, onClick, tooltip }) => (
   <button
@@ -39,6 +41,7 @@ export default function App() {
   const [sqlCode, setSqlCode] = useState(null);
   const [etlCode, setEtlCode] = useState(null);
   const [criticReview, setCriticReview] = useState(null);
+  const [logicalModel, setLogicalModel] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isValidating, setIsValidating] = useState(false);
   const [pipelineState, setPipelineState] = useState(null);
@@ -46,7 +49,14 @@ export default function App() {
   const terminalRef = useRef(null);
 
   useEffect(() => {
-    const sse = new EventSource('http://localhost:8000/api/pipeline-stream');
+    if (!activeSessionId) {
+       const saved = localStorage.getItem('last_session_id') || `session_${Math.random().toString(36).substr(2, 9)}`;
+       setActiveSessionId(saved);
+       localStorage.setItem('last_session_id', saved);
+       return;
+    }
+
+    const sse = new EventSource(`http://localhost:8000/api/pipeline-stream?session_id=${activeSessionId}`);
     sse.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -63,12 +73,12 @@ export default function App() {
       } catch (e) { console.error('SSE Error', e); }
     };
     return () => sse.close();
-  }, []);
+  }, [activeSessionId]);
 
   const handleValidate = async () => {
     setIsValidating(true);
     try {
-      const resp = await fetch('http://localhost:8000/api/validate', { method: 'POST' });
+      const resp = await fetch(`http://localhost:8000/api/validate?session_id=${activeSessionId}`, { method: 'POST' });
       const data = await resp.json();
       if (data.status === 'success' || data.status === 'background') {
         setMessages(prev => [...prev, { role: 'bot', content: "✅ Modèle validé ! La transformation Pentaho est en cours de création..." }]);
@@ -131,7 +141,7 @@ export default function App() {
    
   const handleExportPdf = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/export-pdf');
+      const res = await fetch(`http://localhost:8000/api/export-pdf?session_id=${activeSessionId}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -146,7 +156,7 @@ export default function App() {
 
   const handleExportMcdPdf = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/export-mcd-pdf');
+      const res = await fetch(`http://localhost:8000/api/export-mcd-pdf?session_id=${activeSessionId}`);
       if (!res.ok) throw new Error("Erreur serveur lors de la génération du PDF.");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -164,6 +174,24 @@ export default function App() {
     setView(newView);
   };
 
+  const handleResumeSession = async (id) => {
+    try {
+      const res = await fetch('http://localhost:8000/api/sessions/resume', {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_id: id})
+      });
+      const data = await res.json();
+      if(data.status === 'success') {
+        setSqlCode(data.sql_ddl);
+        setEtlCode(data.etl_code || null);
+        setCriticReview(data.critic_review || null);
+        setLogicalModel(data.logical_model || null);
+        setMessages(data.messages || []);
+        setActiveSessionId(id); 
+        setView('canvas'); 
+      }
+    } catch (e) { console.error("Erreur reprise session", e); }
+  };
+
   if (view === 'dashboard') {
     return (
       <>
@@ -171,28 +199,18 @@ export default function App() {
           onNavigate={handleNavigate}
           onNewSession={async () => {
             try {
-              const res = await fetch('http://localhost:8000/api/sessions/new', { method: 'POST' });
+              const res = await fetch('http://localhost:8000/api/sessions/new', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user ? user.id : null })
+              });
               const data = await res.json();
               setActiveSessionId(data.session_id);
             } catch (e) { console.error(e); }
             setView('canvas'); 
             setIsModalOpen(true); 
           }}
-          onResumeSession={async (id) => {
-            try {
-              const res = await fetch('http://localhost:8000/api/sessions/resume', {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_id: id})
-              });
-              const data = await res.json();
-              if(data.status === 'success') {
-                setSqlCode(data.sql_ddl);
-                setEtlCode(data.etl_code);
-                setMessages(data.messages || []);
-                setActiveSessionId(id); 
-                setView('canvas'); 
-              }
-            } catch (e) { console.error(e); }
-          }}
+          onResumeSession={handleResumeSession}
           user={user}
           onAuthOpen={() => setIsAuthOpen(true)}
         />
@@ -212,16 +230,21 @@ export default function App() {
   return (
     <div className="flex h-screen bg-[#09090b] text-[#fafafa] font-sans overflow-hidden">
       <nav className="w-16 flex flex-col items-center py-6 border-r border-[#27272a] bg-[#09090b] z-20 shrink-0">
-        <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center mb-8 shadow-[0_0_15px_rgba(99,102,241,0.4)] cursor-pointer">
-          <Database size={20} className="text-white" />
+        <div 
+          onClick={() => setView('dashboard')}
+          className="w-14 h-14 mb-8 cursor-pointer active:scale-95 transition-transform hover:drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+        >
+          <img src="/logo.png" alt="AUTOETL AI" className="w-full h-full object-contain" />
         </div>
 
         <div className="flex flex-col gap-4">
           <SidebarIcon icon={LayoutGrid} active={view === 'dashboard'} onClick={() => setView('dashboard')} tooltip="Dashboard" />
-          <SidebarIcon icon={Network} active={view === 'canvas'} onClick={() => setView('canvas')} tooltip="Pipeline Canvas" />
-          <SidebarIcon icon={Database} active={view === 'sources'} onClick={() => setIsModalOpen(true)} tooltip="Connecteurs" />
+          <SidebarIcon icon={Network} active={view === 'canvas'} onClick={() => { user ? setView('canvas') : setIsAuthOpen(true) }} tooltip="Pipeline Canvas" />
+          <SidebarIcon icon={Database} active={view === 'sources'} onClick={() => { user ? setIsModalOpen(true) : setIsAuthOpen(true) }} tooltip="Connecteurs" />
+          <SidebarIcon icon={Search} active={view === 'explorer'} onClick={() => { user ? setView('explorer') : setIsAuthOpen(true) }} tooltip="Explorateur SQL" />
+          <SidebarIcon icon={Book} active={view === 'catalog'} onClick={() => { user ? setView('catalog') : setIsAuthOpen(true) }} tooltip="Catalogue de Données (IA)" />
           <SidebarIcon icon={BookOpen} active={view === 'documentation'} onClick={() => setView('documentation')} tooltip="Documentation Officielle" />
-          <SidebarIcon icon={History} active={view === 'history'} onClick={() => setView('history')} tooltip="Historique" />
+          <SidebarIcon icon={History} active={view === 'history'} onClick={() => { user ? setView('history') : setIsAuthOpen(true) }} tooltip="Historique" />
         </div>
 
         <div className="mt-auto">
@@ -230,7 +253,7 @@ export default function App() {
       </nav>
 
       <main className="flex-1 relative overflow-hidden flex flex-col bg-[#09090b]">
-        {view !== 'usecases' && (
+        {(view !== 'usecases' && view !== 'explorer' && view !== 'catalog') && (
           <header className="h-14 border-b border-[#27272a] bg-[#09090b]/80 backdrop-blur-md flex items-center justify-between px-6 z-10 shrink-0">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-zinc-200">Data Integration Pipeline</span>
@@ -272,20 +295,31 @@ export default function App() {
         )}
 
         <div className="flex-1 relative pattern-dots pattern-zinc-800 pattern-bg-[#09090b] pattern-size-4 pattern-opacity-40 overflow-hidden">
-           {view === 'canvas' && <PipelineCanvas sqlCode={sqlCode} etlCode={etlCode} />}
+           {view === 'canvas' && <PipelineCanvas sqlCode={sqlCode} etlCode={etlCode} pipelineState={pipelineState} />}
            {view === 'documentation' && <DocumentationPage key="doc" />}
            {view === 'usecases' && (
              <div className="w-full h-full overflow-y-auto">
                <ProcessDiagram />
              </div>
            )}
+           {view === 'explorer' && (
+             <div className="w-full h-full overflow-y-hidden">
+               <DataExplorer logicalModel={logicalModel} user={user} activeSessionId={activeSessionId} />
+           </div>
+           )}
+           {view === 'catalog' && (
+             <div className="w-full h-full overflow-y-auto">
+               <DataCatalog logicalModel={logicalModel} />
+             </div>
+           )}
            {view === 'profile' && (
              <ProfilePage 
                user={user} 
                onLogout={() => { setUser(null); localStorage.removeItem('user_profile'); setView('dashboard'); }} 
+               onResumeSession={handleResumeSession}
              />
            )}
-           {(view !== 'canvas' && view !== 'dashboard' && view !== 'documentation' && view !== 'usecases' && view !== 'profile') && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">Page {view} en construction...</div>}
+           {(view !== 'canvas' && view !== 'dashboard' && view !== 'documentation' && view !== 'usecases' && view !== 'profile' && view !== 'explorer' && view !== 'catalog') && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">Page {view} en construction...</div>}
 
             {/* Live Terminal Panel */}
             <AnimatePresence>
@@ -348,7 +382,7 @@ export default function App() {
             </div>
             
             <div className="flex-1 overflow-hidden relative">
-               <ChatInterface messages={messages} setMessages={setMessages} onUpdateSql={setSqlCode} onUpdateEtl={setEtlCode} onUpdateCritic={setCriticReview} sqlCode={sqlCode} etlCode={etlCode} criticReview={criticReview} />
+               <ChatInterface messages={messages} setMessages={setMessages} onUpdateSql={setSqlCode} onUpdateEtl={setEtlCode} onUpdateCritic={setCriticReview} sqlCode={sqlCode} etlCode={etlCode} criticReview={criticReview} activeSessionId={activeSessionId} />
             </div>
           </motion.aside>
         )}
@@ -356,10 +390,13 @@ export default function App() {
 
       {isModalOpen && (
         <ConnectionModal 
+          user={user}
+          activeSessionId={activeSessionId}
           onClose={() => setIsModalOpen(false)} 
-          onStartSuccess={(newSql, critic) => {
+          onStartSuccess={(newSql, critic, model) => {
             setSqlCode(newSql);
             setCriticReview(critic);
+            setLogicalModel(model);
             setEtlCode(null);
             setMessages(prev => [...prev, { role: 'bot', content: "🚀 Modèle généré. Consultez l'onglet Critique pour mon diagnostic." }]);
             setView('canvas');

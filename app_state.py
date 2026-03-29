@@ -30,8 +30,18 @@ class AgentState(TypedDict):
     # Capture de l'erreur d'exécution si l'ETL plante
     etl_error: str
     
+    # Explication humaine optionnelle de la correction apportée par Healer
+    healer_explanation: str
+    
     # Compteur pour éviter une boucle infinie de corrections
     retry_count: int
 
     # Configuration de connexion vers le Data Warehouse MySQL cible (Étape D)
     dw_connection_config: Dict[str, Any]
+
+    # Lineage des données (traçabilité source -> destination)
+    lineage: Dict[str, Any]
+
+    # Identifiant utilisateur pour le préfixage multi-tenant
+    user_id: int
+    user_prefix: str

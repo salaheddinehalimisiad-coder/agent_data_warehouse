@@ -23,7 +23,8 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate,
   const [activeTab, setActiveTab] = useState('explorer');
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/sessions')
+    const url = user ? `http://localhost:8000/api/sessions?user_id=${user.id}` : 'http://localhost:8000/api/sessions';
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         setSessions(data.sessions || []);
@@ -33,7 +34,7 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate,
         console.error("Erreur chargement historiques", err);
         setLoading(false);
       });
-  }, []);
+  }, [user]);
 
   const filtered = sessions.filter(s => s.name?.toLowerCase().includes(search.toLowerCase()) || s.id.includes(search));
 
@@ -57,12 +58,9 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate,
 
       {/* 1. Header Navigation */}
       <nav className="fixed top-0 inset-x-0 z-50 w-full border-b border-white/5 bg-black/50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Database className="text-white" size={22} />
-            </div>
-            <span className="font-extrabold text-2xl tracking-tight text-white">AgentDW</span>
+        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+          <div className="flex items-center cursor-pointer" onClick={() => onNavigate('dashboard')}>
+            <img src="/logo.png" alt="AUTOETL AI" className="h-16 md:h-20 lg:h-24 w-auto object-contain drop-shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:scale-105 transition-transform duration-300" />
           </div>
           <div className="hidden lg:flex items-center gap-10 text-sm font-semibold text-zinc-400">
             <a href="#" className="hover:text-white transition-colors" onClick={e => e.preventDefault()}>Plateforme IA</a>
@@ -76,7 +74,7 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate,
               <button onClick={onAuthOpen} className="text-sm font-semibold text-zinc-300 hover:text-white transition-colors hidden sm:block">Se connecter</button>
             )}
             <button 
-              onClick={onNewSession} 
+              onClick={user ? onNewSession : onAuthOpen} 
               className="text-sm font-bold bg-white text-black px-6 py-2.5 rounded-full hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]"
             >
               Sélectionner source
@@ -108,7 +106,7 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate,
 
           <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center gap-6 w-full justify-center">
             <button 
-              onClick={onNewSession}
+              onClick={user ? onNewSession : onAuthOpen}
               className="group relative flex items-center justify-center gap-3 w-full sm:w-auto px-10 py-5 bg-white text-black rounded-full font-bold text-lg hover:scale-[1.02] transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_80px_rgba(255,255,255,0.5)] overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
@@ -484,7 +482,7 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate,
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(99,102,241,0.2)_0,transparent_60%)]"></div>
         <h2 className="text-5xl md:text-8xl font-black mb-10 relative z-10 tracking-tight">Ready to move <br/>first?</h2>
         <button 
-          onClick={onNewSession}
+          onClick={user ? onNewSession : onAuthOpen}
           className="relative z-10 px-12 py-6 bg-white text-black rounded-full font-black text-xl hover:scale-105 transition-all shadow-[0_0_50px_rgba(255,255,255,0.3)] flex items-center gap-4"
         >
           Commencer maintenant
