@@ -42,7 +42,7 @@ Source de Données (CSV / SQL)
 
 ### 📐 Diagramme de flux détaillé
 
-![Architecture Pipeline Multi-Agents](./docs/architecture_pipeline.png)
+![Architecture Pipeline Multi-Agents](./public/architecture_pipeline.png)
 
 > **Légende :**
 > - 🟢 **Teal** — Agents ETL (Explorer, ETL Generator, ETL Executor)

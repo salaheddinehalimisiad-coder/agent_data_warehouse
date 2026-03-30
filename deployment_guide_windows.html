@@ -1,0 +1,351 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans, sans-serif); }
+
+.stepper { padding: 16px 0; }
+
+.step-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+.step-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1.5px solid var(--color-border-secondary);
+  color: var(--color-text-secondary);
+  background: var(--color-background-secondary);
+  transition: all .2s;
+}
+.step-dot.active {
+  background: #1D9E75; border-color: #0F6E56;
+  color: #E1F5EE;
+}
+.step-dot.done {
+  background: #E1F5EE; border-color: #1D9E75; color: #085041;
+}
+
+.step-card {
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.step-header {
+  padding: 14px 18px;
+  background: var(--color-background-secondary);
+  border-bottom: 1px solid var(--color-border-tertiary);
+  display: flex; align-items: center; gap: 12px;
+}
+.step-badge {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #1D9E75; color: #E1F5EE;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; flex-shrink: 0;
+}
+.step-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+.step-sub { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+
+.step-body { padding: 18px; }
+
+.cmd-block {
+  background: var(--color-background-tertiary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  position: relative;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.7;
+}
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 6px; padding: 3px 8px;
+  font-size: 11px; cursor: pointer; color: var(--color-text-secondary);
+}
+.copy-btn:hover { background: var(--color-background-primary); }
+
+.note {
+  background: var(--color-background-info);
+  border-left: 3px solid var(--color-border-info);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--color-text-info);
+  line-height: 1.6;
+}
+.warn {
+  background: var(--color-background-warning);
+  border-left: 3px solid var(--color-border-warning);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--color-text-warning);
+  line-height: 1.6;
+}
+.success {
+  background: var(--color-background-success);
+  border-left: 3px solid var(--color-border-success);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--color-text-success);
+  line-height: 1.6;
+}
+
+.item { font-size: 13px; color: var(--color-text-secondary); line-height: 1.8; padding-left: 4px; }
+.item b { color: var(--color-text-primary); font-weight: 500; }
+
+.dl-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #1D9E75; color: #E1F5EE;
+  border: none; border-radius: 8px; padding: 8px 14px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  margin: 6px 4px 6px 0; text-decoration: none;
+}
+.dl-btn:hover { background: #0F6E56; }
+
+.btn-nav {
+  display: flex; justify-content: space-between; margin-top: 16px;
+}
+.btn {
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 8px; padding: 8px 18px;
+  font-size: 13px; cursor: pointer; color: var(--color-text-primary);
+}
+.btn:hover { background: var(--color-background-primary); }
+.btn.primary { background: #1D9E75; color: #E1F5EE; border-color: #0F6E56; }
+.btn.primary:hover { background: #0F6E56; }
+.btn:disabled { opacity: 0.3; cursor: default; }
+
+.file-tree {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--color-text-secondary);
+  background: var(--color-background-tertiary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 0;
+}
+.file-tree .hl { color: #1D9E75; font-weight: 500; }
+</style>
+
+<div class="stepper">
+  <div class="step-nav" id="nav"></div>
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-badge" id="hdr-num">1</div>
+      <div>
+        <div class="step-title" id="hdr-title"></div>
+        <div class="step-sub" id="hdr-sub"></div>
+      </div>
+    </div>
+    <div class="step-body" id="body"></div>
+  </div>
+  <div class="btn-nav">
+    <button class="btn" id="prev" onclick="go(-1)">← Précédent</button>
+    <span id="counter" style="font-size:12px;color:var(--color-text-secondary);align-self:center"></span>
+    <button class="btn primary" id="next" onclick="go(1)">Suivant →</button>
+  </div>
+</div>
+
+<script>
+const steps = [
+  {
+    title: "Installer Python 3.11",
+    sub: "Prérequis — runtime backend",
+    body: `<p class="item">Va sur <b>python.org</b> et télécharge Python 3.11 (recommandé, plus stable que 3.12 avec LangGraph).</p>
+<a class="dl-btn" href="https://www.python.org/downloads/" target="_blank">⬇ python.org/downloads</a>
+<div class="warn">⚠️ Pendant l'installation, coche ABSOLUMENT <b>"Add Python to PATH"</b> en bas de la première fenêtre, sinon rien ne fonctionnera.</div>
+<div class="cmd-block" id="c1">python --version<button class="copy-btn" onclick="cp('c1')">copier</button></div>
+<div class="success">✓ Résultat attendu : <b>Python 3.11.x</b></div>`
+  },
+  {
+    title: "Installer Node.js 20 LTS",
+    sub: "Prérequis — runtime frontend React",
+    body: `<p class="item">Va sur <b>nodejs.org</b> et télécharge la version <b>20 LTS</b>.</p>
+<a class="dl-btn" href="https://nodejs.org/" target="_blank">⬇ nodejs.org</a>
+<div class="note">ℹ️ L'installeur Node.js inclut aussi <b>npm</b> automatiquement. Pas besoin d'installer npm séparément.</div>
+<div class="cmd-block" id="c2">node --version
+npm --version<button class="copy-btn" onclick="cp('c2')">copier</button></div>
+<div class="success">✓ Résultat attendu : <b>v20.x.x</b> et <b>10.x.x</b></div>`
+  },
+  {
+    title: "Installer Git",
+    sub: "Pour cloner ton repo GitHub",
+    body: `<p class="item">Va sur <b>git-scm.com</b> et télécharge Git for Windows.</p>
+<a class="dl-btn" href="https://git-scm.com/download/win" target="_blank">⬇ git-scm.com</a>
+<div class="note">ℹ️ Laisse toutes les options par défaut pendant l'installation. Coche <b>"Git from the command line"</b> si demandé.</div>
+<div class="cmd-block" id="c3">git --version<button class="copy-btn" onclick="cp('c3')">copier</button></div>
+<div class="success">✓ Résultat attendu : <b>git version 2.x.x</b></div>`
+  },
+  {
+    title: "Installer MySQL Server",
+    sub: "La base de données cible du Data Warehouse",
+    body: `<p class="item">Télécharge <b>MySQL Installer for Windows</b> (Community Edition, gratuit).</p>
+<a class="dl-btn" href="https://dev.mysql.com/downloads/installer/" target="_blank">⬇ MySQL Installer</a>
+<p class="item" style="margin-top:10px">Pendant l'installation, choisis <b>"Developer Default"</b> puis :</p>
+<div class="item">• Retiens bien le <b>mot de passe root</b> que tu crées<br>• Port par défaut : <b>3306</b> (ne pas changer)<br>• Coche <b>"Start MySQL Server at System Startup"</b></div>
+<div class="cmd-block" id="c4">mysql -u root -p
+-- Entre ton mot de passe root
+-- Tu dois voir : mysql><button class="copy-btn" onclick="cp('c4')">copier</button></div>
+<div class="note">ℹ️ Crée ensuite la base de données pour le DW :<br><br>
+<code style="font-family:var(--font-mono);font-size:12px">CREATE DATABASE data_warehouse;<br>EXIT;</code></div>`
+  },
+  {
+    title: "Installer Ollama",
+    sub: "Le moteur LLM local (gratuit, 100% offline)",
+    body: `<p class="item">Télécharge Ollama pour Windows depuis le site officiel.</p>
+<a class="dl-btn" href="https://ollama.com/download/windows" target="_blank">⬇ ollama.com/download</a>
+<div class="note">ℹ️ Ollama s'installe comme une application Windows et démarre automatiquement en arrière-plan.</div>
+<p class="item" style="margin-top:10px">Après installation, ouvre un terminal et télécharge le modèle recommandé :</p>
+<div class="cmd-block" id="c5">ollama pull qwen2.5-coder:7b<button class="copy-btn" onclick="cp('c5')">copier</button></div>
+<div class="warn">⚠️ Le modèle pèse ~4 Go. Assure-toi d'avoir une bonne connexion internet et ~8 Go de RAM minimum.</div>
+<div class="cmd-block" id="c5b">ollama list<button class="copy-btn" onclick="cp('c5b')">copier</button></div>
+<div class="success">✓ Tu dois voir <b>qwen2.5-coder:7b</b> dans la liste</div>`
+  },
+  {
+    title: "Cloner le repo GitHub",
+    sub: "Récupérer le code source du projet",
+    body: `<p class="item">Ouvre <b>PowerShell</b> ou <b>Command Prompt</b> et navigue où tu veux installer le projet, puis clone :</p>
+<div class="cmd-block" id="c6">cd C:\\
+mkdir projets
+cd projets
+git clone https://github.com/salaheddinehalimisiad-coder/agent_data_warehouse.git
+cd agent_data_warehouse<button class="copy-btn" onclick="cp('c6')">copier</button></div>
+<div class="success">✓ Tu dois voir le dossier créé avec tous les fichiers du projet</div>
+<div class="file-tree">agent_data_warehouse\
+├── <span class="hl">main.py</span>
+├── <span class="hl">app_state.py</span>
+├── <span class="hl">requirements.txt</span>
+├── <span class="hl">package.json</span>
+├── api\
+├── nodes\
+└── ...</div>`
+  },
+  {
+    title: "Configurer le fichier .env",
+    sub: "Variables d'environnement — ne jamais committer ce fichier",
+    body: `<p class="item">Dans le dossier du projet, crée un fichier <b>.env</b> :</p>
+<div class="cmd-block" id="c7">copy .env.example .env
+notepad .env<button class="copy-btn" onclick="cp('c7')">copier</button></div>
+<p class="item" style="margin-top:10px">Remplis ces valeurs dans le fichier :</p>
+<div class="cmd-block" id="c7b"># LLM
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_CLOUD_MODEL=qwen2.5-coder:7b
+
+# Google Gemini (optionnel, fallback)
+GOOGLE_API_KEY=ta_cle_gemini_ici
+
+# MySQL Data Warehouse cible
+DW_HOST=localhost
+DW_PORT=3306
+DW_DATABASE=data_warehouse
+DW_USER=root
+DW_PASSWORD=ton_mot_de_passe_mysql<button class="copy-btn" onclick="cp('c7b')">copier</button></div>
+<div class="warn">⚠️ Remplace <b>ton_mot_de_passe_mysql</b> par le vrai mot de passe root MySQL que tu as créé à l'étape 4.</div>`
+  },
+  {
+    title: "Installer les dépendances Python",
+    sub: "Environnement virtuel + packages backend",
+    body: `<p class="item">Toujours dans le dossier du projet, crée un environnement virtuel Python :</p>
+<div class="cmd-block" id="c8">python -m venv .venv
+.venv\Scripts\activate<button class="copy-btn" onclick="cp('c8')">copier</button></div>
+<div class="note">ℹ️ Tu dois voir <b>(.venv)</b> apparaître au début de ta ligne de commande — c'est bon signe.</div>
+<div class="cmd-block" id="c8b">pip install -r requirements.txt<button class="copy-btn" onclick="cp('c8b')">copier</button></div>
+<div class="warn">⚠️ Cette étape peut prendre 2 à 5 minutes. Attends la fin avant de continuer.</div>
+<div class="success">✓ Résultat attendu en fin : <b>Successfully installed ...</b> sans erreur rouge</div>`
+  },
+  {
+    title: "Installer les dépendances Node.js",
+    sub: "Packages frontend React + Vite",
+    body: `<p class="item">Dans le même dossier du projet (ouvre un <b>second terminal</b> ou désactive le venv) :</p>
+<div class="cmd-block" id="c9">npm install<button class="copy-btn" onclick="cp('c9')">copier</button></div>
+<div class="note">ℹ️ Cette commande lit le fichier <b>package.json</b> et installe React, Vite, et toutes les librairies frontend dans un dossier <b>node_modules/</b>.</div>
+<div class="warn">⚠️ Si tu vois des warnings <b>npm warn deprecated</b>, c'est normal — ce ne sont pas des erreurs. L'installation est réussie si elle se termine sans <b>ERROR</b> en rouge.</div>
+<div class="success">✓ Résultat attendu : <b>added XXX packages</b></div>`
+  },
+  {
+    title: "Lancer le projet",
+    sub: "Démarrer backend + frontend simultanément",
+    body: `<p class="item">Tu as besoin de <b>2 terminaux ouverts</b> en parallèle :</p>
+<p class="item" style="margin-top:8px"><b>Terminal 1 — Backend FastAPI :</b></p>
+<div class="cmd-block" id="c10">cd C:\projets\agent_data_warehouse
+.venv\Scripts\activate
+python -m uvicorn api.server:app --reload --port 8000<button class="copy-btn" onclick="cp('c10')">copier</button></div>
+<div class="success">✓ Tu dois voir : <b>Uvicorn running on http://127.0.0.1:8000</b></div>
+<p class="item" style="margin-top:12px"><b>Terminal 2 — Frontend React :</b></p>
+<div class="cmd-block" id="c11">cd C:\projets\agent_data_warehouse
+npm run dev<button class="copy-btn" onclick="cp('c11')">copier</button></div>
+<div class="success">✓ Tu dois voir : <b>Local: http://localhost:5173/</b></div>
+<div class="note" style="margin-top:12px">ℹ️ Ouvre ton navigateur sur <b>http://localhost:5173</b> — l'interface Agent Data Warehouse est prête !</div>`
+  },
+  {
+    title: "Vérification finale",
+    sub: "Tester que tout fonctionne correctement",
+    body: `<p class="item">Vérifie chaque service :</p>
+<div class="cmd-block" id="c12"># Ollama actif ?
+curl http://localhost:11434/api/tags
+
+# Backend FastAPI actif ?
+curl http://localhost:8000/api/pipeline-status
+
+# MySQL actif ?
+mysql -u root -p -e "SHOW DATABASES;"<button class="copy-btn" onclick="cp('c12')">copier</button></div>
+<div class="item" style="margin-top:12px">
+<b>Récap de ce qui doit tourner en permanence :</b><br><br>
+✓ <b>Ollama</b> — démarre automatiquement avec Windows<br>
+✓ <b>MySQL</b> — démarre automatiquement avec Windows<br>
+✓ <b>Backend</b> (.venv + uvicorn) — à lancer manuellement<br>
+✓ <b>Frontend</b> (npm run dev) — à lancer manuellement
+</div>
+<div class="success" style="margin-top:12px">🎉 Déploiement terminé ! Ouvre <b>http://localhost:5173</b> et connecte ta source de données.</div>`
+  }
+];
+
+let cur = 0;
+
+function render() {
+  const s = steps[cur];
+  document.getElementById('hdr-num').textContent = cur + 1;
+  document.getElementById('hdr-title').textContent = s.title;
+  document.getElementById('hdr-sub').textContent = s.sub;
+  document.getElementById('body').innerHTML = s.body;
+  document.getElementById('counter').textContent = `${cur + 1} / ${steps.length}`;
+  document.getElementById('prev').disabled = cur === 0;
+  document.getElementById('next').disabled = cur === steps.length - 1;
+  document.getElementById('next').textContent = cur === steps.length - 1 ? '✓ Terminé' : 'Suivant →';
+
+  const nav = document.getElementById('nav');
+  nav.innerHTML = '';
+  steps.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (i === cur ? ' active' : i < cur ? ' done' : '');
+    d.textContent = i < cur ? '✓' : i + 1;
+    d.onclick = () => { cur = i; render(); };
+    nav.appendChild(d);
+  });
+}
+
+function go(dir) { cur = Math.max(0, Math.min(steps.length - 1, cur + dir)); render(); }
+
+function cp(id) {
+  const el = document.getElementById(id);
+  const text = el.innerText.replace('copier','').trim();
+  navigator.clipboard.writeText(text).catch(()=>{});
+  const btn = el.querySelector('.copy-btn');
+  if(btn){ btn.textContent = '✓'; setTimeout(()=>btn.textContent='copier', 1500); }
+}
+
+render();
+</script>
