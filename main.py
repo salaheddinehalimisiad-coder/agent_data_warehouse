@@ -13,9 +13,11 @@ from nodes.etl_generator import etl_generator_node
 from nodes.etl_executor import etl_executor_node
 from nodes.healer import healer_node
 
-def human_review_node(state: AgentState):
+def human_review_node(state: AgentState) -> dict:
     """Point d'arrêt pour l'interface de chat."""
-    pass
+    # Bug fix #8: LangGraph nodes MUST return a dict, even empty.
+    # Returning None (via `pass`) causes undefined behavior in LangGraph.
+    return {}
 
 def route_after_review(state: AgentState) -> str:
     """Route l'utilisateur après la validation du modèle."""

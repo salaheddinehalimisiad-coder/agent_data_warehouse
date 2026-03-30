@@ -215,7 +215,11 @@ function FlowArea({ sqlCode, etlCode, pipelineState }) {
          return;
       }
       
-      const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(]+)\s*\(([\s\S]*?)\);/gi;
+      // Bug fix #7 : Regex SQL plus robuste.
+      // En exigeant que le ");" de clôture soit sur sa propre ligne (précédé d'un saut de ligne),
+      // on évite que la regex s'arrête sur un ";" interne à une contrainte inline
+      // (ex : CHECK(...), COMMENT '...;'). Le LLM génère toujours le DDL sur plusieurs lignes.
+      const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([^\s(`"]+|`[^`]+`|"[^"]+")\s*\(([\s\S]*?)\n\s*\)\s*;/gi;
       const mcdNodes = [];
       const mcdEdges = [];
       const dims = [];
@@ -321,7 +325,12 @@ function FlowArea({ sqlCode, etlCode, pipelineState }) {
          }, 100);
       }
     }
-  }, [viewMode, sqlCode, etlCode, pipelineState, bottomProgress, onNodesChange, onEdgesChange, fitView]);
+  // Bug fix #6 : onNodesChange, onEdgesChange et fitView sont des fonctions instables :
+  // elles sont recréées à chaque render par useReactFlow/useNodesState.
+  // Les inclure dans les dépendances déclenchait une boucle infinie de re-renders
+  // dès que le pipeline émettait des événements SSE. On les exclut explicitement.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, sqlCode, etlCode, pipelineState, bottomProgress]);
 
   const isFailed = pipelineState?.status === 'failed';
 
@@ -350,7 +359,14 @@ function FlowArea({ sqlCode, etlCode, pipelineState }) {
                    {pipelineState?.error || "Le pipeline a rencontré une défaillance inattendue. L'agent ne peut pas poursuivre la génération du flux Pentaho."}
                  </p>
                  <button 
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    // Bug fix #11 : L'utilisateur est averti que le rechargement efface
+                    // toute la session (LangGraph MemorySaver est volatile).
+                    // Cela évite une perte de travail non intentionnelle.
+                    if (window.confirm('Cette action va recharger la page et effacer toute la session IA en cours (pipeline, modèles, messages). Continuer ?')) {
+                      window.location.reload();
+                    }
+                  }}
                   className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 rounded-lg text-rose-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95"
                  >
                    <RefreshCcw size={12} /> Redémarrer le système

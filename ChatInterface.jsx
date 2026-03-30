@@ -4,6 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+// Bug fix #4 : URL backend via variable d'environnement Vite.
+// En production ou sur un autre poste, VITE_API_URL doit être défini dans .env
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// Bug fix #3 : Sanitisation HTML — on échappe les caractères spéciaux
+// AVANT d'appliquer les remplacements markdown, évitant toute injection XSS
+// si le LLM génère du contenu avec des balises HTML brutes.
+const escapeHtml = (str) =>
+  str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 const FormattedMessage = ({ content }) => {
   const parts = content.split(/(```[\s\S]*?```)/g);
   return (
@@ -25,12 +40,14 @@ const FormattedMessage = ({ content }) => {
           );
         }
         
-        // Handling normal text to support basic bold and lists
+        // Bug fix #3 : escapeHtml() échappe d'abord le contenu brut pour prévenir le XSS,
+        // puis on applique les remplacements markdown en toute sécurité.
         const lines = part.split('\n');
         return (
           <div key={index} className="space-y-1">
             {lines.map((l, i) => {
-              const text = l.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
+              const safe = escapeHtml(l);
+              const text = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
               if (l.trim().startsWith('* ') || l.trim().startsWith('- ')) {
                 return <li key={i} className="ml-4 list-disc" dangerouslySetInnerHTML={{ __html: text.substring(2) }}></li>;
               }
@@ -75,11 +92,18 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
     setActiveTab('chat');
 
     try {
-      const resp = await fetch(`http://localhost:8000/api/chat?session_id=${activeSessionId}`, {
+      // Bug fix #4 : utilisation de API_URL au lieu de localhost hardcodé
+      const resp = await fetch(`${API_URL}/api/chat?session_id=${activeSessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMsg, context: activeTab === 'etl' ? 'etl' : 'sql' })
       });
+      // Bug fix #10 : vérification du statut HTTP avant de parser le JSON.
+      // Sans ça, une erreur 500/422 afficherait "Modèle mis à jour." à tort.
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`Erreur serveur (${resp.status}) : ${errText}`);
+      }
       const data = await resp.json();
       setMessages(prev => [...prev, { role: 'bot', content: data.reply || "Modèle mis à jour." }]);
       if (data.sql_ddl) onUpdateSql(data.sql_ddl);
@@ -87,7 +111,7 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
       if (data.critic_review) onUpdateCritic(data.critic_review);
 
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', content: "⚠️ Erreur orchestrateur.", isError: true }]);
+      setMessages(prev => [...prev, { role: 'bot', content: `⚠️ ${err.message || 'Erreur orchestrateur.'}`, isError: true }]);
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +184,9 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
                   onClick={() => {
                     const fixPrompt = "Peux-tu appliquer ces remarques et corriger le script SQL ?\n\nRETOUR CRITIQUE :\n" + criticReview;
                     setInput(fixPrompt);
-                    onUpdateCritic(null); // Clear critique after taking action
+                    // Bug fix #5 : optional chaining prévient un crash si le parent
+                    // ne passe pas onUpdateCritic ou si le callback est undefined.
+                    onUpdateCritic?.(null);
                     setActiveTab('chat');
                     setMessages(prev => [...prev, { role: 'bot', content: "D'accord, je transfère ces critiques à mon module de correction. Je m'en occupe immédiatement !" }]);
                   }}

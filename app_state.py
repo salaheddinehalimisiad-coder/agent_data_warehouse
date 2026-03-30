@@ -2,7 +2,11 @@
 from typing import Annotated, TypedDict, List, Dict, Any
 from langgraph.graph.message import add_messages
 
-class AgentState(TypedDict):
+# Bug fix #2 & #9: total=False rend tous les champs optionnels (NotRequired).
+# Sans ça, un accès direct à state["etl_error"] ou state["user_id"] avant
+# leur initialisation lève un KeyError. Utiliser state.get("champ", valeur_defaut)
+# reste la bonne pratique dans les nœuds.
+class AgentState(TypedDict, total=False):
     # L'historique des échanges (Nécessaire pour l'aspect conversationnel) [cite: 20, 33]
     messages: Annotated[list, add_messages]
     
