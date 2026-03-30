@@ -1,6 +1,9 @@
 # 🏭 Agent Data Warehouse — Plateforme ETL Multi-Agents IA
 
-> **Plateforme intelligente d'automatisation ETL** propulsée par un pipeline multi-agents LangGraph. Elle analyse vos sources de données (CSV ou SQL), conçoit automatiquement un schéma Data Warehouse OLAP *Star Schema*, génère le script ETL d'intégration, l'exécute dans MySQL et se **auto-répare** en cas d'erreur — le tout avec une interface React temps réel.
+> **Plateforme intelligente d'automatisation ETL** propulsée par un pipeline multi-agents LangGraph.
+> Elle analyse vos sources de données (CSV ou SQL), conçoit automatiquement un schéma Data Warehouse
+> OLAP *Star Schema*, génère le script ETL d'intégration (`.ktr` Pentaho), l'exécute dans MySQL
+> et se **auto-répare** en cas d'erreur — le tout avec une interface React temps réel.
 
 ---
 
@@ -11,39 +14,55 @@ Source de Données (CSV / SQL)
         │
         ▼
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│  🔍 Explorer  │────▶│  🧠 Modeler   │────▶│  🛡️ Critic  │
+│  🔍 Explorer  │────▶│  🧠 Modeler   │────▶│  🛡️ Critic   │
 │  Extraction   │     │  OLAP Design  │     │  QA / Review  │
 │  Métadonnées  │     │  Star Schema  │     │  DDL SQL      │
 └───────────────┘     └───────────────┘     └───────┬───────┘
                                                      │
                                             ┌────────▼────────┐
-                                            │  👤 Human Review │
-                                            │  Validation +   │
-                                            │  Chat Modifier  │
-                                            └────────┬────────┘
-                                                     │ Validé
+                            ┌──────────────▶│  👤 Human Review │
+                            │  boucle       │  interrupt_before│
+                            │               └────────┬────────┘
+                     ┌──────┴──────┐                 │ validé
+                     │💬 Chat      │◀────────────────┘
+                     │  Modifier   │   is_validated=False
+                     └─────────────┘   après modification
+                                                     │ validé
                                             ┌────────▼────────┐
                                             │  ⚙️ ETL Generator│
-                                            │  Script ETL      │
+                                            │  Script .ktr     │
                                             └────────┬────────┘
                                                      │
                                             ┌────────▼────────┐     ┌────────────┐
                                             │  🚀 ETL Executor │────▶│  🔧 Healer  │
                                             │  MySQL DW Load   │◀────│  AI Repair  │
+                                            │  etl_error=""    │     │+retry_count│
                                             └─────────────────┘     └────────────┘
 ```
+
+### 📐 Diagramme de flux détaillé
+
+![Architecture Pipeline Multi-Agents](./docs/architecture_pipeline.png)
+
+> **Légende :**
+> - 🟢 **Teal** — Agents ETL (Explorer, ETL Generator, ETL Executor)
+> - 🟣 **Purple** — Agents IA modélisation (Modeler, Critic)
+> - 🟠 **Amber** — Human-in-the-loop (Human Review, Chat Modifier)
+> - 🔴 **Red** — Résilience / erreur (Healer)
+
+---
 
 ### 📦 Agents IA (LangGraph Nodes)
 
 | Agent | Fichier | Rôle |
-|-------|---------|------|
+|---|---|---|
 | 🔍 **Explorer** | `nodes/explorer.py` | Connexion à la source (CSV/SQL) et extraction des métadonnées |
 | 🧠 **Modeler** | `nodes/modeler.py` | Génération IA du schéma OLAP Star Schema + DDL SQL |
 | 🛡️ **Critic** | `nodes/critic.py` | Révision qualité du DDL : cohérence PK/FK, types de données |
-| 💬 **Chat Modifier** | `nodes/chat_modifier.py` | Modification itérative du modèle via chat conversationnel |
-| ⚙️ **ETL Generator** | `nodes/etl_generator.py` | Génération d'une transformation Pentaho (.ktr XML) |
-| 🚀 **ETL Executor** | `nodes/etl_executor.py` | Création du schéma MySQL + exécution Kitchen CLI ou export .ktr |
-| 🔧 **Healer** | `nodes/healer.py` | Auto-réparation du fichier .ktr en cas d'erreur (jusqu'à 3 tentatives) |
+| 💬 **Chat Modifier** | `nodes/chat_modifier.py` | Modification itérative du modèle via chat conversationnel — remet `is_validated=False` après chaque modification |
+| ⚙️ **ETL Generator** | `nodes/etl_generator.py` | Génération d'une transformation Pentaho (`.ktr` XML) |
+| 🚀 **ETL Executor** | `nodes/etl_executor.py` | Création du schéma MySQL + exécution Kitchen CLI ou export `.ktr` — remet `etl_error=""` en cas de succès |
+| 🔧 **Healer** | `nodes/healer.py` | Auto-réparation du fichier `.ktr` en cas d'erreur (max 3 tentatives) — incrémente `retry_count` à chaque appel |
 
 ---
 
@@ -60,16 +79,19 @@ Le projet utilise un **factory pattern intelligent** (`nodes/llm_factory.py`) qu
        → Dernier recours si Ollama est inaccessible
 ```
 
-> **Note :** Les modèles `glm-5:cloud` et `gpt-oss:120b-cloud` sont des modèles spéciaux configurés dans votre Ollama local et agissant comme proxy cloud. Ils sont interrogés via l'URL `localhost:11434`.
+> **Note :** Les modèles `glm-5:cloud` et `gpt-oss:120b-cloud` sont des modèles spéciaux configurés
+> dans votre Ollama local et agissant comme proxy cloud.
 
 ---
 
 ## 🚀 Pentaho Data Integration (Kettle)
 
-Le système génère désormais des fichiers **.ktr** compatibles avec Pentaho :
+Le système génère des fichiers **`.ktr`** compatibles avec Pentaho :
+
 - **Export direct** : Téléchargez le fichier `.ktr` depuis l'interface et ouvrez-le dans **Spoon**.
 - **Exécution automatique** : Si `kitchen.bat` est dans votre PATH ou dans les dossiers standards, le pipeline l'exécute automatiquement.
 - **Visualisation** : Le diagramme ETL est généré avec des coordonnées GUI pour une ouverture parfaite dans Spoon.
+- **Validation XML** : Le fichier `.ktr` est validé syntaxiquement avant exécution — un XML mal formé est détecté immédiatement.
 
 ---
 
@@ -138,25 +160,27 @@ Ouvrir l'interface : **http://localhost:5173/**
 agent_data_warehouse/
 │
 ├── 📄 main.py              # Définition du graph LangGraph (flux & boucles)
-├── 📄 app_state.py         # Définition du State partagé entre les agents
+├── 📄 app_state.py         # Définition du State partagé entre les agents (TypedDict strict)
 │
 ├── 📁 api/
 │   └── server.py           # Backend FastAPI : REST endpoints + SSE temps réel
 │
 ├── 📁 nodes/               # Les 7 agents IA du pipeline
-│   ├── explorer.py
-│   ├── modeler.py
-│   ├── critic.py
-│   ├── chat_modifier.py
-│   ├── etl_generator.py
-│   ├── etl_executor.py
-│   ├── healer.py
+│   ├── explorer.py         # Extraction métadonnées CSV / SQL
+│   ├── modeler.py          # Génération Star Schema + DDL
+│   ├── critic.py           # Revue qualité DDL (PK/FK, types)
+│   ├── chat_modifier.py    # Chat conversationnel — remet is_validated=False
+│   ├── etl_generator.py    # Génération .ktr Pentaho
+│   ├── etl_executor.py     # Exécution MySQL + Kitchen CLI — remet etl_error=""
+│   ├── healer.py           # Auto-réparation + incrémentation retry_count
 │   └── llm_factory.py      # Sélection automatique du LLM
 │
 ├── 📁 utils/
 │   └── connectors.py       # Adaptateurs CSV & SQL (Common Connectivity Layer)
 │
 ├── 📁 uploads/             # Fichiers CSV téléversés via l'interface
+├── 📁 docs/
+│   └── architecture_pipeline.png   # Schéma d'architecture du pipeline
 │
 ├── 🎨 App.jsx              # Application React principale (router)
 ├── 🎨 LandingPage.jsx      # Page d'accueil avec présentation
@@ -180,7 +204,7 @@ agent_data_warehouse/
 L'API FastAPI est accessible sur `http://localhost:8000`.
 
 | Méthode | Endpoint | Description |
-|---------|----------|-------------|
+|---|---|---|
 | `POST` | `/api/start` | Démarre le pipeline IA avec la config de connexion |
 | `POST` | `/api/chat` | Discute avec l'agent pour modifier le modèle ou le code ETL |
 | `POST` | `/api/validate` | Valide le modèle et lance le déploiement ETL en arrière-plan |
@@ -194,33 +218,91 @@ L'API FastAPI est accessible sur `http://localhost:8000`.
 | `POST` | `/api/sessions/resume` | Reprendre une session précédente |
 | `POST` | `/api/sessions/new` | Démarrer une nouvelle session propre |
 
+> **Note multi-tenant** : chaque appel doit passer un `thread_id` unique par utilisateur dans la
+> config d'invocation LangGraph (`config={"configurable": {"thread_id": session_id}}`).
+
 ---
 
 ## 💡 Fonctionnalités Clés
 
-- **🔄 Human-in-the-loop** : L'utilisateur valide le modèle avant l'exécution ETL
-- **💬 Chat conversationnel** : Modification du schéma OLAP ou du script ETL en langage naturel
-- **🔧 Auto-guérison** : En cas d'erreur ETL, l'agent Healer corrige le code automatiquement (max 3 tentatives)
+- **🔄 Human-in-the-loop** : L'utilisateur valide le modèle avant l'exécution ETL via `interrupt_before`
+- **💬 Chat conversationnel** : Modification du schéma OLAP ou du script ETL en langage naturel — remet automatiquement `is_validated=False` pour forcer une re-validation
+- **🔧 Auto-guérison** : En cas d'erreur ETL, l'agent Healer corrige le code automatiquement (max 3 tentatives, compteur `retry_count` incrémenté)
+- **✅ Validation XML** : Le fichier `.ktr` généré est validé syntaxiquement avant exécution
 - **📡 Temps réel** : L'interface se met à jour via Server-Sent Events (SSE)
-- **💾 État** : La session est maintenue en mémoire pendant l'exécution
+- **💾 Sessions** : La session est maintenue en mémoire (volatile) pendant l'exécution
 - **📊 Sources multiples** : Compatible CSV et bases de données SQL (via SQLAlchemy)
 - **📤 Export** : Rapport complet en PDF ou JSON (DDL SQL + Code ETL + Critique IA)
-- **📧 Notifications** : Alertes email optionnelles en fin de pipeline (via SMTP)
+- **🔒 Sécurité DDL** : Validation des instructions SQL avant exécution sur le DW cible
 
 ---
 
 ## 🛠️ Stack Technique
 
 | Couche | Technologie |
-|--------|-------------|
+|---|---|
 | **Orchestration IA** | [LangGraph](https://github.com/langchain-ai/langgraph) |
 | **LLM** | Ollama (local) / Google Gemini (fallback) |
 | **Backend** | FastAPI + Uvicorn |
 | **Frontend** | React 18 + Vite + Framer Motion |
 | **Visualisation Pipeline** | @xyflow/react |
 | **Base de données DW cible** | MySQL via SQLAlchemy + mysql-connector-python |
-| **Checkpointing Sessions** | Mémoire (`langgraph.checkpoint.memory`) |
+| **Checkpointing Sessions** | Mémoire volatile (`MemorySaver`) — remplaçable par SQLite/Redis |
 | **Données** | Pandas |
+
+---
+
+## ⚠️ Bugs corrigés (v1.1)
+
+| # | Fichier | Description | Correction |
+|---|---|---|---|
+| 1 | `main.py` | `human_review_node` retournait `None` → comportement indéfini LangGraph | Retourne `{}` explicitement |
+| 2 | `main.py` | `return END` dans routing conditionnel nécessite l'import correct | Import `END` depuis `langgraph.graph` vérifié |
+| 3 | `nodes/etl_executor.py` | `etl_error` jamais remis à `""` après succès → Healer rappelé indéfiniment | Retourne `{"etl_error": ""}` en cas de succès |
+| 4 | `nodes/healer.py` | `retry_count` jamais incrémenté → boucle infinie potentielle | Incrémente `retry_count` à chaque appel |
+| 5 | `nodes/chat_modifier.py` | `is_validated` reste `True` après modification → re-validation ignorée | Retourne `{"is_validated": False}` systématiquement |
+
+---
+
+## ⚙️ Paramètres Avancés
+
+### Retry & Resilience
+
+- **Quota API (429)** : Attente exponentielle automatique (5s → 10s → backoff)
+- **Timeout réseau** : Retry progressif (5s → 10s → 15s)
+- **Auto-guérison ETL** : Max 3 tentatives de correction IA via l'agent Healer
+- **Validation XML** : Le `.ktr` est parsé avec `xml.etree.ElementTree` avant exécution
+
+### Sessions Multi-Utilisateurs
+
+Pour isoler les sessions entre utilisateurs, passer un `thread_id` unique :
+
+```python
+config = {"configurable": {"thread_id": f"user_{user_id}_session_{session_id}"}}
+graph.invoke({"messages": [...]}, config=config)
+```
+
+### Persistance des Sessions (Production)
+
+Remplacer `MemorySaver` par une solution persistante :
+
+```python
+# SQLite (simple, fichier local)
+from langgraph.checkpoint.sqlite import SqliteSaver
+memory = SqliteSaver.from_conn_string("sessions.db")
+
+# Redis (distribué, production)
+from langgraph.checkpoint.redis import RedisSaver
+memory = RedisSaver.from_conn_string("redis://localhost:6379")
+```
+
+### Modèles Ollama Supportés (Local)
+
+```bash
+ollama pull qwen2.5-coder:7b   # Recommandé pour le code
+ollama pull mistral:latest      # Bon généraliste
+ollama pull codellama:latest    # Spécialisé code
+```
 
 ---
 
@@ -235,21 +317,12 @@ Le projet inclut un fichier `ventes.csv` (1 500 lignes) pour tester le pipeline 
 
 ---
 
-## ⚙️ Paramètres Avancés
+## 🔒 Sécurité
 
-### Retry & Resilience
-
-- **Quota API (429)** : Attente exponentielle automatique (5s → 10s → backoff)
-- **Timeout réseau** : Retry progressif (5s → 10s → 15s)
-- **Auto-guérison ETL** : Max 3 tentatives de correction IA via l'agent Healer
-
-### Modèles Ollama Supportés (Local)
-
-```bash
-ollama pull qwen2.5-coder:7b   # Recommandé pour le code
-ollama pull mistral:latest      # Bon généraliste
-ollama pull codellama:latest    # Spécialisé code
-```
+- **Ne jamais committer `.env`** — vérifier `.gitignore` avant chaque push
+- **Credentials DW** : masquer les mots de passe avant tout export JSON ou log
+- **Validation DDL** : seules les instructions `CREATE`, `DROP`, `ALTER`, `INSERT` sont autorisées avant exécution sur le DW cible
+- **Clés API** : utiliser des variables d'environnement, jamais de valeurs hardcodées
 
 ---
 
