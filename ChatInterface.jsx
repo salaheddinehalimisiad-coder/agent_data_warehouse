@@ -4,23 +4,36 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-// Bug fix #4 : URL backend via variable d'environnement Vite.
-// En production ou sur un autre poste, VITE_API_URL doit être défini dans .env
+// BUG FIX #4 : URL backend hardcodée → variable d'environnement Vite.
+// Créer un fichier .env à la racine avec : VITE_API_URL=http://localhost:8000
+// En production, changer uniquement .env sans toucher au code.
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// Bug fix #3 : Sanitisation HTML — on échappe les caractères spéciaux
-// AVANT d'appliquer les remplacements markdown, évitant toute injection XSS
-// si le LLM génère du contenu avec des balises HTML brutes.
-const escapeHtml = (str) =>
-  str
+// BUG FIX #3 : XSS via dangerouslySetInnerHTML.
+// Le contenu vient du LLM — il peut contenir du HTML malveillant (<script>, etc.).
+// SOLUTION : fonction de sanitisation légère qui échappe les balises HTML
+// avant d'appliquer le formatage Markdown (bold/italic).
+// Note : pour une sécurité maximale en production, utiliser la lib DOMPurify.
+function sanitizeAndFormat(raw) {
+  // 1. Échapper d'abord tous les caractères HTML dangereux
+  const escaped = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/'/g, '&#x27;');
+  // 2. Appliquer le formatage Markdown APRÈS l'échappement (safe)
+  return escaped
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+}
 
 const FormattedMessage = ({ content }) => {
+  // Garde-fou : si content est null/undefined, ne rien afficher
+  if (!content) return null;
+
   const parts = content.split(/(```[\s\S]*?```)/g);
+
   return (
     <div className="text-[13px] leading-relaxed break-words space-y-2">
       {parts.map((part, index) => {
@@ -39,22 +52,24 @@ const FormattedMessage = ({ content }) => {
             </div>
           );
         }
-        
-        // Bug fix #3 : escapeHtml() échappe d'abord le contenu brut pour prévenir le XSS,
-        // puis on applique les remplacements markdown en toute sécurité.
+
         const lines = part.split('\n');
         return (
           <div key={index} className="space-y-1">
             {lines.map((l, i) => {
-              const safe = escapeHtml(l);
-              const text = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
+              // FIX #3 : utiliser sanitizeAndFormat() au lieu de la regex directe
+              // pour éviter l'injection HTML depuis les réponses du LLM
+              const safeHtml = sanitizeAndFormat(l);
+
               if (l.trim().startsWith('* ') || l.trim().startsWith('- ')) {
-                return <li key={i} className="ml-4 list-disc" dangerouslySetInnerHTML={{ __html: text.substring(2) }}></li>;
+                const listHtml = sanitizeAndFormat(l.substring(2));
+                return <li key={i} className="ml-4 list-disc" dangerouslySetInnerHTML={{ __html: listHtml }}></li>;
               }
               if (l.match(/^\d+\.\s/)) {
-                return <li key={i} className="ml-4 list-decimal" dangerouslySetInnerHTML={{ __html: text.replace(/^\d+\.\s/, '') }}></li>;
+                const listHtml = sanitizeAndFormat(l.replace(/^\d+\.\s/, ''));
+                return <li key={i} className="ml-4 list-decimal" dangerouslySetInnerHTML={{ __html: listHtml }}></li>;
               }
-              return <p key={i} dangerouslySetInnerHTML={{ __html: text }}></p>;
+              return <p key={i} dangerouslySetInnerHTML={{ __html: safeHtml }}></p>;
             })}
           </div>
         );
@@ -66,7 +81,7 @@ const FormattedMessage = ({ content }) => {
 export default function ChatInterface({ messages, setMessages, onUpdateSql, onUpdateEtl, onUpdateCritic, sqlCode, etlCode, criticReview, activeSessionId }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('chat'); // chat, critic, sql, etl
+  const [activeTab, setActiveTab] = useState('chat');
   const messagesEndRef = useRef(null);
   const [copied, setCopied] = useState(null);
 
@@ -92,18 +107,21 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
     setActiveTab('chat');
 
     try {
-      // Bug fix #4 : utilisation de API_URL au lieu de localhost hardcodé
+      // FIX #4 : utiliser API_URL au lieu de localhost hardcodé
       const resp = await fetch(`${API_URL}/api/chat?session_id=${activeSessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMsg, context: activeTab === 'etl' ? 'etl' : 'sql' })
       });
-      // Bug fix #10 : vérification du statut HTTP avant de parser le JSON.
-      // Sans ça, une erreur 500/422 afficherait "Modèle mis à jour." à tort.
+
+      // BUG FIX #10 : vérifier le status HTTP avant de parser le JSON.
+      // Sans ce check, une erreur 500 du serveur affiche "Modèle mis à jour."
+      // alors que la requête a échoué.
       if (!resp.ok) {
-        const errText = await resp.text();
-        throw new Error(`Erreur serveur (${resp.status}) : ${errText}`);
+        const errorText = await resp.text();
+        throw new Error(`Erreur serveur ${resp.status}: ${errorText}`);
       }
+
       const data = await resp.json();
       setMessages(prev => [...prev, { role: 'bot', content: data.reply || "Modèle mis à jour." }]);
       if (data.sql_ddl) onUpdateSql(data.sql_ddl);
@@ -111,7 +129,7 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
       if (data.critic_review) onUpdateCritic(data.critic_review);
 
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'bot', content: `⚠️ ${err.message || 'Erreur orchestrateur.'}`, isError: true }]);
+      setMessages(prev => [...prev, { role: 'bot', content: `⚠️ Erreur orchestrateur : ${err.message}`, isError: true }]);
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +137,6 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
 
   return (
     <div className="flex flex-col h-full bg-[#0c0c0e]">
-      
       <div className="flex p-2 gap-1 border-b border-[#27272a] bg-[#09090b] shrink-0 overflow-x-auto text-nowrap scrollbar-hide">
         <button onClick={() => setActiveTab('chat')} className={`px-3 py-1.5 min-w-[max-content] text-xs font-bold rounded-md flex items-center justify-center gap-2 transition-all ${activeTab === 'chat' ? 'bg-[#18181b] text-indigo-400 shadow-sm border border-[#27272a]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-[#18181b]/50'}`}>
           <MessageSquare size={14}/> Copilot IA
@@ -140,9 +157,9 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-zinc-500 opacity-60 px-4 text-center">
-                 <Bot size={40} className="mb-4 text-zinc-700" />
-                 <p className="text-sm font-medium">Je suis l'Architecte IA.</p>
-                 <p className="text-xs mt-2">Validez, critiquez ou modifiez le pipeline généré.</p>
+                <Bot size={40} className="mb-4 text-zinc-700" />
+                <p className="text-sm font-medium">Je suis l'Architecte IA.</p>
+                <p className="text-xs mt-2">Validez, critiquez ou modifiez le pipeline généré.</p>
               </div>
             ) : (
               <AnimatePresence initial={false}>
@@ -157,7 +174,7 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
             )}
             {isLoading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2 items-center text-zinc-500 px-2 py-4">
-                 <Loader2 size={14} className="animate-spin text-indigo-500" /> <span className="text-xs font-medium">Analyse en cours...</span>
+                <Loader2 size={14} className="animate-spin text-indigo-500" /> <span className="text-xs font-medium">Analyse en cours...</span>
               </motion.div>
             )}
             <div ref={messagesEndRef} />
@@ -165,7 +182,16 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
 
           <div className="p-4 bg-[#09090b] border-t border-[#27272a] shrink-0">
             <form onSubmit={handleSend} className="relative">
-              <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); } }} disabled={isLoading} placeholder="Posez une question..." rows={1} className="w-full bg-[#18181b] text-sm text-zinc-200 border border-[#27272a] rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none" style={{ fieldSizing: 'content' }} />
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); } }}
+                disabled={isLoading}
+                placeholder="Posez une question..."
+                rows={1}
+                className="w-full bg-[#18181b] text-sm text-zinc-200 border border-[#27272a] rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none"
+                style={{ fieldSizing: 'content' }}
+              />
               <button type="submit" disabled={!input.trim() || isLoading} className="absolute right-2 top-2 p-1.5 bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:bg-zinc-800 hover:bg-indigo-500">
                 <Send size={14} />
               </button>
@@ -176,63 +202,67 @@ export default function ChatInterface({ messages, setMessages, onUpdateSql, onUp
 
       {activeTab === 'critic' && (
         <div className="flex-1 overflow-auto p-4 bg-[#09090b] border-t border-[#27272a] text-sm text-zinc-300 leading-relaxed font-sans relative">
-           {criticReview ? (
-             <div className="space-y-4">
-                <FormattedMessage content={criticReview} />
-                <button 
-                  type="button"
-                  onClick={() => {
-                    const fixPrompt = "Peux-tu appliquer ces remarques et corriger le script SQL ?\n\nRETOUR CRITIQUE :\n" + criticReview;
-                    setInput(fixPrompt);
-                    // Bug fix #5 : optional chaining prévient un crash si le parent
-                    // ne passe pas onUpdateCritic ou si le callback est undefined.
-                    onUpdateCritic?.(null);
-                    setActiveTab('chat');
-                    setMessages(prev => [...prev, { role: 'bot', content: "D'accord, je transfère ces critiques à mon module de correction. Je m'en occupe immédiatement !" }]);
-                  }}
-                  className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-2 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 rounded-lg font-bold text-xs transition-colors"
-                >
-                  <Bot size={14} /> Demander au Copilot IA de corriger
-                </button>
-             </div>
-           ) : <div className="text-zinc-600 flex flex-col items-center justify-center h-40 gap-3 border border-dashed border-zinc-800 rounded-xl">
-                 <Shield size={24} className="opacity-20" />
-                 <span>Aucune critique en attente.</span>
-               </div>}
+          {/* BUG FIX #5 : criticReview pouvait être null après onUpdateCritic(null).
+              Le guard criticReview && ... évite le crash dans FormattedMessage. */}
+          {criticReview ? (
+            <div className="space-y-4">
+              <FormattedMessage content={criticReview} />
+              <button
+                type="button"
+                onClick={() => {
+                  const fixPrompt = "Peux-tu appliquer ces remarques et corriger le script SQL ?\n\nRETOUR CRITIQUE :\n" + criticReview;
+                  setInput(fixPrompt);
+                  // FIX #5 : onUpdateCritic appelé avec null — FormattedMessage
+                  // gère maintenant content=null avec le guard "if (!content) return null"
+                  onUpdateCritic(null);
+                  setActiveTab('chat');
+                  setMessages(prev => [...prev, { role: 'bot', content: "D'accord, je transfère ces critiques à mon module de correction. Je m'en occupe immédiatement !" }]);
+                }}
+                className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-2 bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 rounded-lg font-bold text-xs transition-colors"
+              >
+                <Bot size={14} /> Demander au Copilot IA de corriger
+              </button>
+            </div>
+          ) : (
+            <div className="text-zinc-600 flex flex-col items-center justify-center h-40 gap-3 border border-dashed border-zinc-800 rounded-xl">
+              <Shield size={24} className="opacity-20" />
+              <span>Aucune critique en attente.</span>
+            </div>
+          )}
         </div>
       )}
 
       {activeTab === 'sql' && (
         <div className="flex-1 overflow-auto bg-[#09090b] border-t border-[#27272a] relative">
-           <button onClick={() => handleCopy(sqlCode, 'sql')} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all z-10 flex items-center gap-2 text-xs font-bold border border-white/10 backdrop-blur-md">
-             {copied === 'sql' ? <><Check size={14} className="text-emerald-400" /> Copié</> : <><Copy size={14} /> Copier le code</>}
-           </button>
-           <SyntaxHighlighter
-             language="sql"
-             style={vscDarkPlus}
-             customStyle={{ margin: 0, padding: '3rem 1rem 1rem 1rem', background: 'transparent', fontSize: '13px' }}
-             wrapLines={true}
-           >
-             {sqlCode || "-- Aucun modèle SQL"}
-           </SyntaxHighlighter>
+          <button onClick={() => handleCopy(sqlCode, 'sql')} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all z-10 flex items-center gap-2 text-xs font-bold border border-white/10 backdrop-blur-md">
+            {copied === 'sql' ? <><Check size={14} className="text-emerald-400" /> Copié</> : <><Copy size={14} /> Copier le code</>}
+          </button>
+          <SyntaxHighlighter
+            language="sql"
+            style={vscDarkPlus}
+            customStyle={{ margin: 0, padding: '3rem 1rem 1rem 1rem', background: 'transparent', fontSize: '13px' }}
+            wrapLines={true}
+          >
+            {sqlCode || "-- Aucun modèle SQL"}
+          </SyntaxHighlighter>
         </div>
       )}
 
       {activeTab === 'etl' && (
         <div className="flex-1 overflow-auto bg-[#09090b] border-t border-[#27272a] relative">
-           <div className="absolute top-4 right-4 flex gap-2 z-10">
-             <button onClick={() => handleCopy(etlCode, 'etl')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all flex items-center gap-2 text-xs font-bold border border-white/10 backdrop-blur-md">
-               {copied === 'etl' ? <><Check size={14} className="text-emerald-400" /> Copié</> : <><Copy size={14} /> Copier le code</>}
-             </button>
-           </div>
-           <SyntaxHighlighter
-             language="xml"
-             style={vscDarkPlus}
-             customStyle={{ margin: 0, padding: '3rem 1rem 1rem 1rem', background: 'transparent', fontSize: '13px' }}
-             wrapLines={true}
-           >
-             {etlCode || "<!-- Aucun fichier .ktr généré -->"}
-           </SyntaxHighlighter>
+          <div className="absolute top-4 right-4 flex gap-2 z-10">
+            <button onClick={() => handleCopy(etlCode, 'etl')} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-all flex items-center gap-2 text-xs font-bold border border-white/10 backdrop-blur-md">
+              {copied === 'etl' ? <><Check size={14} className="text-emerald-400" /> Copié</> : <><Copy size={14} /> Copier le code</>}
+            </button>
+          </div>
+          <SyntaxHighlighter
+            language="xml"
+            style={vscDarkPlus}
+            customStyle={{ margin: 0, padding: '3rem 1rem 1rem 1rem', background: 'transparent', fontSize: '13px' }}
+            wrapLines={true}
+          >
+            {etlCode || "<!-- Aucun fichier .ktr généré -->"}
+          </SyntaxHighlighter>
         </div>
       )}
     </div>

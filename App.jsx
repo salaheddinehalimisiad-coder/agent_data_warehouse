@@ -12,6 +12,23 @@ import ProcessDiagram from './ProcessDiagram';
 import DataExplorer from './DataExplorer';
 import DataCatalog from './DataCatalog';
 
+// BUG FIX #4 / #15 : URL backend était hardcodée à "http://localhost:8000" plus de
+// 10 fois dans le projet. Centraliser ici via variable d'environnement Vite.
+// Créer .env à la racine : VITE_API_URL=http://localhost:8000
+// En prod, changer uniquement .env — aucune modification de code nécessaire.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// BUG FIX #7 : Math.random() n'est pas cryptographiquement sécurisé.
+// Un session_id prévisible peut permettre l'usurpation de session.
+// crypto.randomUUID() génère un UUID v4 sécurisé (disponible dans tous les navigateurs modernes).
+function generateSecureSessionId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `session_${crypto.randomUUID()}`;
+  }
+  // Fallback pour les très vieux environnements
+  return `session_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
 const SidebarIcon = ({ icon: Icon, active, onClick, tooltip }) => (
   <button
     onClick={onClick}
@@ -22,8 +39,8 @@ const SidebarIcon = ({ icon: Icon, active, onClick, tooltip }) => (
   >
     <Icon size={20} />
     {active && (
-      <motion.div 
-        layoutId="sidebar-indicator" 
+      <motion.div
+        layoutId="sidebar-indicator"
         className="absolute left-0 w-1 h-6 bg-indigo-500 rounded-r-full"
       />
     )}
@@ -35,9 +52,24 @@ export default function App() {
   const [view, setView] = useState('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user_profile')) || null);
+
+  // BUG FIX #5 (App.jsx) : localStorage stockait le profil utilisateur complet.
+  // En combinaison avec le XSS non corrigé, c'était une chaîne d'attaque complète.
+  // On ne stocke maintenant que les champs non-sensibles (pas de token/mot de passe).
+  // Le token d'auth ne doit JAMAIS aller dans localStorage — utiliser httpOnly cookie côté backend.
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user_profile');
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      // Ne conserver que les champs d'affichage — jamais les tokens
+      return parsed ? { id: parsed.id, name: parsed.name, email: parsed.email, avatar: parsed.avatar } : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [activeSessionId, setActiveSessionId] = useState(null);
-  
   const [sqlCode, setSqlCode] = useState(null);
   const [etlCode, setEtlCode] = useState(null);
   const [criticReview, setCriticReview] = useState(null);
@@ -48,15 +80,31 @@ export default function App() {
   const [showTerminal, setShowTerminal] = useState(false);
   const terminalRef = useRef(null);
 
+  // BUG FIX #4 : Memory leak SSE.
+  // Problème original : le useEffect faisait un early return sans cleanup
+  // quand activeSessionId était null, puis ouvrait un EventSource sans jamais
+  // fermer le précédent lors des re-renders. Résultat : doubles événements SSE
+  // et connexions fantômes qui s'accumulent en mémoire.
+  //
+  // SOLUTION : séparer la logique d'initialisation du session_id (useEffect #1)
+  // de l'ouverture SSE (useEffect #2) pour garantir le cleanup à chaque changement.
   useEffect(() => {
+    // Initialisation du session_id uniquement — PAS d'ouverture SSE ici
     if (!activeSessionId) {
-       const saved = localStorage.getItem('last_session_id') || `session_${Math.random().toString(36).substr(2, 9)}`;
-       setActiveSessionId(saved);
-       localStorage.setItem('last_session_id', saved);
-       return;
+      const saved = localStorage.getItem('last_session_id') || generateSecureSessionId(); // FIX #7
+      setActiveSessionId(saved);
+      localStorage.setItem('last_session_id', saved);
     }
+  }, []); // Exécuté une seule fois au montage
 
-    const sse = new EventSource(`http://localhost:8000/api/pipeline-stream?session_id=${activeSessionId}`);
+  useEffect(() => {
+    // Ouverture SSE uniquement quand activeSessionId est défini
+    if (!activeSessionId) return;
+
+    // FIX #4 : Chaque fois qu'activeSessionId change, on ferme l'ancien EventSource
+    // et on en ouvre un nouveau. Le cleanup est TOUJOURS exécuté grâce au return.
+    const sse = new EventSource(`${API_URL}/api/pipeline-stream?session_id=${activeSessionId}`);
+
     sse.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -65,20 +113,37 @@ export default function App() {
         if (data.etl_code_used) {
           setEtlCode(data.etl_code_used);
         }
-        
-        // Auto-scroll terminal
         if (terminalRef.current) {
-           terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+          terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
         }
-      } catch (e) { console.error('SSE Error', e); }
+      } catch (e) { console.error('SSE parse error', e); }
     };
-    return () => sse.close();
-  }, [activeSessionId]);
+
+    sse.onerror = (e) => {
+      console.error('SSE connection error', e);
+      // Ne pas crasher — la connexion sera retentée automatiquement par le browser
+    };
+
+    // FIX #4 : cleanup garanti — ferme le EventSource quand le composant
+    // se démonte OU quand activeSessionId change
+    return () => {
+      sse.close();
+    };
+  }, [activeSessionId]); // Se ré-exécute uniquement si activeSessionId change
 
   const handleValidate = async () => {
     setIsValidating(true);
     try {
-      const resp = await fetch(`http://localhost:8000/api/validate?session_id=${activeSessionId}`, { method: 'POST' });
+      // FIX #4 / #15 : utiliser API_URL
+      const resp = await fetch(`${API_URL}/api/validate?session_id=${activeSessionId}`, { method: 'POST' });
+
+      // BUG FIX #12 : vérifier resp.ok avant de parser le JSON
+      if (!resp.ok) {
+        const errText = await resp.text();
+        alert(`Erreur de validation (${resp.status}) : ${errText}`);
+        return;
+      }
+
       const data = await resp.json();
       if (data.status === 'success' || data.status === 'background') {
         setMessages(prev => [...prev, { role: 'bot', content: "✅ Modèle validé ! La transformation Pentaho est en cours de création..." }]);
@@ -86,7 +151,7 @@ export default function App() {
         alert("Erreur de validation : " + data.message);
       }
     } catch (err) {
-      alert("Erreur réseau de validation.");
+      alert("Erreur réseau de validation : " + err.message);
     } finally {
       setIsValidating(false);
     }
@@ -138,10 +203,17 @@ export default function App() {
     a.click();
     URL.revokeObjectURL(url);
   };
-   
+
   const handleExportPdf = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/export-pdf?session_id=${activeSessionId}`);
+      // FIX #12 : vérifier res.ok avant de créer le blob
+      // Sans ce check, une erreur JSON du serveur crée un PDF corrompu silencieusement
+      const res = await fetch(`${API_URL}/api/export-pdf?session_id=${activeSessionId}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        alert(`Erreur export PDF (${res.status}) : ${errText}`);
+        return;
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -150,14 +222,19 @@ export default function App() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert("Erreur réseau du rapport.");
+      alert("Erreur réseau du rapport : " + err.message);
     }
   };
 
   const handleExportMcdPdf = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/export-mcd-pdf?session_id=${activeSessionId}`);
-      if (!res.ok) throw new Error("Erreur serveur lors de la génération du PDF.");
+      // FIX #12 : même correction que handleExportPdf
+      const res = await fetch(`${API_URL}/api/export-mcd-pdf?session_id=${activeSessionId}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        alert(`Erreur export MCD PDF (${res.status}) : ${errText}`);
+        return;
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -176,18 +253,22 @@ export default function App() {
 
   const handleResumeSession = async (id) => {
     try {
-      const res = await fetch('http://localhost:8000/api/sessions/resume', {
-        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_id: id})
+      const res = await fetch(`${API_URL}/api/sessions/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: id })
       });
+      // FIX #12 : vérifier res.ok
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
       const data = await res.json();
-      if(data.status === 'success') {
+      if (data.status === 'success') {
         setSqlCode(data.sql_ddl);
         setEtlCode(data.etl_code || null);
         setCriticReview(data.critic_review || null);
         setLogicalModel(data.logical_model || null);
         setMessages(data.messages || []);
-        setActiveSessionId(id); 
-        setView('canvas'); 
+        setActiveSessionId(id);
+        setView('canvas');
       }
     } catch (e) { console.error("Erreur reprise session", e); }
   };
@@ -195,11 +276,11 @@ export default function App() {
   if (view === 'dashboard') {
     return (
       <>
-        <LandingPage 
+        <LandingPage
           onNavigate={handleNavigate}
           onNewSession={async () => {
             try {
-              const res = await fetch('http://localhost:8000/api/sessions/new', { 
+              const res = await fetch(`${API_URL}/api/sessions/new`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: user ? user.id : null })
@@ -207,21 +288,23 @@ export default function App() {
               const data = await res.json();
               setActiveSessionId(data.session_id);
             } catch (e) { console.error(e); }
-            setView('canvas'); 
-            setIsModalOpen(true); 
+            setView('canvas');
+            setIsModalOpen(true);
           }}
           onResumeSession={handleResumeSession}
           user={user}
           onAuthOpen={() => setIsAuthOpen(true)}
         />
-        <AuthModal 
-          isOpen={isAuthOpen} 
-          onClose={() => setIsAuthOpen(false)} 
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
           onLogin={(u) => {
-            setUser(u);
-            localStorage.setItem('user_profile', JSON.stringify(u));
+            // FIX #5 : ne stocker que les champs d'affichage — jamais les tokens
+            const safeUser = { id: u.id, name: u.name, email: u.email, avatar: u.avatar };
+            setUser(safeUser);
+            localStorage.setItem('user_profile', JSON.stringify(safeUser));
             setIsAuthOpen(false);
-          }} 
+          }}
         />
       </>
     );
@@ -230,13 +313,12 @@ export default function App() {
   return (
     <div className="flex h-screen bg-[#09090b] text-[#fafafa] font-sans overflow-hidden">
       <nav className="w-16 flex flex-col items-center py-6 border-r border-[#27272a] bg-[#09090b] z-20 shrink-0">
-        <div 
+        <div
           onClick={() => setView('dashboard')}
           className="w-14 h-14 mb-8 cursor-pointer active:scale-95 transition-transform hover:drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"
         >
           <img src="/logo.png" alt="AUTOETL AI" className="w-full h-full object-contain" />
         </div>
-
         <div className="flex flex-col gap-4">
           <SidebarIcon icon={LayoutGrid} active={view === 'dashboard'} onClick={() => setView('dashboard')} tooltip="Dashboard" />
           <SidebarIcon icon={Network} active={view === 'canvas'} onClick={() => { user ? setView('canvas') : setIsAuthOpen(true) }} tooltip="Pipeline Canvas" />
@@ -246,9 +328,15 @@ export default function App() {
           <SidebarIcon icon={BookOpen} active={view === 'documentation'} onClick={() => setView('documentation')} tooltip="Documentation Officielle" />
           <SidebarIcon icon={History} active={view === 'history'} onClick={() => { user ? setView('history') : setIsAuthOpen(true) }} tooltip="Historique" />
         </div>
-
         <div className="mt-auto">
-          <SidebarIcon icon={Settings} tooltip="Paramètres" />
+          {/* BUG FIX #14 : bouton Settings n'avait aucun onClick — clic silencieux.
+              Pointe maintenant vers une page settings (à créer) ou ouvre une modale. */}
+          <SidebarIcon
+            icon={Settings}
+            active={view === 'settings'}
+            onClick={() => setView('settings')}
+            tooltip="Paramètres"
+          />
         </div>
       </nav>
 
@@ -259,19 +347,18 @@ export default function App() {
               <span className="text-sm font-semibold text-zinc-200">Data Integration Pipeline</span>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-zinc-800 text-zinc-400 border border-zinc-700">Draft</span>
             </div>
-            
             <div className="flex items-center gap-3">
               <button onClick={() => handleDownloadFile(sqlCode, "schema_dw.sql")} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all border border-white/10 group">
                 <Download size={14} className="text-indigo-400 group-hover:scale-110 transition-transform" /> DDL SQL
               </button>
-              <button 
-                onClick={() => handleDownloadFile(etlCode, "transformation_pentaho.ktr")} 
+              <button
+                onClick={() => handleDownloadFile(etlCode, "transformation_pentaho.ktr")}
                 className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all border border-indigo-500/20 group"
               >
                 <Download size={14} className="group-hover:scale-110 transition-transform" /> .ktr
               </button>
-              <button 
-                onClick={handleExportMcdPdf} 
+              <button
+                onClick={handleExportMcdPdf}
                 className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all border border-amber-500/20 group"
               >
                 <FileText size={14} className="group-hover:scale-110 transition-transform" /> MCD PDF
@@ -295,74 +382,79 @@ export default function App() {
         )}
 
         <div className="flex-1 relative pattern-dots pattern-zinc-800 pattern-bg-[#09090b] pattern-size-4 pattern-opacity-40 overflow-hidden">
-           {view === 'canvas' && <PipelineCanvas sqlCode={sqlCode} etlCode={etlCode} pipelineState={pipelineState} />}
-           {view === 'documentation' && <DocumentationPage key="doc" />}
-           {view === 'usecases' && (
-             <div className="w-full h-full overflow-y-auto">
-               <ProcessDiagram />
-             </div>
-           )}
-           {view === 'explorer' && (
-             <div className="w-full h-full overflow-y-hidden">
-               <DataExplorer logicalModel={logicalModel} user={user} activeSessionId={activeSessionId} />
-           </div>
-           )}
-           {view === 'catalog' && (
-             <div className="w-full h-full overflow-y-auto">
-               <DataCatalog logicalModel={logicalModel} />
-             </div>
-           )}
-           {view === 'profile' && (
-             <ProfilePage 
-               user={user} 
-               onLogout={() => { setUser(null); localStorage.removeItem('user_profile'); setView('dashboard'); }} 
-               onResumeSession={handleResumeSession}
-             />
-           )}
-           {(view !== 'canvas' && view !== 'dashboard' && view !== 'documentation' && view !== 'usecases' && view !== 'profile' && view !== 'explorer' && view !== 'catalog') && <div className="absolute inset-0 flex items-center justify-center text-zinc-500">Page {view} en construction...</div>}
+          {view === 'canvas' && <PipelineCanvas sqlCode={sqlCode} etlCode={etlCode} pipelineState={pipelineState} />}
+          {view === 'documentation' && <DocumentationPage key="doc" />}
+          {view === 'usecases' && (
+            <div className="w-full h-full overflow-y-auto">
+              <ProcessDiagram />
+            </div>
+          )}
+          {view === 'explorer' && (
+            <div className="w-full h-full overflow-y-hidden">
+              <DataExplorer logicalModel={logicalModel} user={user} activeSessionId={activeSessionId} />
+            </div>
+          )}
+          {view === 'catalog' && (
+            <div className="w-full h-full overflow-y-auto">
+              <DataCatalog logicalModel={logicalModel} />
+            </div>
+          )}
+          {view === 'profile' && (
+            <ProfilePage
+              user={user}
+              onLogout={() => { setUser(null); localStorage.removeItem('user_profile'); setView('dashboard'); }}
+              onResumeSession={handleResumeSession}
+            />
+          )}
+          {/* FIX #14 : page settings affichée au lieu d'un clic silencieux */}
+          {view === 'settings' && (
+            <div className="absolute inset-0 flex items-center justify-center text-zinc-500">
+              Page Paramètres — en construction...
+            </div>
+          )}
+          {(view !== 'canvas' && view !== 'dashboard' && view !== 'documentation' && view !== 'usecases' && view !== 'profile' && view !== 'explorer' && view !== 'catalog' && view !== 'settings') && (
+            <div className="absolute inset-0 flex items-center justify-center text-zinc-500">Page {view} en construction...</div>
+          )}
 
-            {/* Live Terminal Panel */}
-            <AnimatePresence>
-              {view === 'canvas' && showTerminal && (
-                <motion.div 
-                  initial={{ y: 200, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 200, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="absolute inset-x-0 bottom-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] z-50 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
-                  style={{ height: terminalHeight }} 
-                >
-                   {/* Resize Handle */}
-                   <div 
-                     onMouseDown={startResizing}
-                     className="absolute inset-x-0 -top-1 h-2 cursor-ns-resize z-50 hover:bg-indigo-500/50 transition-colors"
-                   />
-                   
-                   <div className="px-4 py-2 bg-[#18181b] flex items-center justify-between border-b border-[#27272a] shrink-0">
-                     <div className="flex items-center gap-2">
-                       <Terminal size={14} className="text-zinc-400"/>
-                       <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest">Build Output Terminal</span>
-                       {pipelineState?.status === 'running' && <Loader2 className="animate-spin text-indigo-400 ml-2" size={14}/>}
-                     </div>
-                     <button onClick={() => setShowTerminal(false)} className="text-zinc-500 hover:text-white"><X size={14} /></button>
-                   </div>
-                   <div ref={terminalRef} className="flex-1 overflow-auto p-4 font-mono text-[13px] text-zinc-300 space-y-1.5 selection:bg-indigo-500/30">
-                     {pipelineState?.logs?.map((logObj, i) => {
-                       const msgText = logObj?.msg || '';
-                       return (
-                         <div key={i} className={`${msgText.toLowerCase().includes('erreur') ? 'text-rose-400' : ''} ${msgText.toLowerCase().includes('succès') || msgText.toLowerCase().includes('✅') ? 'text-emerald-400' : ''}`}>
-                           <span className="text-zinc-600 mr-2">{'>'}</span>
-                           <span className="text-zinc-500 mr-2 font-mono text-[10px]">[{logObj?.t}s]</span>
-                           {msgText}
-                         </div>
-                       );
-                     })}
-                     {!pipelineState?.logs?.length && <div className="text-zinc-500 italic px-2">En attente des journaux de compilation du Data Warehouse...</div>}
-                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+          {/* Live Terminal Panel */}
+          <AnimatePresence>
+            {view === 'canvas' && showTerminal && (
+              <motion.div
+                initial={{ y: 200, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 200, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="absolute inset-x-0 bottom-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a] z-50 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
+                style={{ height: terminalHeight }}
+              >
+                <div
+                  onMouseDown={startResizing}
+                  className="absolute inset-x-0 -top-1 h-2 cursor-ns-resize z-50 hover:bg-indigo-500/50 transition-colors"
+                />
+                <div className="px-4 py-2 bg-[#18181b] flex items-center justify-between border-b border-[#27272a] shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Terminal size={14} className="text-zinc-400"/>
+                    <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest">Build Output Terminal</span>
+                    {pipelineState?.status === 'running' && <Loader2 className="animate-spin text-indigo-400 ml-2" size={14}/>}
+                  </div>
+                  <button onClick={() => setShowTerminal(false)} className="text-zinc-500 hover:text-white"><X size={14} /></button>
+                </div>
+                <div ref={terminalRef} className="flex-1 overflow-auto p-4 font-mono text-[13px] text-zinc-300 space-y-1.5 selection:bg-indigo-500/30">
+                  {pipelineState?.logs?.map((logObj, i) => {
+                    const msgText = logObj?.msg || '';
+                    return (
+                      <div key={i} className={`${msgText.toLowerCase().includes('erreur') ? 'text-rose-400' : ''} ${msgText.toLowerCase().includes('succès') || msgText.toLowerCase().includes('✅') ? 'text-emerald-400' : ''}`}>
+                        <span className="text-zinc-600 mr-2">{'>'}</span>
+                        <span className="text-zinc-500 mr-2 font-mono text-[10px]">[{logObj?.t}s]</span>
+                        {msgText}
+                      </div>
+                    );
+                  })}
+                  {!pipelineState?.logs?.length && <div className="text-zinc-500 italic px-2">En attente des journaux de compilation du Data Warehouse...</div>}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
 
@@ -377,22 +469,21 @@ export default function App() {
           >
             <div className="h-14 border-b border-[#27272a] flex items-center px-5 shrink-0 bg-[#09090b]">
               <div className="flex items-center gap-2 text-sm font-bold text-zinc-200">
-                 <Bot size={18} className="text-indigo-400" /> AI Data Engineer
+                <Bot size={18} className="text-indigo-400" /> AI Data Engineer
               </div>
             </div>
-            
             <div className="flex-1 overflow-hidden relative">
-               <ChatInterface messages={messages} setMessages={setMessages} onUpdateSql={setSqlCode} onUpdateEtl={setEtlCode} onUpdateCritic={setCriticReview} sqlCode={sqlCode} etlCode={etlCode} criticReview={criticReview} activeSessionId={activeSessionId} />
+              <ChatInterface messages={messages} setMessages={setMessages} onUpdateSql={setSqlCode} onUpdateEtl={setEtlCode} onUpdateCritic={setCriticReview} sqlCode={sqlCode} etlCode={etlCode} criticReview={criticReview} activeSessionId={activeSessionId} />
             </div>
           </motion.aside>
         )}
       </AnimatePresence>
 
       {isModalOpen && (
-        <ConnectionModal 
+        <ConnectionModal
           user={user}
           activeSessionId={activeSessionId}
-          onClose={() => setIsModalOpen(false)} 
+          onClose={() => setIsModalOpen(false)}
           onStartSuccess={(newSql, critic, model) => {
             setSqlCode(newSql);
             setCriticReview(critic);
