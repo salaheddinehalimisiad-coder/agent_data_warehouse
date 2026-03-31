@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Mail, User, ShieldCheck } from 'lucide-react';
 
+// API backend configurable (Vite)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export default function AuthModal({ isOpen, onClose, onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -15,7 +18,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/auth/register-init', {
+      const res = await fetch(`${API_URL}/api/auth/register-init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email, name: formData.name })
@@ -37,7 +40,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/auth/register-verify', {
+      const res = await fetch(`${API_URL}/api/auth/register-verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -65,7 +68,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }) {
     if (isLogin) {
       setIsLoading(true);
       try {
-        const res = await fetch('http://localhost:8000/api/auth/login', {
+        const res = await fetch(`${API_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: formData.email, password: formData.password })

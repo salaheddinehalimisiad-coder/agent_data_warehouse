@@ -8,9 +8,8 @@ from app_state import AgentState
 
 def _build_ktr_template(metadata: dict, logical_model: dict, dw_config: dict) -> str:
     """
-    Génère un XML Pentaho Kettle Transformation (.ktr) de base
-    à partir du modèle logique et des métadonnées source.
-    Ce template est ensuite enrichi par le LLM.
+    Génère un XML Pentaho Kettle Transformation (.ktr) séquentiel
+    pour garantir l'intégrité référentielle (Dimensions -> Faits).
     """
     dw_host = dw_config.get("host", "127.0.0.1")
     dw_port = dw_config.get("port", 3306)
@@ -18,82 +17,175 @@ def _build_ktr_template(metadata: dict, logical_model: dict, dw_config: dict) ->
     dw_pass = dw_config.get("password", "")
     dw_db   = dw_config.get("database", "data_warehouse")
 
-    tables = logical_model.get("tables", [])
-    source_keys = list(metadata.keys())
-    source_table = source_keys[0] if source_keys else "source"
+    tables = logical_model.get("tables", []) or []
+    dimensions = [t for t in tables if "dim_" in (t.get("name") or "")]
+    facts      = [t for t in tables if "fact_" in (t.get("name") or "")]
+
+    from xml.sax.saxutils import escape as xml_escape
+
+    source_table = next(iter(metadata.keys()), "source") if isinstance(metadata, dict) else "source"
+    source_columns = []
+    try:
+        source_columns = metadata.get(source_table, {}).get("columns", [])
+    except Exception:
+        source_columns = []
+
+    def _map_csv_dtype_to_kettle_type(dtype: str) -> str:
+        d = str(dtype or "").lower()
+        if "int" in d or "uint" in d:
+            return "Integer"
+        if any(x in d for x in ["float", "double", "decimal", "number"]):
+            return "Number"
+        if any(x in d for x in ["date", "time"]):
+            return "Date"
+        return "String"
+
+    fields_xml = "\n".join(
+        [
+            (
+                "<field>"
+                f"<name>{xml_escape(str(col.get('name','')))}</name>"
+                f"<type>{xml_escape(_map_csv_dtype_to_kettle_type(col.get('type')))}</type>"
+                "<length>-1</length>"
+                "<precision>-1</precision>"
+                "</field>"
+            )
+            for col in source_columns
+            if col.get("name")
+        ]
+    )
+
+    steps_xml = []
+    hops_xml = []
+    
+    current_step = "Source_Input"
+    x_pos = 80
+    y_pos = 160
+
+    # 1. Lookups pour chaque Dimension
+    for idx, d in enumerate(dimensions):
+        d_name = d.get("name", f"dim_{idx}")
+        step_name = f"Lookup_{d_name}"
+        x_pos += 180
+        
+        # On devine la clé de recherche par défaut (colonne sans _sk)
+        columns = d.get("columns", [])
+        search_key = columns[0].get("name", "id") if columns else "id"
+        sk_field = f"{d_name}_sk"
+
+        steps_xml.append(f"""<step>
+    <name>{xml_escape(step_name)}</name>
+    <type>CombinationLookup</type>
+    <connection>MySQL_DataWarehouse</connection>
+    <schema/>
+    <table>{xml_escape(d_name)}</table>
+    <commit>1</commit>
+    <cache_size>9999</cache_size>
+    <replace>N</replace>
+    <preloadCache>N</preloadCache>
+    <crc>N</crc>
+    <crcfield>hashcode</crcfield>
+    <fields>
+        <key>
+            <name>{xml_escape(search_key)}</name>
+            <lookup>{xml_escape(search_key)}</lookup>
+        </key>
+        <return>
+            <name>{xml_escape(sk_field)}</name>
+            <creation_method>autoinc</creation_method>
+            <use_autoinc>Y</use_autoinc>
+        </return>
+    </fields>
+    <GUI><xloc>{x_pos}</xloc><yloc>{y_pos}</yloc><draw>Y</draw></GUI>
+</step>""")
+        
+        hops_xml.append(f"""<hop><from>{xml_escape(current_step)}</from><to>{xml_escape(step_name)}</to><enabled>Y</enabled></hop>""")
+        current_step = step_name
+
+    # 2. Select Values pour nettoyer avant les Faits
+    x_pos += 180
+    
+    # Conserver uniquement les colonnes du flux qui existent dans la table de faits
+    select_fields = []
+    if facts:
+        # Exclure la PK de la table de faits (elle sera auto-incrémentée par MySQL)
+        fact_cols = [c.get("name") for c in facts[0].get("columns", []) if not c.get("is_primary_key", False)]
+        for col_name in fact_cols:
+            select_fields.append(f"      <field><name>{xml_escape(col_name)}</name></field>")
+            
+    fields_xml_str = "\n".join(select_fields)
+    
+    steps_xml.append(f"""<step>
+    <name>Select_Values</name>
+    <type>SelectValues</type>
+    <fields>
+{fields_xml_str}
+      <select_unspecified>N</select_unspecified>
+    </fields>
+    <GUI><xloc>{x_pos}</xloc><yloc>{y_pos}</yloc><draw>Y</draw></GUI>
+</step>""")
+    hops_xml.append(f"""<hop><from>{xml_escape(current_step)}</from><to>Select_Values</to><enabled>Y</enabled></hop>""")
+    current_step = "Select_Values"
+
+    # 3. Insertion dans la Table de Faits
+    for idx, f in enumerate(facts):
+        f_name = f.get("name", f"fact_{idx}")
+        step_name = f"Load_{f_name}"
+        x_pos += 180
+        
+        # Forcer le Mapping explicite dans le TableOutput (fallback minimaliste)
+        fact_cols = [c.get("name") for c in f.get("columns", []) if not c.get("is_primary_key", False)]
+        mapping_xml_list = []
+        for col in fact_cols:
+            stream_name = col
+            if col.endswith("_bk") and not any(c.get("name") == col for c in source_columns):
+                base_name = col[:-3]
+                if any(c.get("name") == base_name for c in source_columns):
+                    stream_name = base_name
+            mapping_xml_list.append(f"      <field><column_name>{xml_escape(col)}</column_name><stream_name>{xml_escape(stream_name)}</stream_name></field>")
+        mapping_xml = "\n".join(mapping_xml_list)
+        
+        steps_xml.append(f"""<step>
+    <name>{xml_escape(step_name)}</name>
+    <type>TableOutput</type>
+    <connection>MySQL_DataWarehouse</connection>
+    <table>{xml_escape(f_name)}</table>
+    <truncate>Y</truncate>
+    <commitSize>1000</commitSize>
+    <specify_fields>Y</specify_fields>
+    <fields>
+{mapping_xml}
+    </fields>
+    <GUI><xloc>{x_pos}</xloc><yloc>{y_pos}</yloc><draw>Y</draw></GUI>
+</step>""")
+        hops_xml.append(f"""<hop><from>{xml_escape(current_step)}</from><to>{xml_escape(step_name)}</to><enabled>Y</enabled></hop>""")
+        # Pour plusieurs tables de faits, on repartirait de Select_Values ou en série. Ici série.
+        current_step = step_name
+
+    table_steps_joined = "\n".join(steps_xml)
+    hops_joined = "\n".join(hops_xml)
 
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <transformation>
-  <info>
-    <name>ETL_{dw_db}</name>
-    <description>Pipeline ETL généré automatiquement par Agent Data Warehouse IA</description>
-    <extended_description/>
-    <trans_version>1.0</trans_version>
-    <trans_type>Normal</trans_type>
-  </info>
-
-  <!-- ═══ CONNEXION MYSQL TARGET ═══ -->
+  <info><name>ETL_{dw_db}</name><trans_version>1.0</trans_version><trans_type>Normal</trans_type></info>
   <connection>
     <name>MySQL_DataWarehouse</name>
-    <server>{dw_host}</server>
-    <type>MYSQL</type>
-    <access>Native</access>
-    <database>{dw_db}</database>
-    <port>{dw_port}</port>
-    <username>{dw_user}</username>
-    <password>{dw_pass}</password>
+    <server>{dw_host}</server><type>MYSQL</type><access>Native</access>
+    <database>{dw_db}</database><port>{dw_port}</port>
+    <username>{dw_user}</username><password>{dw_pass}</password>
   </connection>
-
-  <!-- ═══ STEPS ═══ -->
-
-  <!-- STEP 1 : Chargement de la source -->
   <step>
     <name>Source_Input</name>
     <type>CsvInput</type>
-    <description>Lecture de la source de données</description>
     <filename>${{FILE_PATH}}</filename>
     <headerPresent>Y</headerPresent>
-    <separator>,</separator>
-    <enclosure>&quot;</enclosure>
-    <encoding>UTF-8</encoding>
-    <lazy_conversion>N</lazy_conversion>
-    <fields>
-FIELDS_PLACEHOLDER
-    </fields>
-    <GUI>
-      <xloc>80</xloc>
-      <yloc>160</yloc>
-      <draw>Y</draw>
-    </GUI>
+    <fields>{fields_xml}</fields>
+    <GUI><xloc>80</xloc><yloc>160</yloc><draw>Y</draw></GUI>
   </step>
-
-  <!-- STEP 2 : Sélection et mapping des colonnes -->
-  <step>
-    <name>Select_Values</name>
-    <type>SelectValues</type>
-    <description>Sélection et renommage des colonnes pour le DW</description>
-    <fields>
-      <select_unspecified>N</select_unspecified>
-    </fields>
-    <GUI>
-      <xloc>320</xloc>
-      <yloc>160</yloc>
-      <draw>Y</draw>
-    </GUI>
-  </step>
-
-TABLES_STEPS_PLACEHOLDER
-
-  <!-- ═══ HOPS ═══ -->
+{table_steps_joined}
   <order>
-    <hop>
-      <from>Source_Input</from>
-      <to>Select_Values</to>
-      <enabled>Y</enabled>
-    </hop>
-HOPS_PLACEHOLDER
+{hops_joined}
   </order>
-
 </transformation>"""
 
 
@@ -109,40 +201,69 @@ def etl_generator_node(state: AgentState) -> dict:
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", """Tu es un expert Pentaho Data Integration (Kettle).
-Ton rôle est de générer un fichier XML Transformation Pentaho (.ktr) COMPLET et VALIDE.
+Ton rôle est de générer un fichier XML (.ktr) SÉQUENTIEL pour un schéma en étoile.
 
-RÈGLES STRICTES :
-1. Le fichier doit commencer par <?xml version="1.0" encoding="UTF-8"?> et contenir une balise <transformation>.
-2. Inclure impérativement : une balise <connection> pour MySQL, des <step> pour chaque étape ETL, et des <order><hop> pour les connexions.
-3. Les steps obligatoires :
-   - "CsvInput" (ou "TableInput" si source SQL) pour lire la source
-   - "SelectValues" pour mapper/renommer les colonnes
-   - Un "TableOutput" PAR TABLE cible du Data Warehouse (fact + dimensions)
-4. Chaque <step> doit avoir une section <GUI> avec des coordonnées <xloc>/<yloc> pour que Spoon affiche correctement le diagramme.
-5. Les noms des tables cibles doivent correspondre EXACTEMENT au modèle logique fourni.
-6. La connexion MySQL doit utiliser le nom "MySQL_DataWarehouse".
-7. RÉPONDS UNIQUEMENT avec le XML complet. Aucune explication, aucun markdown.
+MISSION : RÉSOLUTION DE L'ERREUR INCORRECT INTEGER VALUE
+Tu dois refactoriser l'algorithme de génération du XML pour appliquer ces deux règles obligatoires :
 
-Voici un exemple de step TableOutput valide :
+1. GÉNÉRER UNE CHAÎNE DE COMPOSANTS CombinationLookup :
+Entre l'étape CsvInput et TableOutput, ton code DOIT générer séquentiellement les étapes de recherche pour CHAQUE dimension. 
+Voici le modèle XML exact que ton code doit produire pour l'étape de Lookup (à adapter dynamiquement pour le Temps, le Produit, la Géographie, etc. selon les dimensions de {logical_model}) :
+
 <step>
-  <name>Load_fact_ventes</name>
-  <type>TableOutput</type>
+  <name>Lookup_Client</name>
+  <type>CombinationLookup</type>
   <connection>MySQL_DataWarehouse</connection>
   <schema/>
-  <table>fact_ventes</table>
-  <truncate>Y</truncate>
-  <ignore_errors>N</ignore_errors>
-  <use_batch>Y</use_batch>
-  <commitSize>1000</commitSize>
-  <GUI><xloc>560</xloc><yloc>160</yloc><draw>Y</draw></GUI>
-</step>"""),
-        ("human", """Métadonnées de la source : {metadata}
+  <table>u1_dim_client</table>
+  <commit>1</commit>
+  <cache_size>9999</cache_size>
+  <replace>N</replace>
+  <preloadCache>N</preloadCache>
+  <crc>N</crc>
+  <crcfield>hashcode</crcfield>
+  <fields>
+    <key>
+      <name>client_id</name>
+      <lookup>client_id</lookup>
+    </key>
+    <return>
+      <name>dim_client_sk</name>
+      <creation_method>autoinc</creation_method>
+      <use_autoinc>Y</use_autoinc>
+    </return>
+  </fields>
+</step>
 
-Modèle logique OLAP cible : {logical_model}
+2. FORCER LE MAPPING EXPLICITE DANS LE TableOutput :
+L'étape d'insertion dans la table de faits ne doit plus se faire à l'aveugle. Ton code doit OBLIGATOIREMENT injecter la balise <specify_fields>Y</specify_fields> et mapper les Surrogate Keys générées par les Lookups vers les colonnes physiques de la base.
+Ton code doit générer ce bloc exact (adapté aux colonnes de ta table de faits) dans le <step> du TableOutput :
 
+<specify_fields>Y</specify_fields>
+<fields>
+  <field><column_name>dim_temps_sk</column_name><stream_name>dim_temps_sk</stream_name></field>
+  <field><column_name>dim_client_sk</column_name><stream_name>dim_client_sk</stream_name></field>
+  <field><column_name>dim_produit_sk</column_name><stream_name>dim_produit_sk</stream_name></field>
+  <field><column_name>dim_geographie_sk</column_name><stream_name>dim_geographie_sk</stream_name></field>
+  <field><column_name>dim_canal_sk</column_name><stream_name>dim_canal_sk</stream_name></field>
+  <field><column_name>quantite</column_name><stream_name>quantite</stream_name></field>
+  <field><column_name>prix_unitaire</column_name><stream_name>prix_unitaire</stream_name></field>
+  <field><column_name>remise_pct</column_name><stream_name>remise_pct</stream_name></field>
+  <field><column_name>montant_total</column_name><stream_name>montant_total</stream_name></field>
+  <field><column_name>id_vente_bk</column_name><stream_name>id_vente</stream_name></field>
+</fields>
+
+3. METTRE À JOUR LES HOPS (<order>) :
+Le flux généré doit relier les étapes de manière strictement linéaire : 
+CsvInput -> Lookup_Temps -> Lookup_Client -> Lookup_Produit -> Lookup_Geographie -> Lookup_Canal -> SelectValues -> TableOutput_Fact.
+
+N'oublie pas l'étape SelectValues juste avant le TableOutput avec le filtre approprié !
+"""),
+        ("human", """Métadonnées source : {metadata}
+Modèle logique cible (Star Schema) : {logical_model}
 Connexion MySQL DW : {dw_config}
 
-Génère la transformation Pentaho .ktr complète.""")
+Génère la transformation Pentaho .ktr séquentielle complète avec ces corrections de mapping.""")
     ])
 
     chain = prompt | llm
@@ -157,10 +278,28 @@ Génère la transformation Pentaho .ktr complète.""")
     # Nettoyage des balises markdown éventuelles
     ktr_xml = content.replace("```xml", "").replace("```", "").strip()
 
-    # Fallback : si le LLM n'a pas généré de XML valide, utiliser le template de base
-    if "<transformation>" not in ktr_xml:
-        print("⚠️ LLM n'a pas généré du XML valide — utilisation du template de base.")
+    import xml.etree.ElementTree as ET
+    placeholder_tokens = ("FIELDS_PLACEHOLDER", "TABLES_STEPS_PLACEHOLDER", "HOPS_PLACEHOLDER")
+
+    def _validate_ktr(xml_str: str) -> tuple[bool, str]:
+        if not xml_str or "<transformation" not in xml_str.lower():
+            return False, "missing <transformation> tag"
+        for t in placeholder_tokens:
+            if t in xml_str:
+                return False, f"contains placeholder token {t}"
+        try:
+            ET.fromstring(xml_str)
+        except ET.ParseError as e:
+            return False, f"XML parse error: {e}"
+        return True, ""
+
+    ok, reason = _validate_ktr(ktr_xml)
+    if not ok:
+        print(f"⚠️ KTR invalide ({reason}) — fallback template minimaliste.")
         ktr_xml = _build_ktr_template(metadata, logical_model, dw_config)
+        ok2, reason2 = _validate_ktr(ktr_xml)
+        if not ok2:
+            raise ValueError(f"Impossible de construire un KTR XML valide : {reason2}")
 
     print("✅ Transformation Pentaho .ktr générée avec succès.")
     return {

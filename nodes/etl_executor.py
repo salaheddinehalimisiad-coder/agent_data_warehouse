@@ -66,8 +66,17 @@ def etl_executor_node(state: AgentState) -> dict:
         kitchen_path = _find_kitchen_executable()
 
         if kitchen_path:
+            conn_config = state.get("connection_config", {})
+            file_path = conn_config.get("file_path", "")
+            
+            # Préparer la commande Kitchen avec les paramètres
+            cmd = [kitchen_path, f"/file:{ktr_path}"]
+            if file_path:
+                # On échappe le chemin pour éviter les problèmes d'espace sur Windows
+                cmd.append(f"/param:FILE_PATH={file_path}")
+
             result = subprocess.run(
-                [kitchen_path, f"/file:{ktr_path}"],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=300,
@@ -112,8 +121,12 @@ def _execute_ddl_on_dw(sql_ddl: str, config: dict) -> None:
         if stmt and not any(stmt.startswith(kw) for kw in allowed_keywords):
             raise ValueError(f"Instruction SQL non autorisée détectée : {stmt[:60]}")
 
+    # Backend injecte souvent `user` alors que certains anciens chemins attendaient `username`.
+    username = config.get("username") or config.get("user") or config.get("dw_user")
+    password = config.get("password") or config.get("dw_password") or ""
+
     conn_str = (
-        f"mysql+mysqlconnector://{config.get('username')}:{config.get('password')}"
+        f"mysql+mysqlconnector://{username}:{password}"
         f"@{config.get('host', 'localhost')}:{config.get('port', 3306)}"
         f"/{config.get('database')}"
     )
@@ -146,16 +159,34 @@ def _find_kitchen_executable() -> str | None:
 
 def _build_lineage(state: AgentState) -> dict:
     """Construit le lineage source→destination depuis le logical_model."""
-    logical_model = state.get("logical_model", {})
-    entries = []
-    for dim in logical_model.get("dimension_tables", []):
-        for col in dim.get("columns", []):
+    logical_model = state.get("logical_model", {}) or {}
+    source_metadata = state.get("source_metadata", {}) or {}
+
+    # `explorer_node` renvoie : { "<nom_table_source>": { "columns": [...] } }
+    source_table = next(iter(source_metadata.keys()), "source") if isinstance(source_metadata, dict) else "source"
+
+    entries: list[dict] = []
+    for table in logical_model.get("tables", []) or []:
+        target_table = table.get("name", "unknown_table")
+        for col in table.get("columns", []) or []:
+            target_column = col.get("name", "")
+
+            # Le modélisateur peut (selon le LLM) renseigner `source_column`.
+            # Sinon on retombe sur le nom de la colonne cible.
+            source_column = col.get("source_column") or ""
+            if not source_column or str(source_column).strip().upper() in {"N/A", "NA", "NONE"}:
+                source_column = target_column
+
+            if not target_column or not source_column:
+                continue
+
             entries.append({
-                "source_table":  state.get("source_metadata", {}).get("tables", [{}])[0].get("table_name", "source"),
-                "source_column": col,
-                "target_table":  dim["name"],
-                "target_column": col,
+                "source_table": source_table,
+                "source_column": source_column,
+                "target_table": target_table,
+                "target_column": target_column,
                 "transformation": "direct copy",
             })
+
     from datetime import datetime, timezone
     return {"entries": entries, "generated_at": datetime.now(timezone.utc).isoformat()}

@@ -117,7 +117,21 @@ def _save_session_state(session_id, state_values, user_id=None):
         clean_state = {}
         for k, v in state_values.items():
             if k == 'messages':
-                clean_state[k] = [{"role": getattr(m, "type", "human"), "content": m.content} for m in v]
+                # `messages` peut contenir soit des objets LangChain (avec `.type`/`.content`)
+                # soit des dicts simples (ex: branch chat SQL : {"role": "...", "content": "..."}).
+                normalized = []
+                for m in v:
+                    if isinstance(m, dict):
+                        normalized.append({
+                            "role": m.get("role") or m.get("type") or "human",
+                            "content": m.get("content") or "",
+                        })
+                    else:
+                        normalized.append({
+                            "role": getattr(m, "type", "human"),
+                            "content": getattr(m, "content", "") or "",
+                        })
+                clean_state[k] = normalized
             else:
                 clean_state[k] = v
                 
@@ -407,15 +421,17 @@ async def start_process(req: ConnectionRequest, session_id: str = "session_dw_1"
 
         for event in agent_app.stream(initial_state, config=config):
             node = list(event.keys())[0] if event else None
-            if node == "explorer_node":
+            # LangGraph node ids are the keys used in `add_node(...)` inside main.py.
+            # Keep backward-compatibility for older event naming.
+            if node in ("explorer", "explorer_node"):
                 _set_stage(sid, "explorer", "success", "Métadonnées extraites")
                 _set_stage(sid, "modeler",  "running")
                 _log(sid, "Modélisation OLAP en cours…")
-            elif node == "modeler_node":
+            elif node in ("modeler", "modeler_node"):
                 _set_stage(sid, "modeler", "success", "Schéma généré")
                 _set_stage(sid, "critic", "running")
                 _log(sid, "Agent Critique analyse la conformité...")
-            elif node == "critic_node":
+            elif node in ("critic", "critic_node"):
                 _set_stage(sid, "critic", "success", "Revue terminée")
                 _set_stage(sid, "human",   "running")
                 _log(sid, "En attente de validation humaine...")
@@ -507,8 +523,15 @@ L'utilisateur te demande une modification précise. Renvoie UNIQUEMENT le code c
             # Modification du modèle logique SQL
             if not current_state:
                  return {"status": "error", "message": "Session expirée ou introuvable. Veuillez re-générer un modèle."}
-                 
-            agent_app.update_state(config, {"messages": [{"role": "user", "content": req.message}]})
+
+            # Important : forcer une re-validation.
+            # Sinon, si la session a déjà été validée (is_validated=True),
+            # le graphe peut enchaîner directement vers la génération/exécution ETL
+            # au lieu de repasser par le point d'interruption human_review.
+            agent_app.update_state(config, {
+                "is_validated": False,
+                "messages": [{"role": "user", "content": req.message}]
+            })
             for event in agent_app.stream(None, config=config):
                 pass
             
@@ -583,8 +606,9 @@ def run_etl_pipeline(req: Optional[ConnectionRequest], config: dict):
 
     except Exception as e:
         import traceback; traceback.print_exc()
-        pipeline_state["status"] = "failed"
-        _broadcast()
+        state["status"] = "failed"
+        state["ended_at"] = time.time()
+        _broadcast(sid)
 
 def re_execute_etl_pipeline(config: dict):
     from nodes.etl_executor import etl_executor_node

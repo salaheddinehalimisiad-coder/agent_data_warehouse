@@ -148,27 +148,15 @@ Exemple de structure attendue (avec un préfixe fictif 'u1_') :
         for col in table.columns:
             col_def = f"    {col.name} {col.type}"
             if col.is_primary_key:
-                col_def += " PRIMARY KEY"
+                if any(t in col.type.upper() for t in ["INT", "BIGINT", "SERIAL"]):
+                    col_def += " AUTO_INCREMENT PRIMARY KEY"
+                else:
+                    col_def += " PRIMARY KEY"
             cols_sql.append(col_def)
             if col.is_foreign_key and col.references:
-                # On s'assure que la référence inclut aussi le préfixe si ce n'est pas déjà le cas
-                ref_name = col.references
-                if user_prefix and not ref_name.startswith(user_prefix):
-                    ref_name = user_prefix + ref_name
-                
-                target_pk = ""
-                for t in logical_model.tables:
-                    if t.name == ref_name:
-                        for target_col in t.columns:
-                            if target_col.is_primary_key:
-                                target_pk = target_col.name
-                                break
-                        break
-
-                if not target_pk:
-                    target_pk = "id_sk" # fallback
-                
-                fks.append(f"    FOREIGN KEY ({col.name}) REFERENCES {ref_name}({target_pk})")
+                # Remplacer la contrainte physique FOREIGN KEY par un simple INDEX
+                # pour éviter les erreurs "Foreign Key Constraint Fails" en flux continu
+                fks.append(f"    INDEX idx_{table.name}_{col.name} ({col.name})")
         
         all_cols = cols_sql + fks
         create_table_sql = f"CREATE TABLE IF NOT EXISTS {table.name} (\n" + ",\n".join(all_cols) + "\n);"

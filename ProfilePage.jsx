@@ -2,13 +2,16 @@ import React from 'react';
 import { User, Mail, ShieldCheck, History, Calendar, Clock, Database, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+// API backend configurable (Vite)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export default function ProfilePage({ user, onLogout, onResumeSession }) {
   const [history, setHistory] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!user) return;
-    fetch(`http://localhost:8000/api/sessions?user_id=${user.id}`)
+    fetch(`${API_URL}/api/sessions?user_id=${user.id}`)
       .then(res => res.json())
       .then(data => {
         setHistory(data.sessions || []);

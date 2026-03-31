@@ -2,6 +2,9 @@ import React, { useState, useRef } from 'react';
 import { X, FileText, Server, ChevronDown, ChevronUp, Loader2, Upload, Search, AlertCircle } from 'lucide-react';
 
 export default function ConnectionModal({ user, onClose, onStartSuccess, activeSessionId }) {
+  // API backend configurable (Vite)
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
   // --- Source config ---
   const [sourceType] = useState('csv');
   const [filePath, setFilePath] = useState('ventes.csv');
@@ -32,7 +35,7 @@ export default function ConnectionModal({ user, onClose, onStartSuccess, activeS
     formData.append('file', file);
 
     try {
-      const resp = await fetch('http://127.0.0.1:8000/api/upload-csv', {
+      const resp = await fetch(`${API_URL}/api/upload-csv`, {
         method: 'POST',
         body: formData,
       });
@@ -65,8 +68,8 @@ export default function ConnectionModal({ user, onClose, onStartSuccess, activeS
 
     try {
       const url = activeSessionId 
-        ? `http://127.0.0.1:8000/api/start?session_id=${activeSessionId}` 
-        : 'http://127.0.0.1:8000/api/start';
+        ? `${API_URL}/api/start?session_id=${activeSessionId}` 
+        : `${API_URL}/api/start`;
 
       const response = await fetch(url, {
         method: 'POST',

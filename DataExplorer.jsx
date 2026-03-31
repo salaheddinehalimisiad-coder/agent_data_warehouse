@@ -3,6 +3,9 @@ import { Play, Database, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function DataExplorer({ logicalModel, user, activeSessionId }) {
+  // API backend configurable (Vite)
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
   const defaultTable = logicalModel?.tables?.[0]?.name || "data_warehouse";
   const [query, setQuery] = useState(`SELECT * FROM ${defaultTable} LIMIT 10;`);
 
@@ -27,7 +30,7 @@ export default function DataExplorer({ logicalModel, user, activeSessionId }) {
         dbConfig = JSON.parse(dbConfigStr);
       }
 
-      const response = await fetch('http://localhost:8000/api/query', {
+      const response = await fetch(`${API_URL}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

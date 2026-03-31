@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// API backend configurable (Vite)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
@@ -23,7 +26,7 @@ export default function LandingPage({ onResumeSession, onNewSession, onNavigate,
   const [activeTab, setActiveTab] = useState('explorer');
 
   useEffect(() => {
-    const url = user ? `http://localhost:8000/api/sessions?user_id=${user.id}` : 'http://localhost:8000/api/sessions';
+    const url = user ? `${API_URL}/api/sessions?user_id=${user.id}` : `${API_URL}/api/sessions`;
     fetch(url)
       .then(res => res.json())
       .then(data => {
